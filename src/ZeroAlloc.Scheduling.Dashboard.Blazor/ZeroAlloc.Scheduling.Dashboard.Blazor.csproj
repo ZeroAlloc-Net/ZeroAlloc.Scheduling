@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+  <PropertyGroup>
+    <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
+    <PackageId>ZeroAlloc.Scheduling.Dashboard.Blazor</PackageId>
+    <Description>Blazor component library for ZeroAlloc.Scheduling dashboard.</Description>
+    <Version>0.0.0-local</Version>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="8.0.14" />
+    <ProjectReference Include="..\ZeroAlloc.Scheduling\ZeroAlloc.Scheduling.csproj" />
+  </ItemGroup>
+</Project>

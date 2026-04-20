@@ -1,0 +1,14 @@
+<Solution>
+  <Project Path="src/ZeroAlloc.Scheduling/ZeroAlloc.Scheduling.csproj" />
+  <Project Path="src/ZeroAlloc.Scheduling.Generator/ZeroAlloc.Scheduling.Generator.csproj" />
+  <Project Path="src/ZeroAlloc.Scheduling.EfCore/ZeroAlloc.Scheduling.EfCore.csproj" />
+  <Project Path="src/ZeroAlloc.Scheduling.InMemory/ZeroAlloc.Scheduling.InMemory.csproj" />
+  <Project Path="src/ZeroAlloc.Scheduling.Redis/ZeroAlloc.Scheduling.Redis.csproj" />
+  <Project Path="src/ZeroAlloc.Scheduling.Dashboard/ZeroAlloc.Scheduling.Dashboard.csproj" />
+  <Project Path="src/ZeroAlloc.Scheduling.Dashboard.Blazor/ZeroAlloc.Scheduling.Dashboard.Blazor.csproj" />
+  <Project Path="src/ZeroAlloc.Scheduling.Mediator/ZeroAlloc.Scheduling.Mediator.csproj" />
+  <Project Path="tests/ZeroAlloc.Scheduling.Tests/ZeroAlloc.Scheduling.Tests.csproj" />
+  <Project Path="tests/ZeroAlloc.Scheduling.Generator.Tests/ZeroAlloc.Scheduling.Generator.Tests.csproj" />
+  <Project Path="tests/ZeroAlloc.Scheduling.EfCore.Tests/ZeroAlloc.Scheduling.EfCore.Tests.csproj" />
+  <Project Path="tests/ZeroAlloc.Scheduling.Dashboard.Tests/ZeroAlloc.Scheduling.Dashboard.Tests.csproj" />
+</Solution>

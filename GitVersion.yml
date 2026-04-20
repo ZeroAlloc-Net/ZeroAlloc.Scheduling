@@ -1,0 +1,11 @@
+mode: ContinuousDeployment
+
+branches:
+  main:
+    label: alpha
+  release:
+    label: rc
+    regex: ^release/
+
+ignore:
+  sha: []
