@@ -21,6 +21,7 @@ public sealed class GeneratorTests
         source.Should().Contain("IJobTypeExecutor");
         source.Should().Contain("SendEmailJob");
         source.Should().Contain("AddSendEmailJob");
+        source.Should().NotContain("IHostedService"); // fire-and-forget: no startup service
     }
 
     [Fact]
