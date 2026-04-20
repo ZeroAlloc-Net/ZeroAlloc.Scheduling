@@ -1,6 +1,5 @@
 #pragma warning disable IL2026, IL3050 // DefaultJobSerializer uses reflection-based JSON; acceptable in tests
 
-using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.DependencyInjection;
 using ZeroAlloc.Mediator;
 using ZeroAlloc.Scheduling.InMemory;
@@ -44,8 +43,6 @@ public sealed class MediatorBridgeTests
         Assert.True(handled);
     }
 
-    [RequiresUnreferencedCode("Test type uses reflection-based serialization")]
-    [RequiresDynamicCode("Test type uses reflection-based serialization")]
     private sealed record SendTestJobRequest : IJob, IRequest<Unit>
     {
         public ValueTask ExecuteAsync(JobContext ctx, CancellationToken ct) => ValueTask.CompletedTask;

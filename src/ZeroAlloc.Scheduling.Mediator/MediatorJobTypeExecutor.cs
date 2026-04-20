@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using ZeroAlloc.Mediator;
 
 namespace ZeroAlloc.Scheduling.Mediator;
@@ -7,8 +6,6 @@ namespace ZeroAlloc.Scheduling.Mediator;
 /// Executes a job by deserializing it as an <see cref="IRequest{TResponse}"/> and dispatching via
 /// <see cref="IRequestHandler{TRequest,TResponse}"/>.
 /// </summary>
-[RequiresUnreferencedCode("Uses reflection-based JSON serialization via IJobSerializer")]
-[RequiresDynamicCode("Uses reflection-based JSON serialization via IJobSerializer")]
 internal sealed class MediatorJobTypeExecutor<TJob> : IJobTypeExecutor
     where TJob : IJob, IRequest<Unit>
 {
