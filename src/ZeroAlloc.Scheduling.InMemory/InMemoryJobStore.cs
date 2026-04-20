@@ -38,7 +38,8 @@ public sealed class InMemoryJobStore : IJobStore
         {
             if (claimed.Count >= batchSize) break;
             var e = kvp.Value;
-            if (e.Status != JobStatus.Pending || e.ScheduledAt > now) continue;
+            bool isRetryable = e.Status == JobStatus.Pending || e.Status == JobStatus.Failed;
+            if (!isRetryable || e.ScheduledAt > now) continue;
 
             var running = new JobEntry
             {
