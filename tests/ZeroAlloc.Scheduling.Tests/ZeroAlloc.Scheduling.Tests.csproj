@@ -12,6 +12,10 @@
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
     <ProjectReference Include="..\..\src\ZeroAlloc.Scheduling\ZeroAlloc.Scheduling.csproj" />
     <ProjectReference Include="..\..\src\ZeroAlloc.Scheduling.InMemory\ZeroAlloc.Scheduling.InMemory.csproj" />
+    <ProjectReference Include="..\..\src\ZeroAlloc.Scheduling.Mediator\ZeroAlloc.Scheduling.Mediator.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="ZeroAlloc.Mediator" Version="1.1.8" />
   </ItemGroup>
   <ItemGroup>
     <Using Include="Xunit" />
