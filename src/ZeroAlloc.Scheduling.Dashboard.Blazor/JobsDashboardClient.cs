@@ -9,20 +9,40 @@ public sealed class JobsDashboardClient
 
     public JobsDashboardClient(HttpClient http) => _http = http;
 
-    public Task<JobSummary?> GetSummaryAsync(CancellationToken ct = default)
-        => _http.GetFromJsonAsync<JobSummary>("summary", ct);
+    public async Task<JobSummary?> GetSummaryAsync(CancellationToken ct = default)
+    {
+        using var response = await _http.GetAsync("summary", ct).ConfigureAwait(false);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<JobSummary>(ct).ConfigureAwait(false);
+    }
 
-    public Task<IReadOnlyList<JobEntry>?> GetPendingAsync(CancellationToken ct = default)
-        => _http.GetFromJsonAsync<IReadOnlyList<JobEntry>>("pending", ct);
+    public async Task<IReadOnlyList<JobEntry>?> GetPendingAsync(CancellationToken ct = default)
+    {
+        using var response = await _http.GetAsync("pending", ct).ConfigureAwait(false);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<IReadOnlyList<JobEntry>>(ct).ConfigureAwait(false);
+    }
 
-    public Task<IReadOnlyList<JobEntry>?> GetRunningAsync(CancellationToken ct = default)
-        => _http.GetFromJsonAsync<IReadOnlyList<JobEntry>>("running", ct);
+    public async Task<IReadOnlyList<JobEntry>?> GetRunningAsync(CancellationToken ct = default)
+    {
+        using var response = await _http.GetAsync("running", ct).ConfigureAwait(false);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<IReadOnlyList<JobEntry>>(ct).ConfigureAwait(false);
+    }
 
-    public Task<IReadOnlyList<JobEntry>?> GetFailedAsync(CancellationToken ct = default)
-        => _http.GetFromJsonAsync<IReadOnlyList<JobEntry>>("failed", ct);
+    public async Task<IReadOnlyList<JobEntry>?> GetFailedAsync(CancellationToken ct = default)
+    {
+        using var response = await _http.GetAsync("failed", ct).ConfigureAwait(false);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<IReadOnlyList<JobEntry>>(ct).ConfigureAwait(false);
+    }
 
-    public Task<IReadOnlyList<JobEntry>?> GetSucceededAsync(CancellationToken ct = default)
-        => _http.GetFromJsonAsync<IReadOnlyList<JobEntry>>("succeeded", ct);
+    public async Task<IReadOnlyList<JobEntry>?> GetSucceededAsync(CancellationToken ct = default)
+    {
+        using var response = await _http.GetAsync("succeeded", ct).ConfigureAwait(false);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<IReadOnlyList<JobEntry>>(ct).ConfigureAwait(false);
+    }
 
     public async Task RequeueAsync(Guid id, CancellationToken ct = default)
     {

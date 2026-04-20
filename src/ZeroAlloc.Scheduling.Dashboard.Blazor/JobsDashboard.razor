@@ -3,6 +3,11 @@
 
 <h2>ZeroAlloc Scheduler</h2>
 
+@if (_error is not null)
+{
+    <p class="za-error">Error loading jobs: @_error</p>
+}
+
 @if (_summary is not null)
 {
     <div class="za-cards">
@@ -23,7 +28,7 @@
         {
             <tr>
                 <td title="@job.Id">@job.Id.ToString()[..8]&#x2026;</td>
-                <td>@job.TypeName.Split('.').Last()</td>
+                <td>@(job.TypeName.Split('.').LastOrDefault() ?? job.TypeName)</td>
                 <td><span class="za-badge za-@job.Status">@job.Status</span></td>
                 <td>@job.Attempts / @job.MaxAttempts</td>
                 <td>@job.ScheduledAt.ToLocalTime().ToString("g")</td>
@@ -41,25 +46,32 @@
 </table>
 
 @code {
-    [Parameter] public string ApiBase { get; set; } = "/jobs/api";
-
     private JobSummary? _summary;
     private List<JobEntry> _jobs = [];
+    private string? _error;
 
-    protected override async Task OnInitializedAsync() => await LoadAsync().ConfigureAwait(false);
+    protected override async Task OnInitializedAsync() => await LoadAsync();
 
     private async Task LoadAsync()
     {
-        _summary = await Client.GetSummaryAsync().ConfigureAwait(false);
-        var all = await Task.WhenAll(
-            Client.GetPendingAsync(),
-            Client.GetRunningAsync(),
-            Client.GetFailedAsync(),
-            Client.GetSucceededAsync()).ConfigureAwait(false);
-        _jobs = all.Where(l => l != null).SelectMany(l => l!).ToList();
-        StateHasChanged();
+        _error = null;
+        try
+        {
+            _summary = await Client.GetSummaryAsync();
+            var all = await Task.WhenAll(
+                Client.GetPendingAsync(),
+                Client.GetRunningAsync(),
+                Client.GetFailedAsync(),
+                Client.GetSucceededAsync());
+            _jobs = all.Where(l => l != null).SelectMany(l => l!).ToList();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.ToString();
+        }
+        await InvokeAsync(StateHasChanged);
     }
 
-    private async Task RequeueAsync(Guid id) { await Client.RequeueAsync(id).ConfigureAwait(false); await LoadAsync().ConfigureAwait(false); }
-    private async Task DeleteAsync(Guid id)  { await Client.DeleteAsync(id).ConfigureAwait(false);  await LoadAsync().ConfigureAwait(false); }
+    private async Task RequeueAsync(Guid id) { await Client.RequeueAsync(id); await LoadAsync(); }
+    private async Task DeleteAsync(Guid id)  { await Client.DeleteAsync(id);  await LoadAsync(); }
 }
