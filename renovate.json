@@ -1,0 +1,14 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "timezone": "Europe/Amsterdam",
+  "schedule": ["before 8am on Monday"],
+  "packageRules": [
+    { "groupName": "Microsoft.CodeAnalysis", "matchPackageNames": ["Microsoft.CodeAnalysis.*"], "automerge": true, "automergeType": "branch" },
+    { "groupName": "xunit", "matchPackageNames": ["xunit", "xunit.*"], "automerge": true, "automergeType": "branch" },
+    { "groupName": "Microsoft.Extensions", "matchPackageNames": ["Microsoft.Extensions.*"], "automerge": true, "automergeType": "branch" },
+    { "groupName": "Microsoft.EntityFrameworkCore", "matchPackageNames": ["Microsoft.EntityFrameworkCore.*"], "automerge": true, "automergeType": "branch" },
+    { "groupName": "GitHub Actions", "matchManagers": ["github-actions"], "automerge": true, "automergeType": "branch" },
+    { "matchUpdateTypes": ["patch"], "automerge": true, "automergeType": "branch" }
+  ]
+}

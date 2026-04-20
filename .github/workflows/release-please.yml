@@ -1,0 +1,57 @@
+name: Release Please
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+      version: ${{ steps.release.outputs.version }}
+    steps:
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  publish:
+    needs: release-please
+    if: ${{ needs.release-please.outputs.release_created }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - run: dotnet tool restore
+      - run: dotnet restore
+      - run: dotnet build -c Release -p:Version=${{ needs.release-please.outputs.version }} --no-restore
+      - run: dotnet test -c Release --no-build
+
+      - name: Pack
+        run: |
+          for pkg in ZeroAlloc.Scheduling ZeroAlloc.Scheduling.Generator ZeroAlloc.Scheduling.EfCore \
+                     ZeroAlloc.Scheduling.InMemory ZeroAlloc.Scheduling.Redis \
+                     ZeroAlloc.Scheduling.Dashboard ZeroAlloc.Scheduling.Dashboard.Blazor \
+                     ZeroAlloc.Scheduling.Mediator; do
+            dotnet pack src/$pkg/$pkg.csproj -c Release \
+              -p:Version=${{ needs.release-please.outputs.version }} --no-build -o ./artifacts
+          done
+
+      - run: |
+          dotnet nuget push ./artifacts/*.nupkg \
+            --source https://api.nuget.org/v3/index.json \
+            --api-key ${{ secrets.NUGET_API_KEY }} \
+            --skip-duplicate
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.release-please.outputs.tag_name }}
+          files: ./artifacts/*.nupkg
