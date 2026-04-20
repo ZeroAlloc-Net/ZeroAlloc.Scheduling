@@ -64,7 +64,7 @@ public sealed class SchedulingWorkerService : BackgroundService
         foreach (var entry in entries)
         {
             ct.ThrowIfCancellationRequested();
-            await ProcessEntryAsync(store, executors, entry, ct).ConfigureAwait(false);
+            await ProcessEntryAsync(store, executors, entry, scope.ServiceProvider, ct).ConfigureAwait(false);
         }
     }
 
@@ -72,6 +72,7 @@ public sealed class SchedulingWorkerService : BackgroundService
         IJobStore store,
         Dictionary<string, IJobTypeExecutor> executors,
         JobEntry entry,
+        IServiceProvider scopeServices,
         CancellationToken ct)
     {
         if (!executors.TryGetValue(entry.TypeName, out var executor))
@@ -81,15 +82,13 @@ public sealed class SchedulingWorkerService : BackgroundService
             return;
         }
 
-#pragma warning disable CA2000
         var ctx = new JobContext
         {
             JobId = entry.Id,
             Attempt = entry.Attempts + 1,
             ScheduledAt = entry.ScheduledAt,
-            Services = _scopeFactory.CreateScope().ServiceProvider,
+            Services = scopeServices,
         };
-#pragma warning restore CA2000
 
         try
         {
