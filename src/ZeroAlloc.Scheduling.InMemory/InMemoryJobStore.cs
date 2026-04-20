@@ -3,7 +3,7 @@ using System.Collections.Concurrent;
 namespace ZeroAlloc.Scheduling.InMemory;
 
 /// <summary>Thread-safe in-memory job store. Use in tests — not for production.</summary>
-public sealed class InMemoryJobStore : IJobStore
+public sealed class InMemoryJobStore : IJobStore, IJobDashboardStore
 {
     private readonly ConcurrentDictionary<Guid, JobEntry> _entries = new();
 
@@ -171,5 +171,59 @@ public sealed class InMemoryJobStore : IJobStore
         }
 
         return ValueTask.CompletedTask;
+    }
+
+    // IJobDashboardStore
+
+    public Task<JobSummary> GetSummaryAsync(CancellationToken ct = default)
+    {
+        var counts = _entries.Values
+            .GroupBy(e => e.Status)
+            .ToDictionary(g => g.Key, g => g.Count());
+        return Task.FromResult(new JobSummary(
+            counts.GetValueOrDefault(JobStatus.Pending),
+            counts.GetValueOrDefault(JobStatus.Running),
+            counts.GetValueOrDefault(JobStatus.Succeeded),
+            counts.GetValueOrDefault(JobStatus.Failed),
+            counts.GetValueOrDefault(JobStatus.DeadLetter)));
+    }
+
+    public Task<IReadOnlyList<JobEntry>> QueryByStatusAsync(
+        JobStatus[] statuses, int page = 1, int pageSize = 50, CancellationToken ct = default)
+        => Task.FromResult<IReadOnlyList<JobEntry>>(_entries.Values
+            .Where(e => statuses.Contains(e.Status))
+            .OrderByDescending(e => e.ScheduledAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToList());
+
+    public Task<IReadOnlyList<JobEntry>> GetRecurringAsync(CancellationToken ct = default)
+        => Task.FromResult<IReadOnlyList<JobEntry>>(_entries.Values
+            .Where(e => e.CronExpression != null && e.Status == JobStatus.Pending)
+            .ToList());
+
+    public Task RequeueAsync(Guid id, CancellationToken ct = default)
+    {
+        if (_entries.TryGetValue(id, out var e))
+        {
+            _entries[id] = new JobEntry
+            {
+                Id = e.Id,
+                TypeName = e.TypeName,
+                Payload = e.Payload,
+                Status = JobStatus.Pending,
+                Attempts = 0,
+                MaxAttempts = e.MaxAttempts,
+                ScheduledAt = DateTimeOffset.UtcNow,
+                CronExpression = e.CronExpression,
+            };
+        }
+        return Task.CompletedTask;
+    }
+
+    public Task DeleteAsync(Guid id, CancellationToken ct = default)
+    {
+        _entries.TryRemove(id, out _);
+        return Task.CompletedTask;
     }
 }

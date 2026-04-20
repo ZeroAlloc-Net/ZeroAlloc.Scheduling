@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><title>ZeroAlloc Scheduler</title>
+  <style>
+    body{font-family:system-ui,sans-serif;margin:2rem;background:#f8f9fa}
+    h1{color:#212529}.cards{display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:2rem}
+    .card{background:#fff;border-radius:8px;padding:1.5rem;min-width:120px;box-shadow:0 1px 3px rgba(0,0,0,.1);text-align:center}
+    .card .count{font-size:2rem;font-weight:bold}.card .label{color:#6c757d;font-size:.85rem;margin-top:.25rem}
+    table{width:100%;border-collapse:collapse;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.1)}
+    th,td{padding:.75rem 1rem;text-align:left;border-bottom:1px solid #dee2e6}
+    th{background:#e9ecef;font-weight:600}tr:last-child td{border-bottom:none}
+    .badge{padding:.2rem .5rem;border-radius:4px;font-size:.8rem;font-weight:600}
+    .Pending{background:#cff4fc;color:#055160}.Running{background:#d1ecf1;color:#0c5460}
+    .Succeeded{background:#d4edda;color:#155724}.Failed{background:#fff3cd;color:#856404}
+    .DeadLetter{background:#f8d7da;color:#721c24}
+    button{padding:.35rem .75rem;border:none;border-radius:4px;cursor:pointer;font-size:.85rem;margin-right:.25rem}
+    .btn-requeue{background:#0d6efd;color:#fff}.btn-delete{background:#dc3545;color:#fff}
+  </style>
+</head>
+<body>
+  <h1>ZeroAlloc Scheduler</h1>
+  <div class="cards" id="summary"></div>
+  <h2>Jobs</h2>
+  <table><thead><tr><th>ID</th><th>Type</th><th>Status</th><th>Attempts</th><th>Scheduled At</th><th>Error</th><th>Actions</th></tr></thead>
+  <tbody id="jobs-body"></tbody></table>
+  <script>
+    const base=window.location.pathname.replace(/\/$/,'')+'/api';
+    async function load(){
+      const[summary,...lists]=await Promise.all([
+        fetch(base+'/summary').then(r=>r.json()),
+        fetch(base+'/pending').then(r=>r.json()),
+        fetch(base+'/running').then(r=>r.json()),
+        fetch(base+'/failed').then(r=>r.json()),
+        fetch(base+'/succeeded').then(r=>r.json()),
+      ]);
+      document.getElementById('summary').innerHTML=Object.entries(summary)
+        .map(([k,v])=>`<div class="card"><div class="count">${v}</div><div class="label">${k}</div></div>`).join('');
+      const rows=lists.flat();
+      document.getElementById('jobs-body').innerHTML=rows.map(j=>`<tr>
+        <td title="${j.id}">${j.id.substring(0,8)}\u2026</td>
+        <td>${j.typeName.split('.').pop()}</td>
+        <td><span class="badge ${j.status}">${j.status}</span></td>
+        <td>${j.attempts}/${j.maxAttempts}</td>
+        <td>${new Date(j.scheduledAt).toLocaleString()}</td>
+        <td>${j.error??''}</td>
+        <td>${j.status==='DeadLetter'?`<button class="btn-requeue" onclick="requeue('${j.id}')">Requeue</button>`:''}<button class="btn-delete" onclick="del('${j.id}')">Delete</button></td>
+      </tr>`).join('');
+    }
+    async function requeue(id){await fetch(`${base}/${id}/requeue`,{method:'POST'});load();}
+    async function del(id){await fetch(`${base}/${id}`,{method:'DELETE'});load();}
+    load();setInterval(load,5000);
+  </script>
+</body>
+</html>
