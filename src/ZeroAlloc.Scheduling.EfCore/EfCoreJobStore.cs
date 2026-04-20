@@ -35,21 +35,7 @@ public sealed class EfCoreJobStore : IJobStore
         {
             entity.Status = JobStatus.Running;
             entity.StartedAt = now;
-            claimed.Add(new JobEntry
-            {
-                Id = entity.Id,
-                TypeName = entity.TypeName,
-                Payload = entity.Payload,
-                Status = JobStatus.Running,
-                Attempts = entity.Attempts,
-                MaxAttempts = entity.MaxAttempts,
-                ScheduledAt = entity.ScheduledAt,
-                StartedAt = now,
-                CompletedAt = entity.CompletedAt,
-                NextRunAt = entity.NextRunAt,
-                CronExpression = entity.CronExpression,
-                Error = entity.Error,
-            });
+            claimed.Add(entity.ToJobEntry());
         }
         await _db.SaveChangesAsync(ct).ConfigureAwait(false);
         return claimed;
@@ -100,7 +86,7 @@ public sealed class EfCoreJobStore : IJobStore
         string? cronExpression, int maxAttempts, CancellationToken ct)
     {
         bool exists = await _db.Jobs
-            .AnyAsync(j => j.TypeName == typeName && j.Status == JobStatus.Pending, ct)
+            .AnyAsync(j => j.TypeName == typeName && (j.Status == JobStatus.Pending || j.Status == JobStatus.Running), ct)
             .ConfigureAwait(false);
 
         if (!exists)
