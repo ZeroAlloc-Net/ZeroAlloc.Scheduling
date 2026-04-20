@@ -1,0 +1,65 @@
+@using ZeroAlloc.Scheduling
+@inject JobsDashboardClient Client
+
+<h2>ZeroAlloc Scheduler</h2>
+
+@if (_summary is not null)
+{
+    <div class="za-cards">
+        <div class="za-card"><div class="za-count">@_summary.Pending</div><div class="za-label">Pending</div></div>
+        <div class="za-card"><div class="za-count">@_summary.Running</div><div class="za-label">Running</div></div>
+        <div class="za-card"><div class="za-count">@_summary.Succeeded</div><div class="za-label">Succeeded</div></div>
+        <div class="za-card"><div class="za-count">@_summary.Failed</div><div class="za-label">Failed</div></div>
+        <div class="za-card"><div class="za-count">@_summary.DeadLetter</div><div class="za-label">Dead Letter</div></div>
+    </div>
+}
+
+<table class="za-table">
+    <thead>
+        <tr><th>ID</th><th>Type</th><th>Status</th><th>Attempts</th><th>Scheduled</th><th>Error</th><th>Actions</th></tr>
+    </thead>
+    <tbody>
+        @foreach (var job in _jobs)
+        {
+            <tr>
+                <td title="@job.Id">@job.Id.ToString()[..8]&#x2026;</td>
+                <td>@job.TypeName.Split('.').Last()</td>
+                <td><span class="za-badge za-@job.Status">@job.Status</span></td>
+                <td>@job.Attempts / @job.MaxAttempts</td>
+                <td>@job.ScheduledAt.ToLocalTime().ToString("g")</td>
+                <td>@job.Error</td>
+                <td>
+                    @if (job.Status == JobStatus.DeadLetter)
+                    {
+                        <button @onclick="() => RequeueAsync(job.Id)">Requeue</button>
+                    }
+                    <button @onclick="() => DeleteAsync(job.Id)">Delete</button>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@code {
+    [Parameter] public string ApiBase { get; set; } = "/jobs/api";
+
+    private JobSummary? _summary;
+    private List<JobEntry> _jobs = [];
+
+    protected override async Task OnInitializedAsync() => await LoadAsync().ConfigureAwait(false);
+
+    private async Task LoadAsync()
+    {
+        _summary = await Client.GetSummaryAsync().ConfigureAwait(false);
+        var all = await Task.WhenAll(
+            Client.GetPendingAsync(),
+            Client.GetRunningAsync(),
+            Client.GetFailedAsync(),
+            Client.GetSucceededAsync()).ConfigureAwait(false);
+        _jobs = all.Where(l => l != null).SelectMany(l => l!).ToList();
+        StateHasChanged();
+    }
+
+    private async Task RequeueAsync(Guid id) { await Client.RequeueAsync(id).ConfigureAwait(false); await LoadAsync().ConfigureAwait(false); }
+    private async Task DeleteAsync(Guid id)  { await Client.DeleteAsync(id).ConfigureAwait(false);  await LoadAsync().ConfigureAwait(false); }
+}
