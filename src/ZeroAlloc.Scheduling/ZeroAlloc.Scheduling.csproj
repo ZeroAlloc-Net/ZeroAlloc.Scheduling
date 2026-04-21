@@ -21,4 +21,7 @@
       ReferenceOutputAssembly="false"
       PrivateAssets="all" />
   </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="ZeroAlloc.Scheduling.Tests" />
+  </ItemGroup>
 </Project>

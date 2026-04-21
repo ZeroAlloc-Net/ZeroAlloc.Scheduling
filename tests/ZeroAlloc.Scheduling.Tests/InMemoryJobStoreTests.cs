@@ -78,4 +78,29 @@ public sealed class InMemoryJobStoreTests
 
         _store.AllEntries.Where(e => string.Equals(e.TypeName, "RecurringJob", StringComparison.Ordinal)).Should().HaveCount(1);
     }
+
+    [Fact]
+    public async Task RequeueAsync_MovesDeadLetterToPending()
+    {
+        await _store.EnqueueAsync("MyJob", [], DateTimeOffset.UtcNow, 3, null, _ct);
+        var entry = (await _store.FetchPendingAsync(1, _ct))[0];
+        await _store.DeadLetterAsync(entry.Id, "error", _ct);
+
+        await _store.RequeueAsync(entry.Id, _ct);
+
+        var updated = _store.AllEntries.Single(e => e.Id == entry.Id);
+        updated.Status.Should().Be(JobStatus.Pending);
+        updated.Error.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task DeleteAsync_RemovesEntry()
+    {
+        await _store.EnqueueAsync("MyJob", [], DateTimeOffset.UtcNow, 3, null, _ct);
+        var entry = (await _store.FetchPendingAsync(1, _ct))[0];
+
+        await _store.DeleteAsync(entry.Id, _ct);
+
+        _store.AllEntries.Should().BeEmpty();
+    }
 }
