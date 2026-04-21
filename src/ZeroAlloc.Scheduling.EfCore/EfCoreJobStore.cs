@@ -23,22 +23,35 @@ public sealed class EfCoreJobStore : IJobStore
     public async ValueTask<IReadOnlyList<JobEntry>> FetchPendingAsync(int batchSize, CancellationToken ct)
     {
         var now = DateTimeOffset.UtcNow;
-        var candidates = await _db.Jobs
-            .Where(j => j.Status == JobStatus.Pending && j.ScheduledAt <= now)
-            .Union(_db.Jobs.Where(j => j.Status == JobStatus.Failed && j.ScheduledAt <= now))
+
+        // Step 1: Select candidate IDs only (no tracking, cheap)
+        var candidateIds = await _db.Jobs
+            .Where(j => (j.Status == JobStatus.Pending || j.Status == JobStatus.Failed)
+                     && j.ScheduledAt <= now)
             .OrderBy(j => j.ScheduledAt)
             .Take(batchSize)
+            .Select(j => j.Id)
             .ToListAsync(ct).ConfigureAwait(false);
 
-        var claimed = new List<JobEntry>(candidates.Count);
-        foreach (var entity in candidates)
-        {
-            entity.Status = JobStatus.Running;
-            entity.StartedAt = now;
-            claimed.Add(entity.ToJobEntry());
-        }
-        await _db.SaveChangesAsync(ct).ConfigureAwait(false);
-        return claimed;
+        if (candidateIds.Count == 0)
+            return Array.Empty<JobEntry>();
+
+        // Step 2: Conditional atomic claim — only rows still Pending/Failed get marked Running.
+        // A second worker racing here finds Status already Running and updates 0 rows.
+        await _db.Jobs
+            .Where(j => candidateIds.Contains(j.Id)
+                     && (j.Status == JobStatus.Pending || j.Status == JobStatus.Failed))
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(j => j.Status, JobStatus.Running)
+                .SetProperty(j => j.StartedAt, now), ct).ConfigureAwait(false);
+
+        // Step 3: Read back only the rows we actually claimed
+        var claimed = await _db.Jobs
+            .AsNoTracking()
+            .Where(j => candidateIds.Contains(j.Id) && j.Status == JobStatus.Running)
+            .ToListAsync(ct).ConfigureAwait(false);
+
+        return claimed.Select(e => e.ToJobEntry()).ToList();
     }
 
     public async ValueTask MarkSucceededAsync(Guid id, DateTimeOffset? nextRunAt,
