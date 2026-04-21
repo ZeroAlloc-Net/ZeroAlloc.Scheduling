@@ -16,7 +16,7 @@ internal static class SchedulingCodeWriter
         var startupName = $"{model.TypeName}RecurringStartup";
 
         AppendHeader(sb, model.Namespace);
-        AppendExecutor(sb, executorName, typeFqn, model.TypeFqn);
+        AppendExecutor(sb, executorName, typeFqn, model.TypeFqn, model.MaxAttempts);
 
         if (model.IsRecurring)
             AppendRecurringStartup(sb, model, startupName, typeFqn);
@@ -48,13 +48,14 @@ internal static class SchedulingCodeWriter
         }
     }
 
-    private static void AppendExecutor(StringBuilder sb, string executorName, string typeFqn, string jobFqn)
+    private static void AppendExecutor(StringBuilder sb, string executorName, string typeFqn, string jobFqn, int maxAttempts)
     {
         sb.AppendLine($"internal sealed class {executorName} : global::ZeroAlloc.Scheduling.IJobTypeExecutor");
         sb.AppendLine("{");
         sb.AppendLine("    private readonly global::ZeroAlloc.Scheduling.IJobSerializer _serializer;");
         sb.AppendLine($"    public {executorName}(global::ZeroAlloc.Scheduling.IJobSerializer serializer) => _serializer = serializer;");
         sb.AppendLine($"    public string TypeName => \"{jobFqn}\";");
+        sb.AppendLine($"    public int MaxAttempts => {maxAttempts.ToString(CultureInfo.InvariantCulture)};");
         sb.AppendLine("    public async global::System.Threading.Tasks.ValueTask ExecuteAsync(");
         sb.AppendLine("        byte[] payload,");
         sb.AppendLine("        global::ZeroAlloc.Scheduling.JobContext ctx,");

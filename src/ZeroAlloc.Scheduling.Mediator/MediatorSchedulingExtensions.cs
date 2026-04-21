@@ -6,13 +6,16 @@ public static class MediatorSchedulingExtensions
 {
     /// <summary>
     /// Registers the ZeroAlloc.Scheduling mediator bridge.
-    /// Per-type wiring is emitted by the source generator when it detects <c>IRequest&lt;Unit&gt;</c>
-    /// on a job class — this method is the DI hook consumed by that generated code.
+    /// <para>
+    /// NOTE: Automatic source-generator integration is planned but not yet implemented.
+    /// Callers must manually register <see cref="MediatorJobTypeExecutor{TJob}"/> for each job type, e.g.:
+    /// <code>
+    /// services.AddTransient&lt;IJobTypeExecutor, MediatorJobTypeExecutor&lt;MyJob&gt;&gt;();
+    /// </code>
+    /// </para>
     /// </summary>
     public static IServiceCollection AddSchedulingMediator(this IServiceCollection services)
     {
-        // Generator-emitted Add{TypeName}Job() calls will register MediatorJobTypeExecutor<T>
-        // when AddSchedulingMediator() is in scope. This method is the DI anchor.
         return services;
     }
 }

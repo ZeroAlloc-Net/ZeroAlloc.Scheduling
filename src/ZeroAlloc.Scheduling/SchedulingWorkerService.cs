@@ -9,17 +9,20 @@ namespace ZeroAlloc.Scheduling;
 public sealed class SchedulingWorkerService : BackgroundService
 {
     private readonly IServiceScopeFactory _scopeFactory;
-    private readonly SchedulingOptions _options;
+    private readonly IOptionsMonitor<SchedulingOptions> _options;
     private readonly ILogger<SchedulingWorkerService> _logger;
+    private readonly IReadOnlyDictionary<string, IJobTypeExecutor> _executors;
 
     public SchedulingWorkerService(
         IServiceScopeFactory scopeFactory,
-        IOptions<SchedulingOptions> options,
-        ILogger<SchedulingWorkerService> logger)
+        IOptionsMonitor<SchedulingOptions> options,
+        ILogger<SchedulingWorkerService> logger,
+        IEnumerable<IJobTypeExecutor> executors)
     {
         _scopeFactory = scopeFactory;
-        _options = options.Value;
+        _options = options;
         _logger = logger;
+        _executors = executors.ToDictionary(e => e.TypeName, StringComparer.Ordinal);
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -39,7 +42,7 @@ public sealed class SchedulingWorkerService : BackgroundService
 
             try
             {
-                await Task.Delay(_options.PollingInterval, stoppingToken).ConfigureAwait(false);
+                await Task.Delay(_options.CurrentValue.PollingInterval, stoppingToken).ConfigureAwait(false);
             }
             catch (OperationCanceledException)
             {
@@ -55,22 +58,18 @@ public sealed class SchedulingWorkerService : BackgroundService
 #pragma warning restore MA0004
         var store = scope.ServiceProvider.GetRequiredService<IJobStore>();
 
-        var executors = new Dictionary<string, IJobTypeExecutor>(StringComparer.Ordinal);
-        foreach (var e in scope.ServiceProvider.GetRequiredService<IEnumerable<IJobTypeExecutor>>())
-            executors[e.TypeName] = e;
-
-        var entries = await store.FetchPendingAsync(_options.BatchSize, ct).ConfigureAwait(false);
+        var entries = await store.FetchPendingAsync(_options.CurrentValue.BatchSize, ct).ConfigureAwait(false);
 
         foreach (var entry in entries)
         {
             ct.ThrowIfCancellationRequested();
-            await ProcessEntryAsync(store, executors, entry, scope.ServiceProvider, ct).ConfigureAwait(false);
+            await ProcessEntryAsync(store, _executors, entry, scope.ServiceProvider, ct).ConfigureAwait(false);
         }
     }
 
     private async Task ProcessEntryAsync(
         IJobStore store,
-        Dictionary<string, IJobTypeExecutor> executors,
+        IReadOnlyDictionary<string, IJobTypeExecutor> executors,
         JobEntry entry,
         IServiceProvider scopeServices,
         CancellationToken ct)
@@ -113,7 +112,7 @@ public sealed class SchedulingWorkerService : BackgroundService
             }
             else
             {
-                var delay = TimeSpan.FromMilliseconds(_options.RetryBaseDelay.TotalMilliseconds * Math.Pow(2, newAttempts - 1));
+                var delay = TimeSpan.FromMilliseconds(_options.CurrentValue.RetryBaseDelay.TotalMilliseconds * Math.Pow(2, newAttempts - 1));
                 var nextRetry = DateTimeOffset.UtcNow.Add(delay);
                 _logger.LogWarning(ex, "Job {Id} ({TypeName}) failed (attempt {A}/{Max}). Retry at {Next}.",
                     entry.Id, entry.TypeName, newAttempts, entry.MaxAttempts, nextRetry);

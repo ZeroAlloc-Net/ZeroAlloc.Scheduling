@@ -4,5 +4,6 @@ namespace ZeroAlloc.Scheduling;
 public interface IJobTypeExecutor
 {
     string TypeName { get; }
+    int MaxAttempts { get; }   // 0 = use global default
     ValueTask ExecuteAsync(byte[] payload, JobContext ctx, CancellationToken ct);
 }

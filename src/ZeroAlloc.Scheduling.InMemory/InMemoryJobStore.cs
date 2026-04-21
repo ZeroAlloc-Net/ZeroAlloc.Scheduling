@@ -152,7 +152,7 @@ public sealed class InMemoryJobStore : IJobStore, IJobDashboardStore
     {
         bool exists = _entries.Values.Any(e =>
             string.Equals(e.TypeName, typeName, StringComparison.Ordinal) &&
-            e.Status == JobStatus.Pending);
+            (e.Status == JobStatus.Pending || e.Status == JobStatus.Running));
 
         if (!exists)
         {

@@ -11,12 +11,16 @@ internal sealed class DefaultScheduler : IScheduler
     private readonly IJobStore _store;
     private readonly IJobSerializer _serializer;
     private readonly IOptionsMonitor<SchedulingOptions> _options;
+    private readonly IReadOnlyDictionary<string, IJobTypeExecutor> _executors;
 
-    public DefaultScheduler(IJobStore store, IJobSerializer serializer, IOptionsMonitor<SchedulingOptions> options)
+    public DefaultScheduler(IJobStore store, IJobSerializer serializer,
+        IOptionsMonitor<SchedulingOptions> options,
+        IEnumerable<IJobTypeExecutor> executors)
     {
         _store = store;
         _serializer = serializer;
         _options = options;
+        _executors = executors.ToDictionary(e => e.TypeName, StringComparer.Ordinal);
     }
 
     public ValueTask EnqueueAsync<TJob>(TJob job, CancellationToken ct = default) where TJob : IJob
@@ -24,9 +28,12 @@ internal sealed class DefaultScheduler : IScheduler
 
     public ValueTask EnqueueAsync<TJob>(TJob job, TimeSpan delay, CancellationToken ct = default) where TJob : IJob
     {
+        var typeName = typeof(TJob).FullName!;
         var payload = _serializer.Serialize(job);
         var scheduledAt = DateTimeOffset.UtcNow.Add(delay);
-        return _store.EnqueueAsync(typeof(TJob).FullName!, payload, scheduledAt,
-            _options.CurrentValue.DefaultMaxAttempts, null, ct);
+        var maxAttempts = _executors.TryGetValue(typeName, out var executor) && executor.MaxAttempts > 0
+            ? executor.MaxAttempts
+            : _options.CurrentValue.DefaultMaxAttempts;
+        return _store.EnqueueAsync(typeName, payload, scheduledAt, maxAttempts, null, ct);
     }
 }

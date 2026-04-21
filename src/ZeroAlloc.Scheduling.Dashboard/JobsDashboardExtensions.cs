@@ -2,6 +2,8 @@ using System.Reflection;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace ZeroAlloc.Scheduling.Dashboard;
 
@@ -17,6 +19,16 @@ public static class JobsDashboardExtensions
 
         MapUiRoutes(group);
         MapApiRoutes(group);
+
+        var store = endpoints.ServiceProvider.GetService<IJobDashboardStore>();
+        if (store is null)
+        {
+            var logger = endpoints.ServiceProvider.GetRequiredService<ILoggerFactory>()
+                .CreateLogger(typeof(JobsDashboardExtensions));
+            logger.LogWarning(
+                "No IJobDashboardStore registered. Dashboard will show empty data. " +
+                "Add AddSchedulingEfCore() or AddSchedulingInMemory() to enable dashboard queries.");
+        }
 
         return group;
     }

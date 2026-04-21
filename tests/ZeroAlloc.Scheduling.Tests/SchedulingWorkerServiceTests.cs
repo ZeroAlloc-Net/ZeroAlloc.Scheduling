@@ -81,6 +81,7 @@ public sealed class SchedulingWorkerServiceTests
             _fn = fn;
         }
         public string TypeName { get; }
+        public int MaxAttempts => 0;
         public ValueTask ExecuteAsync(byte[] payload, JobContext ctx, CancellationToken ct)
             => _fn(payload, ctx);
     }

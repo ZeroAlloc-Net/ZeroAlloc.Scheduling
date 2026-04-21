@@ -19,6 +19,7 @@ internal sealed class MediatorJobTypeExecutor<TJob> : IJobTypeExecutor
     }
 
     public string TypeName => typeof(TJob).FullName!;
+    public int MaxAttempts => 0;
 
     public async ValueTask ExecuteAsync(byte[] payload, JobContext ctx, CancellationToken ct)
     {
