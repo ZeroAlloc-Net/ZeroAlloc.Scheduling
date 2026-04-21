@@ -9,6 +9,14 @@ public sealed class SchedulingGenerator : IIncrementalGenerator
 {
     private const string JobAttributeFqn = "ZeroAlloc.Scheduling.JobAttribute";
 
+    private static readonly DiagnosticDescriptor MediatorMaxAttemptsIgnored = new(
+        id: "ZASCH001",
+        title: "MaxAttempts ignored for mediator bridge job",
+        messageFormat: "Job type '{0}' specifies MaxAttempts={1} but implements IRequest<Unit> — MaxAttempts is not honoured for mediator bridge jobs. Remove [Job(MaxAttempts=...)] or use manual registration.",
+        category: "ZeroAlloc.Scheduling",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true);
+
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
         var models = context.SyntaxProvider
@@ -67,10 +75,36 @@ public sealed class SchedulingGenerator : IIncrementalGenerator
             if (string.Equals(arg.Key, "MaxAttempts", System.StringComparison.Ordinal)) maxAttempts = arg.Value.Value is int i ? i : 0;
         }
 
+        bool isMediatorBridge = false;
+        foreach (var iface in symbol.AllInterfaces)
+        {
+            if (string.Equals(iface.ContainingNamespace?.ToDisplayString(), "ZeroAlloc.Mediator", System.StringComparison.Ordinal)
+                && string.Equals(iface.Name, "IRequest", System.StringComparison.Ordinal)
+                && iface.TypeArguments.Length == 1
+                && string.Equals(iface.TypeArguments[0].ToDisplayString(), "ZeroAlloc.Mediator.Unit", System.StringComparison.Ordinal))
+            {
+                isMediatorBridge = true;
+                break;
+            }
+        }
+
         bool isRecurring = cron != null || every != null;
+        var diagnostics = BuildDiagnostics(symbol, isMediatorBridge, maxAttempts);
 
         return new JobModel(ns, symbol.Name, fqn, isRecurring, cron, every, maxAttempts,
-            ImmutableArray<Diagnostic>.Empty);
+            isMediatorBridge, diagnostics);
+    }
+
+    private static ImmutableArray<Diagnostic> BuildDiagnostics(
+        INamedTypeSymbol symbol, bool isMediatorBridge, int maxAttempts)
+    {
+        if (!isMediatorBridge || maxAttempts <= 0)
+            return ImmutableArray<Diagnostic>.Empty;
+
+        var location = symbol.Locations.FirstOrDefault() ?? Location.None;
+        return ImmutableArray.Create(
+            Diagnostic.Create(MediatorMaxAttemptsIgnored, location,
+                symbol.Name, maxAttempts));
     }
 
     // Maps Every enum integer values to names without depending on the ZeroAlloc.Scheduling assembly.

@@ -9,10 +9,12 @@
     <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" PrivateAssets="all" />
     <PackageReference Include="FluentAssertions" Version="6.12.0" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" />
+    <PackageReference Include="ZeroAlloc.Mediator" Version="1.1.8" />
     <PackageReference Include="Verify.SourceGenerators" Version="2.5.0" />
     <PackageReference Include="Verify.Xunit" Version="28.6.0" />
     <ProjectReference Include="..\..\src\ZeroAlloc.Scheduling\ZeroAlloc.Scheduling.csproj" />
     <ProjectReference Include="..\..\src\ZeroAlloc.Scheduling.Generator\ZeroAlloc.Scheduling.Generator.csproj" />
+    <ProjectReference Include="..\..\src\ZeroAlloc.Scheduling.Mediator\ZeroAlloc.Scheduling.Mediator.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Using Include="Xunit" />

@@ -11,4 +11,5 @@ internal sealed record JobModel(
     string? CronExpression,
     string? EveryValue,
     int MaxAttempts,
+    bool IsMediatorBridge,
     ImmutableArray<Diagnostic> Diagnostics);

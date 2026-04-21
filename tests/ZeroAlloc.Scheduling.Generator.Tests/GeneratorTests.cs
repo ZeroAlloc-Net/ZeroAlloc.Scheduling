@@ -57,4 +57,63 @@ public sealed class GeneratorTests
         source.Should().Contain("IHostedService");
         source.Should().Contain("UpsertRecurringAsync");
     }
+
+    [Fact]
+    public void MediatorBridgeJob_RegistersMediatorExecutor_NotDirectExecutor()
+    {
+        var (source, diagnostics) = GeneratorTestHelper.Run("""
+            using ZeroAlloc.Scheduling;
+            using ZeroAlloc.Mediator;
+            namespace MyApp;
+            [Job]
+            public sealed class SendWelcomeEmailJob : IJob, IRequest<Unit>
+            {
+                public System.Threading.Tasks.ValueTask ExecuteAsync(JobContext ctx, System.Threading.CancellationToken ct) => default;
+            }
+            """);
+
+        diagnostics.Should().BeEmpty();
+        source.Should().Contain("MediatorJobTypeExecutor");
+        source.Should().Contain("AddSendWelcomeEmailJob");
+        source.Should().NotContain("SendWelcomeEmailJobJobTypeExecutor"); // no direct executor class
+    }
+
+    [Fact]
+    public void RecurringMediatorBridgeJob_GeneratesStartupServiceAndMediatorRegistration()
+    {
+        var (source, diagnostics) = GeneratorTestHelper.Run("""
+            using ZeroAlloc.Scheduling;
+            using ZeroAlloc.Mediator;
+            namespace MyApp;
+            [Job(Cron = "0 * * * *")]
+            public sealed class HourlyReportJob : IJob, IRequest<Unit>
+            {
+                public System.Threading.Tasks.ValueTask ExecuteAsync(JobContext ctx, System.Threading.CancellationToken ct) => default;
+            }
+            """);
+
+        diagnostics.Should().BeEmpty();
+        source.Should().Contain("MediatorJobTypeExecutor");
+        source.Should().Contain("AddHourlyReportJob");
+        source.Should().Contain("IHostedService");         // recurring startup still emitted
+        source.Should().NotContain("HourlyReportJobJobTypeExecutor"); // no direct executor
+    }
+
+    [Fact]
+    public void MediatorBridgeJob_WithMaxAttempts_EmitsZASCH001Warning()
+    {
+        var (_, diagnostics) = GeneratorTestHelper.Run("""
+            using ZeroAlloc.Scheduling;
+            using ZeroAlloc.Mediator;
+            namespace MyApp;
+            [Job(MaxAttempts = 3)]
+            public sealed class SendWelcomeEmailJob : IJob, IRequest<Unit>
+            {
+                public System.Threading.Tasks.ValueTask ExecuteAsync(JobContext ctx, System.Threading.CancellationToken ct) => default;
+            }
+            """);
+
+        diagnostics.Should().ContainSingle()
+            .Which.Id.Should().Be("ZASCH001");
+    }
 }

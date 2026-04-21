@@ -16,12 +16,15 @@ internal static class SchedulingCodeWriter
         var startupName = $"{model.TypeName}RecurringStartup";
 
         AppendHeader(sb, model.Namespace);
-        AppendExecutor(sb, executorName, typeFqn, model.TypeFqn, model.MaxAttempts);
+
+        if (!model.IsMediatorBridge)
+            AppendExecutor(sb, executorName, typeFqn, model.TypeFqn, model.MaxAttempts);
 
         if (model.IsRecurring)
             AppendRecurringStartup(sb, model, startupName, typeFqn);
 
-        AppendDiExtension(sb, diMethodName, executorName, startupName, model.IsRecurring);
+        AppendDiExtension(sb, diMethodName, executorName, typeFqn, startupName,
+                          model.IsRecurring, model.IsMediatorBridge);
 
         var hint = model.Namespace != null
             ? $"{model.Namespace}_{model.TypeName}.Scheduling.g.cs"
@@ -105,14 +108,24 @@ internal static class SchedulingCodeWriter
         sb.AppendLine("    }");
     }
 
-    private static void AppendDiExtension(StringBuilder sb, string diMethodName, string executorName, string startupName, bool isRecurring)
+    private static void AppendDiExtension(StringBuilder sb, string diMethodName, string executorName,
+        string typeFqn, string startupName, bool isRecurring, bool isMediatorBridge)
     {
         sb.AppendLine("public static partial class SchedulingServiceCollectionExtensions");
         sb.AppendLine("{");
         sb.AppendLine($"    public static global::Microsoft.Extensions.DependencyInjection.IServiceCollection {diMethodName}(");
         sb.AppendLine("        this global::Microsoft.Extensions.DependencyInjection.IServiceCollection services)");
         sb.AppendLine("    {");
-        sb.AppendLine($"        services.AddTransient<global::ZeroAlloc.Scheduling.IJobTypeExecutor, {executorName}>();");
+
+        if (isMediatorBridge)
+        {
+            sb.AppendLine($"        services.AddTransient<global::ZeroAlloc.Scheduling.IJobTypeExecutor, global::ZeroAlloc.Scheduling.Mediator.MediatorJobTypeExecutor<{typeFqn}>>();");
+        }
+        else
+        {
+            sb.AppendLine($"        services.AddTransient<global::ZeroAlloc.Scheduling.IJobTypeExecutor, {executorName}>();");
+        }
+
         if (isRecurring)
             sb.AppendLine($"        services.AddHostedService<{startupName}>();");
         sb.AppendLine("        return services;");

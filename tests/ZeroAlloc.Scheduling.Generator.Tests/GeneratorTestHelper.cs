@@ -14,6 +14,8 @@ internal static class GeneratorTestHelper
             .ToList();
 
         refs.Add(MetadataReference.CreateFromFile(typeof(ZeroAlloc.Scheduling.JobAttribute).Assembly.Location));
+        refs.Add(MetadataReference.CreateFromFile(typeof(ZeroAlloc.Mediator.IRequest<>).Assembly.Location));
+        refs.Add(MetadataReference.CreateFromFile(typeof(ZeroAlloc.Scheduling.Mediator.MediatorJobTypeExecutor<>).Assembly.Location));
 
         var compilation = CSharpCompilation.Create(
             "TestAssembly",

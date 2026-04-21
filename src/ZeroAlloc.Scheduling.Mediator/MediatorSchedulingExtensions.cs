@@ -7,11 +7,13 @@ public static class MediatorSchedulingExtensions
     /// <summary>
     /// Registers the ZeroAlloc.Scheduling mediator bridge.
     /// <para>
-    /// NOTE: Automatic source-generator integration is planned but not yet implemented.
-    /// Callers must manually register <see cref="MediatorJobTypeExecutor{TJob}"/> for each job type, e.g.:
-    /// <code>
-    /// services.AddTransient&lt;IJobTypeExecutor, MediatorJobTypeExecutor&lt;MyJob&gt;&gt;();
-    /// </code>
+    /// Job types decorated with <c>[Job]</c> that also implement <c>IRequest&lt;Unit&gt;</c>
+    /// have their <see cref="MediatorJobTypeExecutor{TJob}"/> registered automatically
+    /// by the source generator via the generated <c>AddXxxJob()</c> extension method.
+    /// </para>
+    /// <para>
+    /// This method is now a no-op retained for source compatibility. It may be safely
+    /// removed from application startup code.
     /// </para>
     /// </summary>
     public static IServiceCollection AddSchedulingMediator(this IServiceCollection services)
