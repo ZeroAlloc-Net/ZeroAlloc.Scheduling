@@ -13,6 +13,7 @@ public static class RedisSchedulingServiceCollectionExtensions
         services.AddSingleton<IConnectionMultiplexer>(_ => ConnectionMultiplexer.Connect(connectionString));
         services.TryAddSingleton<IDatabase>(sp => sp.GetRequiredService<IConnectionMultiplexer>().GetDatabase());
         services.TryAddSingleton<IJobStore, RedisJobStore>();
+        services.TryAddSingleton<IJobDashboardStore>(sp => (IJobDashboardStore)sp.GetRequiredService<IJobStore>());
         return services;
     }
 }

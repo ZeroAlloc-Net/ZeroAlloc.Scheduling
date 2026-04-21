@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ZeroAlloc.Scheduling.EfCore;
 
-public sealed class EfCoreJobStore : IJobStore
+public sealed class EfCoreJobStore : IJobStore, IJobDashboardStore
 {
     private readonly SchedulingDbContext _db;
 
@@ -112,5 +112,58 @@ public sealed class EfCoreJobStore : IJobStore
             });
             await _db.SaveChangesAsync(ct).ConfigureAwait(false);
         }
+    }
+
+    public async Task<JobSummary> GetSummaryAsync(CancellationToken ct = default)
+    {
+        var counts = await _db.Jobs
+            .GroupBy(j => j.Status)
+            .Select(g => new { Status = g.Key, Count = g.Count() })
+            .ToListAsync(ct).ConfigureAwait(false);
+
+        int Get(JobStatus s) => counts.FirstOrDefault(c => c.Status == s)?.Count ?? 0;
+        return new JobSummary(
+            Get(JobStatus.Pending), Get(JobStatus.Running),
+            Get(JobStatus.Succeeded), Get(JobStatus.Failed), Get(JobStatus.DeadLetter));
+    }
+
+    public async Task<IReadOnlyList<JobEntry>> QueryByStatusAsync(
+        JobStatus[] statuses, int page = 1, int pageSize = 50, CancellationToken ct = default)
+    {
+        var results = await _db.Jobs
+            .AsNoTracking()
+            .Where(j => statuses.Contains(j.Status))
+            .OrderByDescending(j => j.ScheduledAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(ct).ConfigureAwait(false);
+        return results.Select(e => e.ToJobEntry()).ToList();
+    }
+
+    public async Task<IReadOnlyList<JobEntry>> GetRecurringAsync(CancellationToken ct = default)
+    {
+        var results = await _db.Jobs
+            .AsNoTracking()
+            .Where(j => j.CronExpression != null)
+            .OrderBy(j => j.TypeName)
+            .ToListAsync(ct).ConfigureAwait(false);
+        return results.Select(e => e.ToJobEntry()).ToList();
+    }
+
+    public async Task RequeueAsync(Guid id, CancellationToken ct = default)
+    {
+        await _db.Jobs
+            .Where(j => j.Id == id)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(j => j.Status, JobStatus.Pending)
+                .SetProperty(j => j.Error, (string?)null)
+                .SetProperty(j => j.ScheduledAt, DateTimeOffset.UtcNow), ct).ConfigureAwait(false);
+    }
+
+    public async Task DeleteAsync(Guid id, CancellationToken ct = default)
+    {
+        await _db.Jobs
+            .Where(j => j.Id == id)
+            .ExecuteDeleteAsync(ct).ConfigureAwait(false);
     }
 }

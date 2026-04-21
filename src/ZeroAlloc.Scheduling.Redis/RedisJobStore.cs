@@ -2,7 +2,7 @@ using StackExchange.Redis;
 
 namespace ZeroAlloc.Scheduling.Redis;
 
-public sealed class RedisJobStore : IJobStore
+public sealed class RedisJobStore : IJobStore, IJobDashboardStore
 {
     private readonly IDatabase _db;
 
@@ -48,6 +48,7 @@ public sealed class RedisJobStore : IJobStore
         var tran = _db.CreateTransaction();
         _ = tran.HashSetAsync($"job:{id}", [new HashEntry("status", "Succeeded"), new HashEntry("completedAt", DateTimeOffset.UtcNow.ToUnixTimeSeconds())]);
         _ = tran.SetRemoveAsync("jobs:running", id.ToString());
+        _ = tran.SetAddAsync("jobs:succeeded", id.ToString());
 
         if (nextRunAt.HasValue)
         {
@@ -70,6 +71,7 @@ public sealed class RedisJobStore : IJobStore
         _ = tran.HashSetAsync($"job:{id}", [new HashEntry("status", "Failed"), new HashEntry("attempts", attempts), new HashEntry("scheduledAt", score)]);
         _ = tran.SetRemoveAsync("jobs:running", id.ToString());
         _ = tran.SortedSetAddAsync("jobs:pending", id.ToString(), score); // re-add to pending sorted set for retry
+        _ = tran.SetAddAsync("jobs:failed", id.ToString());
         await tran.ExecuteAsync().ConfigureAwait(false);
     }
 
@@ -78,6 +80,7 @@ public sealed class RedisJobStore : IJobStore
         var tran = _db.CreateTransaction();
         _ = tran.HashSetAsync($"job:{id}", [new HashEntry("status", "DeadLetter"), new HashEntry("error", error), new HashEntry("completedAt", DateTimeOffset.UtcNow.ToUnixTimeSeconds())]);
         _ = tran.SetRemoveAsync("jobs:running", id.ToString());
+        _ = tran.SetAddAsync("jobs:deadletter", id.ToString());
         await tran.ExecuteAsync().ConfigureAwait(false);
     }
 
@@ -101,6 +104,93 @@ public sealed class RedisJobStore : IJobStore
             _ = tran.SetAddAsync("jobs:recurring", typeName);
             await tran.ExecuteAsync().ConfigureAwait(false);
         }
+    }
+
+    public async Task<JobSummary> GetSummaryAsync(CancellationToken ct = default)
+    {
+        var pending = (long)await _db.SortedSetLengthAsync("jobs:pending").ConfigureAwait(false);
+        var running = (long)await _db.SetLengthAsync("jobs:running").ConfigureAwait(false);
+        var succeeded = (long)await _db.SetLengthAsync("jobs:succeeded").ConfigureAwait(false);
+        var failed = (long)await _db.SetLengthAsync("jobs:failed").ConfigureAwait(false);
+        var deadLetter = (long)await _db.SetLengthAsync("jobs:deadletter").ConfigureAwait(false);
+        return new JobSummary((int)pending, (int)running, (int)succeeded, (int)failed, (int)deadLetter);
+    }
+
+    public async Task<IReadOnlyList<JobEntry>> QueryByStatusAsync(
+        JobStatus[] statuses, int page = 1, int pageSize = 50, CancellationToken ct = default)
+    {
+        var results = new List<JobEntry>();
+        foreach (var status in statuses)
+        {
+            await AppendEntriesByStatusAsync(results, status, page, pageSize).ConfigureAwait(false);
+        }
+        return results;
+    }
+
+    private async Task AppendEntriesByStatusAsync(List<JobEntry> results, JobStatus status, int page, int pageSize)
+    {
+        RedisValue[] raw;
+        if (status == JobStatus.Pending)
+            raw = await _db.SortedSetRangeByRankAsync("jobs:pending", (page - 1) * pageSize, page * pageSize - 1).ConfigureAwait(false);
+        else if (status == JobStatus.Running)
+            raw = await _db.SetMembersAsync("jobs:running").ConfigureAwait(false);
+        else if (status == JobStatus.Succeeded)
+            raw = await _db.SetMembersAsync("jobs:succeeded").ConfigureAwait(false);
+        else if (status == JobStatus.Failed)
+            raw = await _db.SetMembersAsync("jobs:failed").ConfigureAwait(false);
+        else if (status == JobStatus.DeadLetter)
+            raw = await _db.SetMembersAsync("jobs:deadletter").ConfigureAwait(false);
+        else
+            return;
+
+        foreach (var v in raw)
+        {
+            var entry = await ReadEntryAsync(v.ToString()).ConfigureAwait(false);
+            if (entry != null) results.Add(entry);
+        }
+    }
+
+    public async Task<IReadOnlyList<JobEntry>> GetRecurringAsync(CancellationToken ct = default)
+    {
+        var typeNames = await _db.SetMembersAsync("jobs:recurring").ConfigureAwait(false);
+        var results = new List<JobEntry>();
+        var pendingIds = await _db.SortedSetRangeByRankAsync("jobs:pending").ConfigureAwait(false);
+        foreach (var typeName in typeNames)
+        {
+            var typeNameStr = typeName.ToString();
+            foreach (var idValue in pendingIds)
+            {
+                var entry = await ReadEntryAsync(idValue.ToString()).ConfigureAwait(false);
+                if (entry != null && string.Equals(entry.TypeName, typeNameStr, StringComparison.Ordinal))
+                {
+                    results.Add(entry);
+                    break;
+                }
+            }
+        }
+        return results;
+    }
+
+    public async Task RequeueAsync(Guid id, CancellationToken ct = default)
+    {
+        var score = (double)DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        var tran = _db.CreateTransaction();
+        _ = tran.HashSetAsync($"job:{id}", [new HashEntry("status", "Pending"), new HashEntry("error", RedisValue.EmptyString), new HashEntry("scheduledAt", score)]);
+        _ = tran.SetRemoveAsync("jobs:deadletter", id.ToString());
+        _ = tran.SortedSetAddAsync("jobs:pending", id.ToString(), score);
+        await tran.ExecuteAsync().ConfigureAwait(false);
+    }
+
+    public async Task DeleteAsync(Guid id, CancellationToken ct = default)
+    {
+        var tran = _db.CreateTransaction();
+        _ = tran.KeyDeleteAsync($"job:{id}");
+        _ = tran.SortedSetRemoveAsync("jobs:pending", id.ToString());
+        _ = tran.SetRemoveAsync("jobs:running", id.ToString());
+        _ = tran.SetRemoveAsync("jobs:succeeded", id.ToString());
+        _ = tran.SetRemoveAsync("jobs:failed", id.ToString());
+        _ = tran.SetRemoveAsync("jobs:deadletter", id.ToString());
+        await tran.ExecuteAsync().ConfigureAwait(false);
     }
 
     private static HashEntry[] BuildHash(Guid id, string typeName, byte[] payload, JobStatus status,

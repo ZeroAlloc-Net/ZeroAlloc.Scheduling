@@ -12,6 +12,7 @@ public static class EfCoreSchedulingServiceCollectionExtensions
     {
         services.AddDbContext<SchedulingDbContext>(configure);
         services.TryAddScoped<IJobStore, EfCoreJobStore>();
+        services.TryAddScoped<IJobDashboardStore>(sp => (IJobDashboardStore)sp.GetRequiredService<IJobStore>());
         return services;
     }
 }
