@@ -13,4 +13,4 @@ jobs:
         with:
           token: ${{ secrets.WEBSITE_DISPATCH_TOKEN }}
           repository: ZeroAlloc-Net/.website
-          event-type: docs-updated
+          event-type: submodule-update
