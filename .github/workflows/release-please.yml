@@ -22,18 +22,24 @@ jobs:
     if: ${{ needs.release-please.outputs.release_created }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-dotnet@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: '10.0.x'
 
-      - run: dotnet tool restore
-      - run: dotnet restore
-      - run: dotnet build -c Release -p:Version=${{ needs.release-please.outputs.version }} --no-restore
-      - run: dotnet test -c Release --no-build
+      - name: Restore tools
+        run: dotnet tool restore
+      - name: Restore dependencies
+        run: dotnet restore
+      - name: Build
+        run: dotnet build -c Release -p:PackageVersion=${{ needs.release-please.outputs.version }} --no-restore
+      - name: Test
+        run: dotnet test -c Release --no-build
 
       - name: Pack
         run: |
@@ -42,16 +48,18 @@ jobs:
                      ZeroAlloc.Scheduling.Dashboard ZeroAlloc.Scheduling.Dashboard.Blazor \
                      ZeroAlloc.Scheduling.Mediator; do
             dotnet pack src/$pkg/$pkg.csproj -c Release \
-              -p:Version=${{ needs.release-please.outputs.version }} --no-build -o ./artifacts
+              -p:PackageVersion=${{ needs.release-please.outputs.version }} --no-build -o ./artifacts
           done
 
-      - run: |
+      - name: Push to NuGet
+        run: |
           dotnet nuget push ./artifacts/*.nupkg \
             --source https://api.nuget.org/v3/index.json \
             --api-key ${{ secrets.NUGET_API_KEY }} \
             --skip-duplicate
 
-      - uses: softprops/action-gh-release@v2
+      - name: Create GitHub Release assets
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ needs.release-please.outputs.tag_name }}
           files: ./artifacts/*.nupkg
