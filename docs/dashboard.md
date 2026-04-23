@@ -30,6 +30,10 @@ Open `/jobs/` in a browser to see:
 - **Requeue** — re-enqueue a dead-lettered job with one click
 - **Delete** — remove any job from the store
 
+![Scheduler dashboard — desktop](screenshots/dashboard-desktop.png)
+
+The layout is plain HTML/CSS with no framework dependency — it reflows to tablet and mobile widths. Full captures at all three viewports live in [`docs/screenshots/`](screenshots/).
+
 The dashboard is served from an embedded resource (no static file middleware required). It calls the following API endpoints automatically:
 
 | Endpoint | Description |
