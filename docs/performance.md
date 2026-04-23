@@ -90,3 +90,20 @@ Overhead becomes relevant when:
 - You run many workers polling a single Redis or SQL instance (connection pressure)
 
 For very high throughput, consider batching work into fewer, larger jobs rather than many small ones.
+
+## Benchmark
+
+The [benchmarks/ZeroAlloc.Scheduling.Benchmarks](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/tree/main/benchmarks/ZeroAlloc.Scheduling.Benchmarks) project contains `JobExecuteBenchmark` — a measurement of the generator-emitted job dispatch cost in isolation from the store.
+
+The benchmark calls `IJob.ExecuteAsync(ctx, ct)` in a tight loop on a pre-constructed job + context. This isolates the dispatch path from store I/O, polling, and serialisation. It is the lower bound on what scheduler overhead can be — store + network costs add on top in a real scheduler.
+
+```bash
+dotnet run --project benchmarks/ZeroAlloc.Scheduling.Benchmarks -c Release --filter "*"
+```
+
+What to watch:
+
+- **Allocated column**: must read `0 B/op`. The dispatch is a direct virtual call on a generator-emitted class — no boxing, no `params object[]`, no closure. `JobContext` is constructed once in `[GlobalSetup]`, not per iteration
+- **Mean column**: a regression from sub-5-ns dispatch suggests the generator has started emitting unnecessary object creation on the dispatch path
+
+This benchmark does **not** cover the store-polling path; store implementations (EF Core, Redis, InMemory) each have their own allocation profile dominated by the underlying provider.
