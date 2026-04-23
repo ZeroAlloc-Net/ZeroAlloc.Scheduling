@@ -60,6 +60,23 @@ public class OrderService(IScheduler scheduler)
 - **Mediator bridge** — `[Job]` + `IRequest<Unit>` auto-registers `MediatorJobTypeExecutor<T>`, routing execution through ZeroAlloc.Mediator pipeline behaviors
 - **Native AOT compatible** — no reflection at runtime; all dispatch resolved at compile time
 
+## Dashboard
+
+An embedded HTML/JS dashboard — summary cards for each job state, a live-refreshing table with per-row requeue / delete actions, and fully responsive down to mobile widths.
+
+```csharp
+app.MapJobsDashboard("/jobs");
+
+// Optional: protect with auth
+app.MapJobsDashboard("/jobs").RequireAuthorization("AdminPolicy");
+```
+
+![Scheduler dashboard — desktop](docs/screenshots/dashboard-desktop.png)
+
+Tablet (768 × 1024) and mobile (375 × 812) captures live in [`docs/screenshots/`](docs/screenshots/).
+
+See [Dashboard](docs/dashboard.md) for the full endpoint reference and the Blazor component.
+
 ## Packages
 
 | Package | Description |
