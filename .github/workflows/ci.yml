@@ -54,3 +54,31 @@ jobs:
       - name: Push to NuGet (pre-release)
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: dotnet nuget push ./artifacts/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+
+  aot-smoke:
+    runs-on: ubuntu-latest
+    # Publishes samples/ZeroAlloc.Scheduling.AotSmoke with PublishAot=true.
+    # Exercises the generator-emitted IJobTypeExecutor + AddSendEmailJob
+    # extension via real DI resolution — the executor's payload deserialiser
+    # is where reflection could leak.
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Install AOT native toolchain
+        run: sudo apt-get update && sudo apt-get install -y clang zlib1g-dev
+
+      - name: Restore
+        run: dotnet restore samples/ZeroAlloc.Scheduling.AotSmoke/ZeroAlloc.Scheduling.AotSmoke.csproj
+
+      - name: Publish AOT
+        run: dotnet publish samples/ZeroAlloc.Scheduling.AotSmoke/ZeroAlloc.Scheduling.AotSmoke.csproj -r linux-x64 -c Release -o ./aot-out
+
+      - name: Run AOT binary
+        run: ./aot-out/ZeroAlloc.Scheduling.AotSmoke

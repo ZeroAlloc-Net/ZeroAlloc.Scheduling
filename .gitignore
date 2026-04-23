@@ -3,3 +3,6 @@ obj/
 .vs/
 *.user
 .worktrees/
+
+# Scratch / temporary
+.tmp/
