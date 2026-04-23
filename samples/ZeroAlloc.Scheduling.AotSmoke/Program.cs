@@ -34,7 +34,7 @@ var ctx = new JobContext
     Services = provider,
 };
 
-SendEmailJob.InvocationCount = 0;
+SendEmailJob.ResetInvocationCount();
 var emptyPayload = """{"To":"aot@example.com"}"""u8.ToArray();
 await executor.ExecuteAsync(emptyPayload, ctx, CancellationToken.None).ConfigureAwait(false);
 
