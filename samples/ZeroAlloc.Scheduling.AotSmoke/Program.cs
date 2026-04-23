@@ -29,8 +29,3 @@ if (SendEmailJob.InvocationCount != 1)
 
 Console.WriteLine("AOT smoke: PASS");
 return 0;
-
-internal sealed class EmptyServiceProvider : IServiceProvider
-{
-    public object? GetService(Type serviceType) => null;
-}
