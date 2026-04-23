@@ -16,9 +16,15 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.*" />
-    <!-- The generator is picked up transitively via ZeroAlloc.Scheduling's
-         ProjectReference to it (matches the pattern used by the test project). -->
+
     <ProjectReference Include="..\..\src\ZeroAlloc.Scheduling\ZeroAlloc.Scheduling.csproj"
                       SetTargetFramework="TargetFramework=net10.0" />
+    <!-- The main lib's generator ProjectReference has PrivateAssets="all" which
+         hides the generator from downstream consumers. Re-attach it here as an
+         Analyzer so the generator actually runs against this sample. -->
+    <ProjectReference Include="..\..\src\ZeroAlloc.Scheduling.Generator\ZeroAlloc.Scheduling.Generator.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false"
+                      UndefineProperties="PublishAot" />
   </ItemGroup>
 </Project>
