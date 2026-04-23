@@ -6,3 +6,5 @@ obj/
 
 # Scratch / temporary
 .tmp/
+
+BenchmarkDotNet.Artifacts/
