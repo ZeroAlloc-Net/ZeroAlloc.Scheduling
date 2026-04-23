@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.1.2](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v0.1.1...v0.1.2) (2026-04-23)
+
+
+### Performance
+
+* add BenchmarkDotNet project measuring IJob.ExecuteAsync overhead ([#8](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/8)) ([366409d](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/366409dd0444735b1321f57a64b017f6f9766a4c))
+
+
+### Documentation
+
+* reference new JobExecute benchmark project ([#9](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/9)) ([07ff167](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/07ff167ae7f88ad8665d979535fb93642523d6f3))
+
+
+### CI
+
+* add AOT publish smoke test (item 1 of [#5](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/5)) ([#6](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/6)) ([de3c5f0](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/de3c5f04fd0d3021a8a71d909746343123d085c9))
+
 ## [0.1.1](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v0.1.0...v0.1.1) (2026-04-22)
 
 
