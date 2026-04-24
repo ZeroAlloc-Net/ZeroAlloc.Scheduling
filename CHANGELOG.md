@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.3](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v0.1.2...v0.1.3) (2026-04-24)
+
+
+### Bug Fixes
+
+* **dashboard:** also fix desktop Delete clipping and 4+1 card reflow ([#13](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/13)) ([9a41aab](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/9a41aabb3c6b1fa730b2452973ef116a8c3d594c))
+* **dashboard:** fit jobs table at tablet viewports; hide ID column &lt; 900px ([#11](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/11)) ([126b274](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/126b2744a5045cf14b2fe72f3a2c1011b7015c45))
+
 ## [0.1.2](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v0.1.1...v0.1.2) (2026-04-23)
 
 
