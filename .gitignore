@@ -8,3 +8,4 @@ obj/
 .tmp/
 
 BenchmarkDotNet.Artifacts/
+.worktrees/
