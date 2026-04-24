@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.1.4](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v0.1.3...v0.1.4) (2026-04-24)
+
+
+### Features
+
+* **scheduling:** use ConcurrentHeapSpanDictionary for InMemoryJobStore ([#21](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/21)) ([d1ed6f1](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/d1ed6f1bbf8d7383727aad36f289c1203dc9a2d6))
+* telemetry spans, typed JobId, FSM, Outbox bridge + NuGet isolation ([6a2feca](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/6a2feca3166d6e2eab8ad1dbd49b5e1aa6c5b9f1))
+* telemetry, typed JobId, JobStatusFsm, Outbox bridge + NuGet isolation ([5c49338](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/5c493380ffb1c3a20925f4fdc7b9a12c675b1ca0))
+
+
+### Bug Fixes
+
+* update dashboard and benchmarks to typed JobId ([ccd436c](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/ccd436c97c1bdd4edb6f6a27eb6c2c8466d6b7bb))
+* update ZeroAlloc.Outbox to 1.2.0 (contains OutboxMessageId) ([72e9129](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/72e91290069ae70e6b7264dd71e321d37c283b22))
+* update ZeroAlloc.Outbox to 1.2.1 (OutboxMessageId in public API) ([016ad53](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/016ad531aafa8a8266f0e83b1c4e3ddfe87c78f3))
+* use JobId.New() in AotSmoke sample (JobContext.JobId is typed JobId) ([eac90df](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/eac90df16583c437751c19b60d952e4d9d4c6d75))
+
 ## [0.1.3](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v0.1.2...v0.1.3) (2026-04-24)
 
 
