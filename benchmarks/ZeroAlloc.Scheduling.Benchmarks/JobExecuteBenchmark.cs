@@ -23,7 +23,7 @@ public class JobExecuteBenchmark
         _job = new SendEmailJob { To = "benchmark@example.com" };
         _ctx = new JobContext
         {
-            JobId = System.Guid.NewGuid(),
+            JobId = JobId.New(),
             Attempt = 1,
             ScheduledAt = System.DateTimeOffset.UtcNow,
             Services = new EmptyServiceProvider(),
