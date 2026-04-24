@@ -65,13 +65,13 @@ public static class JobsDashboardExtensions
 
         group.MapPost("/api/{id:guid}/requeue", async (Guid id, IJobStore s, CancellationToken ct) =>
         {
-            if (s is IJobDashboardStore d) await d.RequeueAsync(id, ct).ConfigureAwait(false);
+            if (s is IJobDashboardStore d) await d.RequeueAsync(new JobId(id), ct).ConfigureAwait(false);
             return Results.Ok();
         });
 
         group.MapDelete("/api/{id:guid}", async (Guid id, IJobStore s, CancellationToken ct) =>
         {
-            if (s is IJobDashboardStore d) await d.DeleteAsync(id, ct).ConfigureAwait(false);
+            if (s is IJobDashboardStore d) await d.DeleteAsync(new JobId(id), ct).ConfigureAwait(false);
             return Results.Ok();
         });
     }

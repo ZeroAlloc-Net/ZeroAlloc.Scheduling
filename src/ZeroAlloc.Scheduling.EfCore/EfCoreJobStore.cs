@@ -54,10 +54,10 @@ public sealed class EfCoreJobStore : IJobStore, IJobDashboardStore
         return claimed.Select(e => e.ToJobEntry()).ToList();
     }
 
-    public async ValueTask MarkSucceededAsync(Guid id, DateTimeOffset? nextRunAt,
+    public async ValueTask MarkSucceededAsync(JobId id, DateTimeOffset? nextRunAt,
         string? cronExpression, int maxAttempts, CancellationToken ct)
     {
-        var entity = await _db.Jobs.FindAsync(new object[] { id }, ct).ConfigureAwait(false);
+        var entity = await _db.Jobs.FindAsync(new object[] { id.Value }, ct).ConfigureAwait(false);
         if (entity is null) return;
 
         entity.Status = JobStatus.Succeeded;
@@ -75,9 +75,9 @@ public sealed class EfCoreJobStore : IJobStore, IJobDashboardStore
         await _db.SaveChangesAsync(ct).ConfigureAwait(false);
     }
 
-    public async ValueTask MarkFailedAsync(Guid id, int attempts, DateTimeOffset nextRetryAt, CancellationToken ct)
+    public async ValueTask MarkFailedAsync(JobId id, int attempts, DateTimeOffset nextRetryAt, CancellationToken ct)
     {
-        var entity = await _db.Jobs.FindAsync(new object[] { id }, ct).ConfigureAwait(false);
+        var entity = await _db.Jobs.FindAsync(new object[] { id.Value }, ct).ConfigureAwait(false);
         if (entity is null) return;
         entity.Status = JobStatus.Failed;
         entity.Attempts = attempts;
@@ -85,9 +85,9 @@ public sealed class EfCoreJobStore : IJobStore, IJobDashboardStore
         await _db.SaveChangesAsync(ct).ConfigureAwait(false);
     }
 
-    public async ValueTask DeadLetterAsync(Guid id, string error, CancellationToken ct)
+    public async ValueTask DeadLetterAsync(JobId id, string error, CancellationToken ct)
     {
-        var entity = await _db.Jobs.FindAsync(new object[] { id }, ct).ConfigureAwait(false);
+        var entity = await _db.Jobs.FindAsync(new object[] { id.Value }, ct).ConfigureAwait(false);
         if (entity is null) return;
         entity.Status = JobStatus.DeadLetter;
         entity.CompletedAt = DateTimeOffset.UtcNow;
@@ -150,20 +150,20 @@ public sealed class EfCoreJobStore : IJobStore, IJobDashboardStore
         return results.Select(e => e.ToJobEntry()).ToList();
     }
 
-    public async Task RequeueAsync(Guid id, CancellationToken ct = default)
+    public async Task RequeueAsync(JobId id, CancellationToken ct = default)
     {
         await _db.Jobs
-            .Where(j => j.Id == id)
+            .Where(j => j.Id == id.Value)
             .ExecuteUpdateAsync(s => s
                 .SetProperty(j => j.Status, JobStatus.Pending)
                 .SetProperty(j => j.Error, (string?)null)
                 .SetProperty(j => j.ScheduledAt, DateTimeOffset.UtcNow), ct).ConfigureAwait(false);
     }
 
-    public async Task DeleteAsync(Guid id, CancellationToken ct = default)
+    public async Task DeleteAsync(JobId id, CancellationToken ct = default)
     {
         await _db.Jobs
-            .Where(j => j.Id == id)
+            .Where(j => j.Id == id.Value)
             .ExecuteDeleteAsync(ct).ConfigureAwait(false);
     }
 }

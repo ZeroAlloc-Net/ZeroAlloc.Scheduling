@@ -3,7 +3,7 @@ namespace ZeroAlloc.Scheduling;
 /// <summary>A persisted job record fetched from the store.</summary>
 public sealed class JobEntry
 {
-    public required Guid Id { get; init; }
+    public required JobId Id { get; init; }
     public required string TypeName { get; init; }
     public required byte[] Payload { get; init; }
     public required JobStatus Status { get; init; }
