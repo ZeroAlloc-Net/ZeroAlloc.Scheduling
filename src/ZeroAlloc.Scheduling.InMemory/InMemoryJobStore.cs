@@ -1,14 +1,14 @@
-using System.Collections.Concurrent;
+using ZeroAlloc.Collections;
 
 namespace ZeroAlloc.Scheduling.InMemory;
 
 /// <summary>Thread-safe in-memory job store. Use in tests — not for production.</summary>
-public sealed class InMemoryJobStore : IJobStore, IJobDashboardStore
+public sealed class InMemoryJobStore : IJobStore, IJobDashboardStore, IDisposable
 {
-    private readonly ConcurrentDictionary<Guid, JobEntry> _entries = new();
+    private readonly ConcurrentHeapSpanDictionary<Guid, JobEntry> _entries = new();
 
     /// <summary>All entries — for test assertions.</summary>
-    public IReadOnlyCollection<JobEntry> AllEntries => _entries.Values.ToList();
+    public IReadOnlyCollection<JobEntry> AllEntries => _entries.ToValuesArray();
 
     public ValueTask EnqueueAsync(
         string typeName, byte[] payload, DateTimeOffset scheduledAt,
@@ -150,7 +150,7 @@ public sealed class InMemoryJobStore : IJobStore, IJobDashboardStore
         string typeName, byte[] payload, DateTimeOffset scheduledAt,
         string? cronExpression, int maxAttempts, CancellationToken ct)
     {
-        bool exists = _entries.Values.Any(e =>
+        bool exists = _entries.ToValuesArray().Any(e =>
             string.Equals(e.TypeName, typeName, StringComparison.Ordinal) &&
             (e.Status == JobStatus.Pending || e.Status == JobStatus.Running));
 
@@ -177,7 +177,7 @@ public sealed class InMemoryJobStore : IJobStore, IJobDashboardStore
 
     public Task<JobSummary> GetSummaryAsync(CancellationToken ct = default)
     {
-        var counts = _entries.Values
+        var counts = _entries.ToValuesArray()
             .GroupBy(e => e.Status)
             .ToDictionary(g => g.Key, g => g.Count());
         return Task.FromResult(new JobSummary(
@@ -190,7 +190,7 @@ public sealed class InMemoryJobStore : IJobStore, IJobDashboardStore
 
     public Task<IReadOnlyList<JobEntry>> QueryByStatusAsync(
         JobStatus[] statuses, int page = 1, int pageSize = 50, CancellationToken ct = default)
-        => Task.FromResult<IReadOnlyList<JobEntry>>(_entries.Values
+        => Task.FromResult<IReadOnlyList<JobEntry>>(_entries.ToValuesArray()
             .Where(e => statuses.Contains(e.Status))
             .OrderByDescending(e => e.ScheduledAt)
             .Skip((page - 1) * pageSize)
@@ -198,7 +198,7 @@ public sealed class InMemoryJobStore : IJobStore, IJobDashboardStore
             .ToList());
 
     public Task<IReadOnlyList<JobEntry>> GetRecurringAsync(CancellationToken ct = default)
-        => Task.FromResult<IReadOnlyList<JobEntry>>(_entries.Values
+        => Task.FromResult<IReadOnlyList<JobEntry>>(_entries.ToValuesArray()
             .Where(e => e.CronExpression != null && e.Status == JobStatus.Pending)
             .ToList());
 
@@ -226,4 +226,7 @@ public sealed class InMemoryJobStore : IJobStore, IJobDashboardStore
         _entries.TryRemove(id, out _);
         return Task.CompletedTask;
     }
+
+    /// <summary>Returns the pooled bucket array. Tests typically rely on GC; production callers should dispose explicitly.</summary>
+    public void Dispose() => _entries.Dispose();
 }
