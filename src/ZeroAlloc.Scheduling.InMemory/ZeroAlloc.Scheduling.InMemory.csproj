@@ -8,5 +8,6 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\ZeroAlloc.Scheduling\ZeroAlloc.Scheduling.csproj" />
+    <PackageReference Include="ZeroAlloc.Collections" Version="0.1.6" />
   </ItemGroup>
 </Project>
