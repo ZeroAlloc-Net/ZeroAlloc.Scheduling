@@ -13,7 +13,7 @@ using ZeroAlloc.Scheduling.AotSmoke;
 var job = new SendEmailJob { To = "aot@example.com" };
 var ctx = new JobContext
 {
-    JobId = Guid.NewGuid(),
+    JobId = JobId.New(),
     Attempt = 1,
     ScheduledAt = DateTimeOffset.UtcNow,
     Services = new EmptyServiceProvider(),
