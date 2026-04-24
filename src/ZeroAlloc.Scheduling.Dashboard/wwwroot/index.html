@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" /><title>ZeroAlloc Scheduler</title>
   <style>
+    *,*::before,*::after{box-sizing:border-box}
     body{font-family:system-ui,sans-serif;margin:2rem;background:#f8f9fa}
     .container{max-width:1200px;margin:0 auto}
     h1{color:#212529}.cards{display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:2rem}
@@ -10,7 +11,7 @@
     .card .count{font-size:2rem;font-weight:bold}.card .label{color:#6c757d;font-size:.85rem;margin-top:.25rem}
     .table-wrap{overflow-x:auto}
     table{width:100%;border-collapse:collapse;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.1)}
-    th,td{padding:.75rem 1rem;text-align:left;border-bottom:1px solid #dee2e6;white-space:nowrap}
+    th,td{padding:.6rem .7rem;text-align:left;border-bottom:1px solid #dee2e6;white-space:nowrap}
     th{background:#e9ecef;font-weight:600}tr:last-child td{border-bottom:none}
     .badge{padding:.2rem .5rem;border-radius:4px;font-size:.8rem;font-weight:600}
     .Pending{background:#cff4fc;color:#055160}.Running{background:#d1ecf1;color:#0c5460}
@@ -19,8 +20,9 @@
     button{padding:.35rem .75rem;border:none;border-radius:4px;cursor:pointer;font-size:.85rem;margin-right:.25rem}
     .btn-requeue{background:#0d6efd;color:#fff}.btn-delete{background:#dc3545;color:#fff}
     .refresh{color:#6c757d;font-size:.85rem;margin-bottom:1rem}
-    /* Tablet: reclaim horizontal space so the Error column renders without scrolling. */
-    @media(max-width:900px){body{margin:1rem}th,td{padding:.5rem .6rem}.col-id{display:none}}
+    /* Tablet: reclaim horizontal space (hide ID, tighten padding) and give each of the 5 summary
+       cards an explicit 20% flex-basis so they stay on a single row instead of reflowing to 4+1. */
+    @media(max-width:900px){body{margin:1rem}th,td{padding:.45rem .5rem}.col-id{display:none}.card{flex:1 1 calc(20% - .8rem);min-width:0;padding:1rem}.card .count{font-size:1.6rem}}
     @media(max-width:600px){.card{flex:1 1 calc(50% - .5rem);min-width:0}}
   </style>
 </head>
@@ -39,6 +41,11 @@
     const base=window.location.pathname.replace(/\/$/,'')+'/api';
     const labelMap={deadLetter:'Dead Letter'};
     function formatLabel(k){return labelMap[k]??k;}
+    // Compact "24 Apr 10:44" — drops year (irrelevant for ops) and seconds. Full ISO
+    // timestamp is still in the title tooltip for copy / precision reads.
+    const dfmt=new Intl.DateTimeFormat(undefined,{day:'2-digit',month:'short'});
+    const tfmt=new Intl.DateTimeFormat(undefined,{hour:'2-digit',minute:'2-digit'});
+    function fmtWhen(iso){const d=new Date(iso);return dfmt.format(d)+' '+tfmt.format(d);}
     async function load(){
       const[summary,...lists]=await Promise.all([
         fetch(base+'/summary').then(r=>r.json()),
@@ -57,7 +64,7 @@
           <td>${j.typeName.split('.').pop()}</td>
           <td><span class="badge ${j.status}">${j.status}</span></td>
           <td>${j.attempts}/${j.maxAttempts}</td>
-          <td>${new Date(j.scheduledAt).toLocaleString()}</td>
+          <td title="${j.scheduledAt}">${fmtWhen(j.scheduledAt)}</td>
           <td>${j.error??''}</td>
           <td>${j.status==='DeadLetter'?`<button class="btn-requeue" onclick="requeue('${j.id}')">Requeue</button>`:''}<button class="btn-delete" onclick="del('${j.id}')">Delete</button></td>
         </tr>`).join('');
