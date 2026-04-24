@@ -32,7 +32,7 @@ public sealed class MediatorBridgeTests
 
         var ctx = new JobContext
         {
-            JobId = Guid.NewGuid(),
+            JobId = JobId.New(),
             Attempt = 1,
             ScheduledAt = DateTimeOffset.UtcNow,
             Services = services,

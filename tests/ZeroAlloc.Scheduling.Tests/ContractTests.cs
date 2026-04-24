@@ -7,7 +7,7 @@ public sealed class ContractTests
     {
         var entry = new JobEntry
         {
-            Id = Guid.NewGuid(),
+            Id = JobId.New(),
             TypeName = "MyJob",
             Payload = Array.Empty<byte>(),
             Status = JobStatus.Pending,

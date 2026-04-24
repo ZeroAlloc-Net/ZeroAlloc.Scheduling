@@ -48,7 +48,7 @@ public sealed class EfCoreJobStoreTests : IDisposable
 
         await _store.MarkSucceededAsync(entry.Id, null, null, 3, _ct);
 
-        var updated = await _db.Jobs.FindAsync(entry.Id);
+        var updated = await _db.Jobs.FindAsync(entry.Id.Value);
         updated!.Status.Should().Be(JobStatus.Succeeded);
     }
 
@@ -60,7 +60,7 @@ public sealed class EfCoreJobStoreTests : IDisposable
 
         await _store.DeadLetterAsync(entry.Id, "oops", _ct);
 
-        var updated = await _db.Jobs.FindAsync(entry.Id);
+        var updated = await _db.Jobs.FindAsync(entry.Id.Value);
         updated!.Status.Should().Be(JobStatus.DeadLetter);
         updated.Error.Should().Be("oops");
     }

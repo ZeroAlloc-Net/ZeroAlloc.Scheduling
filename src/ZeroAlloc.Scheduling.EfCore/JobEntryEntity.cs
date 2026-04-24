@@ -17,7 +17,7 @@ public sealed class JobEntryEntity
 
     public JobEntry ToJobEntry() => new()
     {
-        Id = Id, TypeName = TypeName, Payload = Payload, Status = Status,
+        Id = new JobId(Id), TypeName = TypeName, Payload = Payload, Status = Status,
         Attempts = Attempts, MaxAttempts = MaxAttempts, ScheduledAt = ScheduledAt,
         StartedAt = StartedAt, CompletedAt = CompletedAt, NextRunAt = NextRunAt,
         CronExpression = CronExpression, Error = Error,
