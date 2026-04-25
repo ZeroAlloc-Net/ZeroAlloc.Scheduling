@@ -35,7 +35,7 @@ public sealed class CleanupExpiredSessionsJob : IJob
 
 // 2. Register — generated AddCleanupExpiredSessionsJob() wires executor + recurring startup
 services.AddScheduling()
-        .AddSchedulingInMemory()
+        .WithInMemoryStore()
         .AddCleanupExpiredSessionsJob();
 
 // 3. Enqueue a one-off job from application code

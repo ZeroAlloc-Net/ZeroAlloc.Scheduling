@@ -27,8 +27,8 @@ public sealed class MediatorBridgeTests
 
         var services = new ServiceCollection()
             .AddScheduling()
-            .AddSchedulingInMemory()
-            .BuildServiceProvider();
+            .WithInMemoryStore()
+            .Services.BuildServiceProvider();
 
         var ctx = new JobContext
         {

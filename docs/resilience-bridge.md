@@ -42,18 +42,16 @@ The `ZeroAlloc.Resilience` generator emits a `ResilientSendReportExecutorProxy` 
 // Register your real executor (generated or custom)
 services.AddTransient<SendReportJobTypeExecutor>();
 
-// AddSchedulingResilience wires the proxy as IJobTypeExecutor
-services.AddSchedulingResilience<
-    IResilientSendReportExecutor,
-    ResilientSendReportExecutorProxy>();
-
-// Standard scheduling setup
+// WithResilience wires the proxy as IJobTypeExecutor
 services.AddScheduling()
-        .AddSchedulingInMemory()
+        .WithInMemoryStore()
+        .WithResilience<
+            IResilientSendReportExecutor,
+            ResilientSendReportExecutorProxy>()
         .AddSendReportJob();
 ```
 
-`AddSchedulingResilience<TExecutorInterface, TResilienceProxy>()` registers `TResilienceProxy` as `Transient` and binds it as `IJobTypeExecutor`.
+`WithResilience<TExecutorInterface, TResilienceProxy>()` registers `TResilienceProxy` as `Transient` and binds it as `IJobTypeExecutor`.
 
 ## Type Parameters
 

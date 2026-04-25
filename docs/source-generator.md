@@ -100,13 +100,13 @@ internal sealed class SendInvoiceJobJobTypeExecutor : IJobTypeExecutor
     }
 }
 
-// 2. DI extension — call this in your AddXxx registration chain
-public static partial class SchedulingServiceCollectionExtensions
+// 2. DI extension — call this on the ISchedulingBuilder returned by AddScheduling()
+public static partial class SchedulingBuilderExtensions
 {
-    public static IServiceCollection AddSendInvoiceJob(this IServiceCollection services)
+    public static ISchedulingBuilder AddSendInvoiceJob(this ISchedulingBuilder builder)
     {
-        services.AddTransient<IJobTypeExecutor, SendInvoiceJobJobTypeExecutor>();
-        return services;
+        builder.Services.AddTransient<IJobTypeExecutor, SendInvoiceJobJobTypeExecutor>();
+        return builder;
     }
 }
 ```

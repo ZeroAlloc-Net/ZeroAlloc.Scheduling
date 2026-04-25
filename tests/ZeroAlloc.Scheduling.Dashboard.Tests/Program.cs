@@ -9,8 +9,7 @@ var builder = WebApplication.CreateBuilder(new WebApplicationOptions
     Args = args,
     ContentRootPath = AppContext.BaseDirectory,
 });
-builder.Services.AddScheduling();
-builder.Services.AddSchedulingInMemory();
+builder.Services.AddScheduling().WithInMemoryStore();
 builder.Services.AddRouting();
 
 var app = builder.Build();

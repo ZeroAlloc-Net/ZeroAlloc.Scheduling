@@ -10,6 +10,20 @@ sidebar_position: 1
 
 ZeroAlloc.Scheduling is a background job scheduler for .NET 8 and .NET 10. You decorate a class with `[Job]`, and the Roslyn source generator emits the executor, DI registration, and optional recurring startup for you at build time — no reflection, no convention scanning, no `IServiceCollection.Scan`.
 
+## Migrating from v1.x
+
+| v1.x | v2.x |
+|---|---|
+| `services.AddScheduling()` returning `IServiceCollection` | `services.AddScheduling()` returning `ISchedulingBuilder` (use `.Services` to recover) |
+| `services.AddSchedulingInMemory()` | `services.AddScheduling().WithInMemoryStore()` |
+| `services.AddSchedulingEfCore(...)` | `services.AddScheduling().WithEfCore(...)` |
+| `services.AddSchedulingOutboxWriter<TJob>()` | `services.AddScheduling().WithOutboxWriter<TJob>()` |
+| `services.AddSchedulingMediator()` | `services.AddScheduling().WithMediator()` |
+| `services.AddSchedulingResilience<TInterface, TProxy>()` | `services.AddScheduling().WithResilience<TInterface, TProxy>()` |
+| `services.AddXxxJob()` (per-job, generator-emitted) | `services.AddScheduling().AddXxxJob()` |
+
+The v1.x extensions remain as `[Obsolete]` shims (diagnostic IDs `ZASCH001`–`ZASCH010`) for one minor version, then are removed.
+
 ## Installation
 
 ```bash
@@ -54,7 +68,7 @@ The generator emits `AddSendWelcomeEmailJob()`. Call it alongside `AddScheduling
 ```csharp
 builder.Services
     .AddScheduling()
-    .AddSchedulingInMemory()
+    .WithInMemoryStore()
     .AddSendWelcomeEmailJob();
 ```
 

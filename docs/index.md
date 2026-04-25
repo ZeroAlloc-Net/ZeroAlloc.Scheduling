@@ -32,7 +32,7 @@ public sealed class SendWelcomeEmailJob : IJob
 {
     public async ValueTask ExecuteAsync(JobContext ctx, CancellationToken ct) { ... }
 }
-services.AddScheduling().AddSchedulingInMemory().AddSendWelcomeEmailJob();
+services.AddScheduling().WithInMemoryStore().AddSendWelcomeEmailJob();
 await scheduler.EnqueueAsync(new SendWelcomeEmailJob { To = "user@example.com" }, ct);
 
 // Recurring job (every hour)

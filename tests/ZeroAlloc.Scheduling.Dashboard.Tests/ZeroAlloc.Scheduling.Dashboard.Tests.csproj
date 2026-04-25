@@ -3,6 +3,8 @@
     <TargetFramework>net10.0</TargetFramework>
     <IsPackable>false</IsPackable>
     <GenerateProgramFile>false</GenerateProgramFile>
+    <!-- Builder-pattern migration: legacy [Obsolete] shims emit custom DiagnosticIds that #pragma cannot suppress while TreatWarningsAsErrors=true. -->
+    <NoWarn>$(NoWarn);ZASCH001;ZASCH002;ZASCH003;ZASCH004;ZASCH005</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
