@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.5](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v0.1.4...v0.1.5) (2026-04-25)
+
+
+### Features
+
+* add ZeroAlloc.Scheduling.Resilience bridge package (Scheduling[#18](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/18)) ([#25](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/25)) ([9b4d669](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/9b4d669bd90713620bdd9c15d8df156c81b133d0))
+
 ## [0.1.4](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v0.1.3...v0.1.4) (2026-04-24)
 
 
