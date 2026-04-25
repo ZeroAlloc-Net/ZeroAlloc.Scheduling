@@ -60,7 +60,7 @@ dotnet add package ZeroAlloc.Scheduling.Redis
 
 ```csharp
 services.AddScheduling()
-        .AddSchedulingRedis("localhost:6379")
+        .WithRedis("localhost:6379")
         .AddMyJob();
 ```
 
