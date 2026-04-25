@@ -19,8 +19,9 @@ Source-generated background job scheduler for .NET 8 and .NET 10.
 | 3 | [Backends](stores.md) | InMemory, EF Core, and Redis store configuration |
 | 4 | [Dashboard](dashboard.md) | Embedded HTML dashboard and Blazor component |
 | 5 | [Mediator Bridge](mediator-bridge.md) | Route job execution through ZeroAlloc.Mediator |
-| 6 | [Diagnostics](diagnostics.md) | ZASCH001 compiler warning reference |
-| 7 | [Performance](performance.md) | Throughput, allocation profile, and tuning guide |
+| 6 | [Resilience Bridge](resilience-bridge.md) | Wrap executors in retry, circuit-breaker, and timeout policies |
+| 7 | [Diagnostics](diagnostics.md) | ZASCH001 compiler warning reference |
+| 8 | [Performance](performance.md) | Throughput, allocation profile, and tuning guide |
 
 ## Quick Reference
 
