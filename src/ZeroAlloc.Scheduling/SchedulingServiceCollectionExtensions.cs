@@ -23,7 +23,7 @@ public static partial class SchedulingServiceCollectionExtensions
     /// </remarks>
     [RequiresUnreferencedCode("AddScheduling may register DefaultJobSerializer which uses reflection-based JSON. Call services.AddSerializerDispatcher() first for AOT-safe serialisation.")]
     [RequiresDynamicCode("AddScheduling may register DefaultJobSerializer which may require runtime code generation. Call services.AddSerializerDispatcher() first for AOT-safe serialisation.")]
-    public static IServiceCollection AddScheduling(
+    public static ISchedulingBuilder AddScheduling(
         this IServiceCollection services,
         Action<SchedulingOptions>? configure = null)
     {
@@ -55,6 +55,6 @@ public static partial class SchedulingServiceCollectionExtensions
         services.AddSingleton<SchedulingWorkerService>();
         services.AddHostedService(sp => sp.GetRequiredService<SchedulingWorkerService>());
 
-        return services;
+        return new SchedulingBuilder(services);
     }
 }
