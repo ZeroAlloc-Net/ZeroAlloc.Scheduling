@@ -20,7 +20,7 @@ dotnet add package ZeroAlloc.Scheduling.InMemory
 
 ```csharp
 services.AddScheduling()
-        .AddSchedulingInMemory()
+        .WithInMemoryStore()
         .AddMyJob();
 ```
 
@@ -36,7 +36,7 @@ dotnet add package ZeroAlloc.Scheduling.EfCore
 
 ```csharp
 services.AddScheduling()
-        .AddSchedulingEfCore(opt =>
+        .WithEfCore(opt =>
             opt.UseSqlite("Data Source=jobs.db"))
         .AddMyJob();
 ```
