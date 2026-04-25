@@ -42,6 +42,7 @@ internal static class SchedulingCodeWriter
         sb.AppendLine("using Microsoft.Extensions.DependencyInjection.Extensions;");
         sb.AppendLine("using Microsoft.Extensions.Hosting;");
         sb.AppendLine("using Microsoft.Extensions.Options;");
+        sb.AppendLine("using ZeroAlloc.Scheduling;");
         sb.AppendLine();
 
         if (ns != null)
@@ -113,21 +114,31 @@ internal static class SchedulingCodeWriter
     {
         sb.AppendLine("public static partial class SchedulingServiceCollectionExtensions");
         sb.AppendLine("{");
-        sb.AppendLine($"    public static global::Microsoft.Extensions.DependencyInjection.IServiceCollection {diMethodName}(");
-        sb.AppendLine("        this global::Microsoft.Extensions.DependencyInjection.IServiceCollection services)");
+        sb.AppendLine($"    public static global::ZeroAlloc.Scheduling.ISchedulingBuilder {diMethodName}(");
+        sb.AppendLine("        this global::ZeroAlloc.Scheduling.ISchedulingBuilder builder)");
         sb.AppendLine("    {");
 
         if (isMediatorBridge)
         {
-            sb.AppendLine($"        services.AddTransient<global::ZeroAlloc.Scheduling.IJobTypeExecutor, global::ZeroAlloc.Scheduling.Mediator.MediatorJobTypeExecutor<{typeFqn}>>();");
+            sb.AppendLine($"        builder.Services.AddTransient<global::ZeroAlloc.Scheduling.IJobTypeExecutor, global::ZeroAlloc.Scheduling.Mediator.MediatorJobTypeExecutor<{typeFqn}>>();");
         }
         else
         {
-            sb.AppendLine($"        services.AddTransient<global::ZeroAlloc.Scheduling.IJobTypeExecutor, {executorName}>();");
+            sb.AppendLine($"        builder.Services.AddTransient<global::ZeroAlloc.Scheduling.IJobTypeExecutor, {executorName}>();");
         }
 
         if (isRecurring)
-            sb.AppendLine($"        services.AddHostedService<{startupName}>();");
+            sb.AppendLine($"        builder.Services.AddHostedService<{startupName}>();");
+        sb.AppendLine("        return builder;");
+        sb.AppendLine("    }");
+        sb.AppendLine();
+        sb.AppendLine($"    [global::System.Obsolete(\"Use AddScheduling().{diMethodName}() instead. Will be removed in the next major.\", DiagnosticId = \"ZASCH010\")]");
+        sb.AppendLine("    [global::System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode(\"AddScheduling may register DefaultJobSerializer which uses reflection-based JSON. Call services.AddSerializerDispatcher() first for AOT-safe serialisation.\")]");
+        sb.AppendLine("    [global::System.Diagnostics.CodeAnalysis.RequiresDynamicCode(\"AddScheduling may register DefaultJobSerializer which may require runtime code generation. Call services.AddSerializerDispatcher() first for AOT-safe serialisation.\")]");
+        sb.AppendLine($"    public static global::Microsoft.Extensions.DependencyInjection.IServiceCollection {diMethodName}(");
+        sb.AppendLine("        this global::Microsoft.Extensions.DependencyInjection.IServiceCollection services)");
+        sb.AppendLine("    {");
+        sb.AppendLine($"        services.AddScheduling().{diMethodName}();");
         sb.AppendLine("        return services;");
         sb.AppendLine("    }");
         sb.AppendLine("}");
