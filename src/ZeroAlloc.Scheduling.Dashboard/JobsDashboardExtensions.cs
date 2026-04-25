@@ -27,7 +27,7 @@ public static class JobsDashboardExtensions
                 .CreateLogger(typeof(JobsDashboardExtensions));
             logger.LogWarning(
                 "No IJobDashboardStore registered. Dashboard will show empty data. " +
-                "Add AddSchedulingEfCore() or AddSchedulingInMemory() to enable dashboard queries.");
+                "Add .WithEfCore(...) or .WithInMemoryStore() to your AddScheduling() chain to enable dashboard queries.");
         }
 
         return group;
