@@ -24,7 +24,7 @@ public sealed class SchedulingWorkerServiceTests
             .AddSingleton<IJobStore>(store)
             .AddSingleton<IJobTypeExecutor>(executor)
             .AddScheduling(o => o.PollingInterval = TimeSpan.FromMilliseconds(50))
-            .BuildServiceProvider();
+            .Services.BuildServiceProvider();
 
         await store.EnqueueAsync("TestJob", [], DateTimeOffset.UtcNow, 3, null, CancellationToken.None);
 
@@ -59,7 +59,7 @@ public sealed class SchedulingWorkerServiceTests
                 o.RetryBaseDelay = TimeSpan.FromMilliseconds(1);
                 o.DefaultMaxAttempts = 3;
             })
-            .BuildServiceProvider();
+            .Services.BuildServiceProvider();
 
         await store.EnqueueAsync("FailJob", [], DateTimeOffset.UtcNow, 3, null, CancellationToken.None);
 
