@@ -16,4 +16,5 @@
   <Project Path="tests/ZeroAlloc.Scheduling.EfCore.Tests/ZeroAlloc.Scheduling.EfCore.Tests.csproj" />
   <Project Path="tests/ZeroAlloc.Scheduling.Dashboard.Tests/ZeroAlloc.Scheduling.Dashboard.Tests.csproj" />
   <Project Path="tests/ZeroAlloc.Scheduling.Resilience.Tests/ZeroAlloc.Scheduling.Resilience.Tests.csproj" />
+  <Project Path="tests/ZeroAlloc.Scheduling.Telemetry.Tests/ZeroAlloc.Scheduling.Telemetry.Tests.csproj" />
 </Solution>
