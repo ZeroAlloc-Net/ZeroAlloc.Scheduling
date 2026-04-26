@@ -32,6 +32,29 @@ public class SchedulingTelemetryTests
         listener.StoppedActivities[0].DisplayName.Should().Be("scheduling.job_execute");
     }
 
+    [Fact]
+    public async Task WithTelemetry_InnerThrows_RecordsErrorStatus()
+    {
+        using var listener = new TestActivityListener("ZeroAlloc.Scheduling");
+        var fake = new ThrowingExecutor();
+
+        var services = new ServiceCollection();
+        services.AddLogging();
+        var builder = services.AddScheduling();
+        builder.Services.AddTransient<IJobTypeExecutor>(_ => fake);
+        builder.WithTelemetry();
+
+        var sp = services.BuildServiceProvider();
+        var executor = sp.GetServices<IJobTypeExecutor>().First();
+
+        Func<Task> act = async () =>
+            await executor.ExecuteAsync(Array.Empty<byte>(), CreateContext(sp), CancellationToken.None);
+
+        await act.Should().ThrowAsync<InvalidOperationException>();
+        listener.StoppedActivities.Should().ContainSingle();
+        listener.StoppedActivities[0].Status.Should().Be(ActivityStatusCode.Error);
+    }
+
     private static JobContext CreateContext(IServiceProvider sp) => new JobContext
     {
         JobId = default,
@@ -45,5 +68,13 @@ public class SchedulingTelemetryTests
         public string TypeName => "Fake";
         public int MaxAttempts => 0;
         public ValueTask ExecuteAsync(byte[] payload, JobContext ctx, CancellationToken ct) => default;
+    }
+
+    private sealed class ThrowingExecutor : IJobTypeExecutor
+    {
+        public string TypeName => "Throwing";
+        public int MaxAttempts => 0;
+        public ValueTask ExecuteAsync(byte[] payload, JobContext ctx, CancellationToken ct)
+            => throw new InvalidOperationException("boom");
     }
 }
