@@ -115,6 +115,29 @@ public class SchedulingTelemetryTests
         listener.StoppedActivities.Should().ContainSingle();
     }
 
+    [Fact]
+    public async Task WithTelemetry_MultipleExecutors_AllWrapped()
+    {
+        using var listener = new TestActivityListener("ZeroAlloc.Scheduling");
+
+        var services = new ServiceCollection();
+        services.AddLogging();
+        var builder = services.AddScheduling();
+        // Two distinct executor registrations, mimicking what the per-[Job] generator does.
+        builder.Services.AddTransient<IJobTypeExecutor>(_ => new FakeExecutor());
+        builder.Services.AddTransient<IJobTypeExecutor>(_ => new FakeExecutor());
+        builder.WithTelemetry();
+
+        var sp = services.BuildServiceProvider();
+        var executors = sp.GetServices<IJobTypeExecutor>().ToList();
+
+        foreach (var e in executors)
+            await e.ExecuteAsync(Array.Empty<byte>(), CreateContext(sp), CancellationToken.None);
+
+        // Each executor starts one span — both should have been wrapped.
+        listener.StoppedActivities.Should().HaveCount(2);
+    }
+
     private static JobContext CreateContext(IServiceProvider sp) => new JobContext
     {
         JobId = default,
