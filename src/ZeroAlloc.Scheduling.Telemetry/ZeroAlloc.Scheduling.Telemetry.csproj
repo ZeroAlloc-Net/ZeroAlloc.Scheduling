@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
+    <PackageId>ZeroAlloc.Scheduling.Telemetry</PackageId>
+    <Description>ZeroAlloc.Telemetry bridge for ZeroAlloc.Scheduling — wraps IJobTypeExecutor with a source-generated OpenTelemetry proxy.</Description>
+    <Version>0.0.0-local</Version>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <!-- Generator emits a catch block that observes ex.Message; ErrorProne EPC12 false-positives. -->
+    <NoWarn>$(NoWarn);EPC12</NoWarn>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <CompilerGeneratedFilesOutputPath>$(BaseIntermediateOutputPath)$(Configuration)\$(TargetFramework)\generated</CompilerGeneratedFilesOutputPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="ZeroAlloc.Telemetry" Version="1.1.0" />
+    <!-- Match ZeroAlloc.Scheduling's transitive minimum -->
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.0" />
+    <ProjectReference Include="..\ZeroAlloc.Scheduling\ZeroAlloc.Scheduling.csproj" />
+  </ItemGroup>
+</Project>

@@ -8,6 +8,7 @@
   <Project Path="src/ZeroAlloc.Scheduling.Dashboard.Blazor/ZeroAlloc.Scheduling.Dashboard.Blazor.csproj" />
   <Project Path="src/ZeroAlloc.Scheduling.Mediator/ZeroAlloc.Scheduling.Mediator.csproj" />
   <Project Path="src/ZeroAlloc.Scheduling.Resilience/ZeroAlloc.Scheduling.Resilience.csproj" />
+  <Project Path="src/ZeroAlloc.Scheduling.Telemetry/ZeroAlloc.Scheduling.Telemetry.csproj" />
   <Project Path="benchmarks/ZeroAlloc.Scheduling.Benchmarks/ZeroAlloc.Scheduling.Benchmarks.csproj" />
   <Project Path="samples/ZeroAlloc.Scheduling.AotSmoke/ZeroAlloc.Scheduling.AotSmoke.csproj" />
   <Project Path="tests/ZeroAlloc.Scheduling.Tests/ZeroAlloc.Scheduling.Tests.csproj" />
