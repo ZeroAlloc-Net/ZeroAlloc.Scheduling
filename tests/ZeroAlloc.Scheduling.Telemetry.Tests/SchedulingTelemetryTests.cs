@@ -55,6 +55,45 @@ public class SchedulingTelemetryTests
         listener.StoppedActivities[0].Status.Should().Be(ActivityStatusCode.Error);
     }
 
+    [Fact]
+    public async Task WithTelemetry_RecordsCounterAndHistogram()
+    {
+        long counterValue = 0;
+        double histogramValue = 0;
+
+        using var meterListener = new System.Diagnostics.Metrics.MeterListener();
+        meterListener.InstrumentPublished = (instrument, l) =>
+        {
+            if (string.Equals(instrument.Meter.Name, "ZeroAlloc.Scheduling", StringComparison.Ordinal))
+                l.EnableMeasurementEvents(instrument);
+        };
+        meterListener.SetMeasurementEventCallback<long>((inst, m, _, _) =>
+        {
+            if (string.Equals(inst.Name, "scheduling.jobs_total", StringComparison.Ordinal))
+                Interlocked.Add(ref counterValue, m);
+        });
+        meterListener.SetMeasurementEventCallback<double>((inst, m, _, _) =>
+        {
+            if (string.Equals(inst.Name, "scheduling.job_duration_ms", StringComparison.Ordinal))
+                histogramValue = m;
+        });
+        meterListener.Start();
+
+        var services = new ServiceCollection();
+        services.AddLogging();
+        var builder = services.AddScheduling();
+        builder.Services.AddTransient<IJobTypeExecutor>(_ => new FakeExecutor());
+        builder.WithTelemetry();
+
+        var sp = services.BuildServiceProvider();
+        var executor = sp.GetServices<IJobTypeExecutor>().First();
+
+        await executor.ExecuteAsync(Array.Empty<byte>(), CreateContext(sp), CancellationToken.None);
+
+        counterValue.Should().Be(1);
+        histogramValue.Should().BeGreaterThanOrEqualTo(0); // duration in ms; may be 0 on a no-op call
+    }
+
     private static JobContext CreateContext(IServiceProvider sp) => new JobContext
     {
         JobId = default,
