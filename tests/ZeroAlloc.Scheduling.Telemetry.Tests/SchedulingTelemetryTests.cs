@@ -94,6 +94,27 @@ public class SchedulingTelemetryTests
         histogramValue.Should().BeGreaterThanOrEqualTo(0); // duration in ms; may be 0 on a no-op call
     }
 
+    [Fact]
+    public async Task WithTelemetry_TwoCalls_DoesNotDoubleWrap()
+    {
+        using var listener = new TestActivityListener("ZeroAlloc.Scheduling");
+        var fake = new FakeExecutor();
+
+        var services = new ServiceCollection();
+        services.AddLogging();
+        var builder = services.AddScheduling();
+        builder.Services.AddTransient<IJobTypeExecutor>(_ => fake);
+        builder.WithTelemetry().WithTelemetry();   // call twice
+
+        var sp = services.BuildServiceProvider();
+        var executor = sp.GetServices<IJobTypeExecutor>().First();
+
+        await executor.ExecuteAsync(Array.Empty<byte>(), CreateContext(sp), CancellationToken.None);
+
+        // Single span — not two nested spans from a doubly-wrapped proxy.
+        listener.StoppedActivities.Should().ContainSingle();
+    }
+
     private static JobContext CreateContext(IServiceProvider sp) => new JobContext
     {
         JobId = default,
