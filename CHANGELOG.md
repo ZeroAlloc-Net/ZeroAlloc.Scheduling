@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v0.2.0...v0.2.1) (2026-04-26)
+
+
+### Features
+
+* **scheduling.telemetry:** bridge package wiring [Instrument] proxy on IJobTypeExecutor ([#19](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/19)) ([#29](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/29)) ([bc39c3a](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/bc39c3a4197c8433d1ddb0da732d70d93f95f954))
+
 ## [0.2.0](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v0.1.5...v0.2.0) (2026-04-25)
 
 
