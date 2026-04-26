@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.2.0](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v0.1.5...v0.2.0) (2026-04-25)
+
+
+### ⚠ BREAKING CHANGES
+
+* **scheduling:** AddScheduling() return type changed from IServiceCollection to ISchedulingBuilder. Use builder.Services where you previously chained on IServiceCollection.
+
+### Features
+
+* **scheduling:** migrate DI registration to ISchedulingBuilder fluent API ([#27](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/27)) ([2c3fc88](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/2c3fc888d7db62ab9ec94b42a0692beb708623a2))
+
 ## [0.1.5](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v0.1.4...v0.1.5) (2026-04-25)
 
 
