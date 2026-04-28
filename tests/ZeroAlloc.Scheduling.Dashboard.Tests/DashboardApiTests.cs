@@ -52,7 +52,7 @@ public sealed class DashboardApiTests : IClassFixture<WebApplicationFactory<Prog
     public async Task RequeueNonExistentJob_Returns2xx()
     {
         // The endpoint is idempotent: missing IDs are silently ignored and 200 OK is returned.
-        var r = await _client.PostAsync($"/jobs/api/{Guid.NewGuid()}/requeue", null);
+        var r = await _client.PostAsync($"/jobs/api/{JobId.New()}/requeue", null);
         ((int)r.StatusCode).Should().BeInRange(200, 299);
     }
 
@@ -60,7 +60,7 @@ public sealed class DashboardApiTests : IClassFixture<WebApplicationFactory<Prog
     public async Task DeleteNonExistentJob_Returns2xx()
     {
         // The endpoint is idempotent: missing IDs are silently ignored and 200 OK is returned.
-        var r = await _client.DeleteAsync($"/jobs/api/{Guid.NewGuid()}");
+        var r = await _client.DeleteAsync($"/jobs/api/{JobId.New()}");
         ((int)r.StatusCode).Should().BeInRange(200, 299);
     }
 }
