@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.0
+
+Stability milestone — public API of `ZeroAlloc.Scheduling` is now considered stable. Bundles PR #33 (CI: publish bridge packages — Resilience and Telemetry — to NuGet). This release marks the transition out of pre-1.0 SemVer.
+
 ## [0.3.0](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v0.2.1...v0.3.0) (2026-04-28)
 
 
