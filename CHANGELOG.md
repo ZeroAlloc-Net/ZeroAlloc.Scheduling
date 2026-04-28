@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.3.0](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v0.2.1...v0.3.0) (2026-04-28)
+
+
+### ⚠ BREAKING CHANGES
+
+* **scheduling:** Redis wire format for job hash keys changes from 36-char hyphenated Guid strings to 26-char ULID base32 strings. Live Redis-backed Scheduling deployments must drain queues before upgrading. No CLR-side API change.
+
+### Features
+
+* **scheduling:** finish JobId migration on entity, dashboard, and Redis ([#20](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/20)) ([#32](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/32)) ([cd51165](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/cd5116539e318a85d0630527051d6c86a8a87e0a))
+
+
+### Documentation
+
+* add GitHub Sponsors badge to README ([0c5ae25](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/0c5ae25499a2c90b8369db691ff6a81aba22c93e))
+
 ## [0.2.1](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v0.2.0...v0.2.1) (2026-04-26)
 
 
