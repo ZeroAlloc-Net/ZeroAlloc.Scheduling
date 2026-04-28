@@ -72,6 +72,6 @@
         await InvokeAsync(StateHasChanged);
     }
 
-    private async Task RequeueAsync(Guid id) { await Client.RequeueAsync(id); await LoadAsync(); }
-    private async Task DeleteAsync(Guid id)  { await Client.DeleteAsync(id);  await LoadAsync(); }
+    private async Task RequeueAsync(JobId id) { await Client.RequeueAsync(id); await LoadAsync(); }
+    private async Task DeleteAsync(JobId id)  { await Client.DeleteAsync(id);  await LoadAsync(); }
 }

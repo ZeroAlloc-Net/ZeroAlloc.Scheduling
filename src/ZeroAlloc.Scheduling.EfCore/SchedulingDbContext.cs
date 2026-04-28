@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using ZeroAlloc.ValueObjects.EfCore;
 
 namespace ZeroAlloc.Scheduling.EfCore;
 
@@ -23,6 +24,7 @@ public sealed class SchedulingDbContext : DbContext
         {
             e.ToTable("ScheduledJobs");
             e.HasKey(j => j.Id);
+            e.Property(j => j.Id).HasConversion<TypedIdValueConverter<JobId, Guid>>();
             e.Property(j => j.TypeName).HasMaxLength(256).IsRequired();
             e.Property(j => j.Status).HasConversion<int>();
             e.Property(j => j.Error).HasMaxLength(2000);

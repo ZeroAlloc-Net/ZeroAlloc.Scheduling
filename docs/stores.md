@@ -66,6 +66,8 @@ services.AddScheduling()
 
 Jobs are stored as Redis hashes. The store maintains three tracking Sets (`jobs:succeeded`, `jobs:failed`, `jobs:deadletter`) for O(1) summary queries without scanning all keys.
 
+> **Upgrade note.** Hash keys are now derived from `JobId.ToString()`, a 26-character ULID base32 string, instead of the previous `Guid` representation. Live deployments must drain the queue (let in-flight jobs complete and stop producing new ones) before upgrading: existing keys written by the older version will not be discovered by the new lookups, so they should be allowed to finish or be cleared explicitly before the rollout.
+
 ## Dashboard Integration
 
 All three stores also implement `IJobDashboardStore`, which powers the dashboard API. EF Core and Redis register `IJobDashboardStore` automatically. InMemory implements it directly on `InMemoryJobStore`.

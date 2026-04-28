@@ -63,15 +63,15 @@ public static class JobsDashboardExtensions
                 ? Results.Ok(await d.GetRecurringAsync(ct).ConfigureAwait(false))
                 : Results.Ok(Array.Empty<object>()));
 
-        group.MapPost("/api/{id:guid}/requeue", async (Guid id, IJobStore s, CancellationToken ct) =>
+        group.MapPost("/api/{id}/requeue", async (JobId id, IJobStore s, CancellationToken ct) =>
         {
-            if (s is IJobDashboardStore d) await d.RequeueAsync(new JobId(id), ct).ConfigureAwait(false);
+            if (s is IJobDashboardStore d) await d.RequeueAsync(id, ct).ConfigureAwait(false);
             return Results.Ok();
         });
 
-        group.MapDelete("/api/{id:guid}", async (Guid id, IJobStore s, CancellationToken ct) =>
+        group.MapDelete("/api/{id}", async (JobId id, IJobStore s, CancellationToken ct) =>
         {
-            if (s is IJobDashboardStore d) await d.DeleteAsync(new JobId(id), ct).ConfigureAwait(false);
+            if (s is IJobDashboardStore d) await d.DeleteAsync(id, ct).ConfigureAwait(false);
             return Results.Ok();
         });
     }

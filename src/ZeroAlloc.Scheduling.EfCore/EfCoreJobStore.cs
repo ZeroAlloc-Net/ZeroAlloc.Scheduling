@@ -13,7 +13,7 @@ public sealed class EfCoreJobStore : IJobStore, IJobDashboardStore
     {
         _db.Jobs.Add(new JobEntryEntity
         {
-            Id = Guid.NewGuid(), TypeName = typeName, Payload = payload,
+            Id = JobId.New(), TypeName = typeName, Payload = payload,
             Status = JobStatus.Pending, Attempts = 0, MaxAttempts = maxAttempts,
             ScheduledAt = scheduledAt, CronExpression = cronExpression,
         });
@@ -57,7 +57,7 @@ public sealed class EfCoreJobStore : IJobStore, IJobDashboardStore
     public async ValueTask MarkSucceededAsync(JobId id, DateTimeOffset? nextRunAt,
         string? cronExpression, int maxAttempts, CancellationToken ct)
     {
-        var entity = await _db.Jobs.FindAsync(new object[] { id.Value }, ct).ConfigureAwait(false);
+        var entity = await _db.Jobs.FindAsync(new object[] { id }, ct).ConfigureAwait(false);
         if (entity is null) return;
 
         entity.Status = JobStatus.Succeeded;
@@ -67,7 +67,7 @@ public sealed class EfCoreJobStore : IJobStore, IJobDashboardStore
         {
             _db.Jobs.Add(new JobEntryEntity
             {
-                Id = Guid.NewGuid(), TypeName = entity.TypeName, Payload = entity.Payload,
+                Id = JobId.New(), TypeName = entity.TypeName, Payload = entity.Payload,
                 Status = JobStatus.Pending, Attempts = 0, MaxAttempts = maxAttempts,
                 ScheduledAt = nextRunAt.Value, CronExpression = cronExpression,
             });
@@ -77,7 +77,7 @@ public sealed class EfCoreJobStore : IJobStore, IJobDashboardStore
 
     public async ValueTask MarkFailedAsync(JobId id, int attempts, DateTimeOffset nextRetryAt, CancellationToken ct)
     {
-        var entity = await _db.Jobs.FindAsync(new object[] { id.Value }, ct).ConfigureAwait(false);
+        var entity = await _db.Jobs.FindAsync(new object[] { id }, ct).ConfigureAwait(false);
         if (entity is null) return;
         entity.Status = JobStatus.Failed;
         entity.Attempts = attempts;
@@ -87,7 +87,7 @@ public sealed class EfCoreJobStore : IJobStore, IJobDashboardStore
 
     public async ValueTask DeadLetterAsync(JobId id, string error, CancellationToken ct)
     {
-        var entity = await _db.Jobs.FindAsync(new object[] { id.Value }, ct).ConfigureAwait(false);
+        var entity = await _db.Jobs.FindAsync(new object[] { id }, ct).ConfigureAwait(false);
         if (entity is null) return;
         entity.Status = JobStatus.DeadLetter;
         entity.CompletedAt = DateTimeOffset.UtcNow;
@@ -106,7 +106,7 @@ public sealed class EfCoreJobStore : IJobStore, IJobDashboardStore
         {
             _db.Jobs.Add(new JobEntryEntity
             {
-                Id = Guid.NewGuid(), TypeName = typeName, Payload = payload,
+                Id = JobId.New(), TypeName = typeName, Payload = payload,
                 Status = JobStatus.Pending, Attempts = 0, MaxAttempts = maxAttempts,
                 ScheduledAt = scheduledAt, CronExpression = cronExpression,
             });
@@ -153,7 +153,7 @@ public sealed class EfCoreJobStore : IJobStore, IJobDashboardStore
     public async Task RequeueAsync(JobId id, CancellationToken ct = default)
     {
         await _db.Jobs
-            .Where(j => j.Id == id.Value)
+            .Where(j => j.Id == id)
             .ExecuteUpdateAsync(s => s
                 .SetProperty(j => j.Status, JobStatus.Pending)
                 .SetProperty(j => j.Error, (string?)null)
@@ -163,7 +163,7 @@ public sealed class EfCoreJobStore : IJobStore, IJobDashboardStore
     public async Task DeleteAsync(JobId id, CancellationToken ct = default)
     {
         await _db.Jobs
-            .Where(j => j.Id == id.Value)
+            .Where(j => j.Id == id)
             .ExecuteDeleteAsync(ct).ConfigureAwait(false);
     }
 }

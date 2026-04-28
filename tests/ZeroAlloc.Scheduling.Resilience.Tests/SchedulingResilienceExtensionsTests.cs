@@ -37,7 +37,7 @@ public class SchedulingResilienceExtensionsTests
         var payload = System.Text.Encoding.UTF8.GetBytes("{}");
         var ctx = new JobContext
         {
-            JobId = new JobId(Guid.NewGuid()),
+            JobId = JobId.New(),
             Attempt = 1,
             ScheduledAt = DateTimeOffset.UtcNow,
             Services = new ServiceCollection().BuildServiceProvider(),

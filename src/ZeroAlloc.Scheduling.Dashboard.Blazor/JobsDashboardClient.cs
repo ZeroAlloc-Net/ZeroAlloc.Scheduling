@@ -44,13 +44,13 @@ public sealed class JobsDashboardClient
         return await response.Content.ReadFromJsonAsync<IReadOnlyList<JobEntry>>(ct).ConfigureAwait(false);
     }
 
-    public async Task RequeueAsync(Guid id, CancellationToken ct = default)
+    public async Task RequeueAsync(JobId id, CancellationToken ct = default)
     {
         using var response = await _http.PostAsync($"{id}/requeue", null, ct).ConfigureAwait(false);
         response.EnsureSuccessStatusCode();
     }
 
-    public async Task DeleteAsync(Guid id, CancellationToken ct = default)
+    public async Task DeleteAsync(JobId id, CancellationToken ct = default)
     {
         using var response = await _http.DeleteAsync($"{id}", ct).ConfigureAwait(false);
         response.EnsureSuccessStatusCode();
