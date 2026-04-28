@@ -44,7 +44,8 @@ jobs:
           for pkg in ZeroAlloc.Scheduling ZeroAlloc.Scheduling.Generator ZeroAlloc.Scheduling.EfCore \
                      ZeroAlloc.Scheduling.InMemory ZeroAlloc.Scheduling.Redis \
                      ZeroAlloc.Scheduling.Dashboard ZeroAlloc.Scheduling.Dashboard.Blazor \
-                     ZeroAlloc.Scheduling.Mediator; do
+                     ZeroAlloc.Scheduling.Mediator ZeroAlloc.Scheduling.Resilience \
+                     ZeroAlloc.Scheduling.Telemetry; do
             dotnet pack src/$pkg/$pkg.csproj --no-build -c Release \
               -p:PackageVersion=${{ steps.version.outputs.version }} -o ./artifacts
           done
