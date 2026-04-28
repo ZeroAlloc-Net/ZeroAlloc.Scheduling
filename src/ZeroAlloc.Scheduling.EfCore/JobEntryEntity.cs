@@ -1,8 +1,10 @@
+using ZeroAlloc.Scheduling;
+
 namespace ZeroAlloc.Scheduling.EfCore;
 
 public sealed class JobEntryEntity
 {
-    public Guid Id { get; set; }
+    public JobId Id { get; set; } = JobId.New();
     public required string TypeName { get; set; }
     public required byte[] Payload { get; set; }
     public JobStatus Status { get; set; }
@@ -17,7 +19,7 @@ public sealed class JobEntryEntity
 
     public JobEntry ToJobEntry() => new()
     {
-        Id = new JobId(Id), TypeName = TypeName, Payload = Payload, Status = Status,
+        Id = Id, TypeName = TypeName, Payload = Payload, Status = Status,
         Attempts = Attempts, MaxAttempts = MaxAttempts, ScheduledAt = ScheduledAt,
         StartedAt = StartedAt, CompletedAt = CompletedAt, NextRunAt = NextRunAt,
         CronExpression = CronExpression, Error = Error,
