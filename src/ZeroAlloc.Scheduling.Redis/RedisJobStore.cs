@@ -11,7 +11,7 @@ public sealed class RedisJobStore : IJobStore, IJobDashboardStore
     public async ValueTask EnqueueAsync(string typeName, byte[] payload, DateTimeOffset scheduledAt,
         int maxAttempts, string? cronExpression, CancellationToken ct)
     {
-        var id = JobId.New().Value;
+        var id = JobId.New();
         var score = (double)scheduledAt.ToUnixTimeSeconds();
         var tran = _db.CreateTransaction();
         _ = tran.HashSetAsync($"job:{id}", BuildHash(id, typeName, payload, JobStatus.Pending, 0, maxAttempts, scheduledAt, cronExpression));
@@ -46,17 +46,17 @@ public sealed class RedisJobStore : IJobStore, IJobDashboardStore
         string? cronExpression, int maxAttempts, CancellationToken ct)
     {
         var tran = _db.CreateTransaction();
-        _ = tran.HashSetAsync($"job:{id.Value}", [new HashEntry("status", "Succeeded"), new HashEntry("completedAt", DateTimeOffset.UtcNow.ToUnixTimeSeconds())]);
-        _ = tran.SetRemoveAsync("jobs:running", id.Value.ToString());
-        _ = tran.SetAddAsync("jobs:succeeded", id.Value.ToString());
+        _ = tran.HashSetAsync($"job:{id}", [new HashEntry("status", "Succeeded"), new HashEntry("completedAt", DateTimeOffset.UtcNow.ToUnixTimeSeconds())]);
+        _ = tran.SetRemoveAsync("jobs:running", id.ToString());
+        _ = tran.SetAddAsync("jobs:succeeded", id.ToString());
 
         if (nextRunAt.HasValue)
         {
-            var typeName = (string?)(await _db.HashGetAsync($"job:{id.Value}", "typeName").ConfigureAwait(false));
-            var payload = (byte[]?)(await _db.HashGetAsync($"job:{id.Value}", "payload").ConfigureAwait(false));
+            var typeName = (string?)(await _db.HashGetAsync($"job:{id}", "typeName").ConfigureAwait(false));
+            var payload = (byte[]?)(await _db.HashGetAsync($"job:{id}", "payload").ConfigureAwait(false));
             if (typeName != null && payload != null)
             {
-                var nextId = JobId.New().Value;
+                var nextId = JobId.New();
                 _ = tran.HashSetAsync($"job:{nextId}", BuildHash(nextId, typeName, payload, JobStatus.Pending, 0, maxAttempts, nextRunAt.Value, cronExpression));
                 _ = tran.SortedSetAddAsync("jobs:pending", nextId.ToString(), (double)nextRunAt.Value.ToUnixTimeSeconds());
             }
@@ -68,19 +68,19 @@ public sealed class RedisJobStore : IJobStore, IJobDashboardStore
     {
         var score = (double)nextRetryAt.ToUnixTimeSeconds();
         var tran = _db.CreateTransaction();
-        _ = tran.HashSetAsync($"job:{id.Value}", [new HashEntry("status", "Failed"), new HashEntry("attempts", attempts), new HashEntry("scheduledAt", score)]);
-        _ = tran.SetRemoveAsync("jobs:running", id.Value.ToString());
-        _ = tran.SortedSetAddAsync("jobs:pending", id.Value.ToString(), score); // re-add to pending sorted set for retry
-        _ = tran.SetAddAsync("jobs:failed", id.Value.ToString());
+        _ = tran.HashSetAsync($"job:{id}", [new HashEntry("status", "Failed"), new HashEntry("attempts", attempts), new HashEntry("scheduledAt", score)]);
+        _ = tran.SetRemoveAsync("jobs:running", id.ToString());
+        _ = tran.SortedSetAddAsync("jobs:pending", id.ToString(), score); // re-add to pending sorted set for retry
+        _ = tran.SetAddAsync("jobs:failed", id.ToString());
         await tran.ExecuteAsync().ConfigureAwait(false);
     }
 
     public async ValueTask DeadLetterAsync(JobId id, string error, CancellationToken ct)
     {
         var tran = _db.CreateTransaction();
-        _ = tran.HashSetAsync($"job:{id.Value}", [new HashEntry("status", "DeadLetter"), new HashEntry("error", error), new HashEntry("completedAt", DateTimeOffset.UtcNow.ToUnixTimeSeconds())]);
-        _ = tran.SetRemoveAsync("jobs:running", id.Value.ToString());
-        _ = tran.SetAddAsync("jobs:deadletter", id.Value.ToString());
+        _ = tran.HashSetAsync($"job:{id}", [new HashEntry("status", "DeadLetter"), new HashEntry("error", error), new HashEntry("completedAt", DateTimeOffset.UtcNow.ToUnixTimeSeconds())]);
+        _ = tran.SetRemoveAsync("jobs:running", id.ToString());
+        _ = tran.SetAddAsync("jobs:deadletter", id.ToString());
         await tran.ExecuteAsync().ConfigureAwait(false);
     }
 
@@ -96,7 +96,7 @@ public sealed class RedisJobStore : IJobStore, IJobDashboardStore
 
         if (!exists)
         {
-            var id = JobId.New().Value;
+            var id = JobId.New();
             var score = (double)scheduledAt.ToUnixTimeSeconds();
             var tran = _db.CreateTransaction();
             _ = tran.HashSetAsync($"job:{id}", BuildHash(id, typeName, payload, JobStatus.Pending, 0, maxAttempts, scheduledAt, cronExpression));
@@ -175,25 +175,25 @@ public sealed class RedisJobStore : IJobStore, IJobDashboardStore
     {
         var score = (double)DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         var tran = _db.CreateTransaction();
-        _ = tran.HashSetAsync($"job:{id.Value}", [new HashEntry("status", "Pending"), new HashEntry("error", RedisValue.EmptyString), new HashEntry("scheduledAt", score)]);
-        _ = tran.SetRemoveAsync("jobs:deadletter", id.Value.ToString());
-        _ = tran.SortedSetAddAsync("jobs:pending", id.Value.ToString(), score);
+        _ = tran.HashSetAsync($"job:{id}", [new HashEntry("status", "Pending"), new HashEntry("error", RedisValue.EmptyString), new HashEntry("scheduledAt", score)]);
+        _ = tran.SetRemoveAsync("jobs:deadletter", id.ToString());
+        _ = tran.SortedSetAddAsync("jobs:pending", id.ToString(), score);
         await tran.ExecuteAsync().ConfigureAwait(false);
     }
 
     public async Task DeleteAsync(JobId id, CancellationToken ct = default)
     {
         var tran = _db.CreateTransaction();
-        _ = tran.KeyDeleteAsync($"job:{id.Value}");
-        _ = tran.SortedSetRemoveAsync("jobs:pending", id.Value.ToString());
-        _ = tran.SetRemoveAsync("jobs:running", id.Value.ToString());
-        _ = tran.SetRemoveAsync("jobs:succeeded", id.Value.ToString());
-        _ = tran.SetRemoveAsync("jobs:failed", id.Value.ToString());
-        _ = tran.SetRemoveAsync("jobs:deadletter", id.Value.ToString());
+        _ = tran.KeyDeleteAsync($"job:{id}");
+        _ = tran.SortedSetRemoveAsync("jobs:pending", id.ToString());
+        _ = tran.SetRemoveAsync("jobs:running", id.ToString());
+        _ = tran.SetRemoveAsync("jobs:succeeded", id.ToString());
+        _ = tran.SetRemoveAsync("jobs:failed", id.ToString());
+        _ = tran.SetRemoveAsync("jobs:deadletter", id.ToString());
         await tran.ExecuteAsync().ConfigureAwait(false);
     }
 
-    private static HashEntry[] BuildHash(Guid id, string typeName, byte[] payload, JobStatus status,
+    private static HashEntry[] BuildHash(JobId id, string typeName, byte[] payload, JobStatus status,
         int attempts, int maxAttempts, DateTimeOffset scheduledAt, string? cronExpression)
     {
         var list = new List<HashEntry>
@@ -222,7 +222,7 @@ public sealed class RedisJobStore : IJobStore, IJobDashboardStore
     {
         return new JobEntry
         {
-            Id = new JobId(Guid.Parse((string)d["id"]!)),
+            Id = JobId.Parse((string)d["id"]!),
             TypeName = d["typeName"]!,
             Payload = (byte[])d["payload"]!,
             Status = Enum.Parse<JobStatus>((string)d["status"]!),
