@@ -46,6 +46,8 @@ The dashboard is served from an embedded resource (no static file middleware req
 | `POST /jobs/api/{id}/requeue` | Re-enqueue a dead-lettered job |
 | `DELETE /jobs/api/{id}` | Delete a job |
 
+The `{id}` route segment binds to a strongly-typed `JobId`, which serializes as a 26-character ULID base32 string (e.g. `01H8XGJWBWBAQ4ZQ8Y9ABZ35TX`). URLs that embed the legacy `Guid` format no longer match these routes — clients holding job IDs from a previous version must be refreshed before issuing requeue or delete requests. The Blazor `JobsDashboardClient` already builds these URLs from `JobId.ToString()`, so no caller changes are required when consuming the component.
+
 ### Authentication
 
 `MapJobsDashboard` returns an `IEndpointConventionBuilder`, so standard ASP.NET Core authorization policies apply:
