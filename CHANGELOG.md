@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.0.0](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v0.3.0...v1.0.0) (2026-04-28)
+
+
+### CI
+
+* **release:** pack and publish Scheduling bridge packages (Resilience, Telemetry) ([30ce85b](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/30ce85be80f8a59b8a4ed50d41764b85b2bc7861))
+* **release:** publish Scheduling bridge packages to NuGet ([18ebf81](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/18ebf817400adec55adbeae874ea252fab4dbf32))
+
+
+### Chores
+
+* **release:** promote to 1.0.0 stability milestone ([9057afb](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/9057afbec485800d21c36fe9c879f9b036c10cbf))
+* **release:** promote ZeroAlloc.Scheduling to 1.0.0 ([043fbab](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/043fbab14f2c6131c0cb96bebab269c724523f5a))
+
 ## 1.0.0
 
 Stability milestone — public API of `ZeroAlloc.Scheduling` is now considered stable. Bundles PR #33 (CI: publish bridge packages — Resilience and Telemetry — to NuGet). This release marks the transition out of pre-1.0 SemVer.
