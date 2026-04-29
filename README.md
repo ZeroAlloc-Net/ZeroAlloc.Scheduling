@@ -3,6 +3,7 @@
 [![NuGet](https://img.shields.io/nuget/v/ZeroAlloc.Scheduling.svg)](https://www.nuget.org/packages/ZeroAlloc.Scheduling)
 [![Build](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/actions/workflows/ci.yml/badge.svg)](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![AOT](https://img.shields.io/badge/AOT--Compatible-passing-brightgreen)](https://learn.microsoft.com/dotnet/core/deploying/native-aot/)
 [![GitHub Sponsors](https://img.shields.io/github/sponsors/MarcelRoozekrans?style=flat&logo=githubsponsors&color=ea4aaa&label=Sponsor)](https://github.com/sponsors/MarcelRoozekrans)
 
 ZeroAlloc.Scheduling is a source-generated background job scheduler for .NET 8 and .NET 10. Decorate any class with `[Job]` and the source generator wires up the executor, DI registration, and recurring startup automatically — no reflection, no convention scanning at runtime.
