@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.1](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.0.0...v1.0.1) (2026-04-29)
+
+
+### CI
+
+* **release-please:** add 'deps' to changelog-sections ([d98c83a](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/d98c83a70e3b36e98c23454d948d1d149f4a644f))
+* **release-please:** add 'deps' to changelog-sections ([b34dab7](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/b34dab74d26d094d0e930a71f4c5cb25e5bcb294))
+
 ## [1.0.0](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v0.3.0...v1.0.0) (2026-04-28)
 
 
