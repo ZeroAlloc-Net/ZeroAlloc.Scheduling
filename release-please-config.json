@@ -11,6 +11,7 @@
         { "type": "refactor", "section": "Code Refactoring" },
         { "type": "docs",     "section": "Documentation"    },
         { "type": "test",     "section": "Tests"            },
+        { "type": "deps",     "section": "Dependencies"     },
         { "type": "build",    "section": "Build System"     },
         { "type": "ci",       "section": "CI"               },
         { "type": "chore",    "section": "Chores"           },
