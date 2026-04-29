@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.2](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.0.1...v1.0.2) (2026-04-29)
+
+
+### Documentation
+
+* **readme:** standardize 5-badge set ([429e2cf](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/429e2cf6cd72c4a835600381a41482a33652447f))
+* **readme:** standardize 5-badge set (NuGet/Build/License/AOT/Sponsors) ([03dc0c3](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/03dc0c31ebbab25c738523747101bbfb38955af8))
+
 ## [1.0.1](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.0.0...v1.0.1) (2026-04-29)
 
 
