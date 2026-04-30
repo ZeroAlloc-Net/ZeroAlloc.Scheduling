@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.3](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.0.2...v1.0.3) (2026-04-30)
+
+
+### Bug Fixes
+
+* pack generator DLL under analyzers/dotnet/cs ([178b3d8](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/178b3d84f02ac56f4fd052cc718e7ecc141e4060))
+* pack generator DLL under analyzers/dotnet/cs ([0d4ab9d](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/0d4ab9dea415ea84240214e7c24adf8e316deabb))
+
 ## [1.0.2](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.0.1...v1.0.2) (2026-04-29)
 
 
