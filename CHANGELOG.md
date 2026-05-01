@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.1.0](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.0.3...v1.1.0) (2026-05-01)
+
+
+### Features
+
+* bundle source generator into ZeroAlloc.Scheduling package ([34f4916](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/34f49164cb2452967ae44c789070a6bf608ee67f))
+* bundle source generator into ZeroAlloc.Scheduling package ([a73225a](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/a73225a86a006d7dcdd6127b03bc8765d3156f77))
+* lock public API surface (PublicApiAnalyzers + api-compat gate) ([#44](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/44)) ([6884723](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/688472316689f793088dcca23c0910e54c963f13))
+
+
+### Documentation
+
+* update install instructions for bundled generator ([372848a](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/372848a477b20055c7e7d1d049d22c174532ee1b))
+
 ## [1.0.3](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.0.2...v1.0.3) (2026-04-30)
 
 
