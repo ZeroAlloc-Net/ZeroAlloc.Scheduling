@@ -29,4 +29,19 @@
   <ItemGroup>
     <InternalsVisibleTo Include="ZeroAlloc.Scheduling.Tests" />
   </ItemGroup>
+
+  <!--
+    Bundle the source generator into the NuGet package so consumers get it by
+    referencing only ZeroAlloc.Scheduling. The standalone
+    ZeroAlloc.Scheduling.Generator package is still published for backwards
+    compatibility, but new consumers should reference the main package only.
+  -->
+  <Target Name="IncludeGeneratorInPackage" BeforeTargets="_GetPackageFiles">
+    <ItemGroup>
+      <None Include="$(MSBuildThisFileDirectory)..\ZeroAlloc.Scheduling.Generator\bin\$(Configuration)\netstandard2.0\ZeroAlloc.Scheduling.Generator.dll"
+            Pack="true"
+            PackagePath="analyzers/dotnet/cs"
+            Visible="false" />
+    </ItemGroup>
+  </Target>
 </Project>

@@ -10,16 +10,14 @@ ZeroAlloc.Scheduling is a source-generated background job scheduler for .NET 8 a
 
 ## Install
 
+The source generator is bundled into the main package — a single `PackageReference` is all you need:
+
 ```bash
 dotnet add package ZeroAlloc.Scheduling
 dotnet add package ZeroAlloc.Scheduling.InMemory   # or EfCore / Redis
 ```
 
-The generator package must be added as an analyzer:
-
-```xml
-<PackageReference Include="ZeroAlloc.Scheduling.Generator" Version="*" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
-```
+> The standalone `ZeroAlloc.Scheduling.Generator` package is still published for backwards compatibility with existing direct PackageReferences, but new consumers should reference only `ZeroAlloc.Scheduling`.
 
 ## Example
 
