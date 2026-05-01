@@ -82,3 +82,9 @@ jobs:
 
       - name: Run AOT binary
         run: ./aot-out/ZeroAlloc.Scheduling.AotSmoke
+
+  api-compat:
+    uses: ZeroAlloc-Net/.github/.github/workflows/api-compat.yml@main
+    with:
+      package-id: ZeroAlloc.Scheduling
+      csproj-path: src/ZeroAlloc.Scheduling/ZeroAlloc.Scheduling.csproj
