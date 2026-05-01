@@ -1,0 +1,162 @@
+#nullable enable
+ZeroAlloc.Scheduling.DefaultJobSerializer
+ZeroAlloc.Scheduling.DefaultJobSerializer.DefaultJobSerializer() -> void
+ZeroAlloc.Scheduling.DefaultJobSerializer.Deserialize<T>(byte[]! payload) -> T
+ZeroAlloc.Scheduling.DefaultJobSerializer.Serialize<T>(T job) -> byte[]!
+ZeroAlloc.Scheduling.DispatchingJobSerializer
+ZeroAlloc.Scheduling.DispatchingJobSerializer.Deserialize<T>(byte[]! payload) -> T
+ZeroAlloc.Scheduling.DispatchingJobSerializer.DispatchingJobSerializer(ZeroAlloc.Serialisation.ISerializerDispatcher! dispatcher) -> void
+ZeroAlloc.Scheduling.DispatchingJobSerializer.Serialize<T>(T job) -> byte[]!
+ZeroAlloc.Scheduling.Every
+ZeroAlloc.Scheduling.Every.Day = 7 -> ZeroAlloc.Scheduling.Every
+ZeroAlloc.Scheduling.Every.FifteenMinutes = 2 -> ZeroAlloc.Scheduling.Every
+ZeroAlloc.Scheduling.Every.FiveMinutes = 1 -> ZeroAlloc.Scheduling.Every
+ZeroAlloc.Scheduling.Every.Hour = 4 -> ZeroAlloc.Scheduling.Every
+ZeroAlloc.Scheduling.Every.Minute = 0 -> ZeroAlloc.Scheduling.Every
+ZeroAlloc.Scheduling.Every.SixHours = 5 -> ZeroAlloc.Scheduling.Every
+ZeroAlloc.Scheduling.Every.ThirtyMinutes = 3 -> ZeroAlloc.Scheduling.Every
+ZeroAlloc.Scheduling.Every.TwelveHours = 6 -> ZeroAlloc.Scheduling.Every
+ZeroAlloc.Scheduling.Every.Week = 8 -> ZeroAlloc.Scheduling.Every
+ZeroAlloc.Scheduling.EveryToCron
+ZeroAlloc.Scheduling.IJob
+ZeroAlloc.Scheduling.IJob.ExecuteAsync(ZeroAlloc.Scheduling.JobContext! ctx, System.Threading.CancellationToken ct) -> System.Threading.Tasks.ValueTask
+ZeroAlloc.Scheduling.IJobDashboardStore
+ZeroAlloc.Scheduling.IJobDashboardStore.DeleteAsync(ZeroAlloc.Scheduling.JobId id, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+ZeroAlloc.Scheduling.IJobDashboardStore.GetRecurringAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<ZeroAlloc.Scheduling.JobEntry!>!>!
+ZeroAlloc.Scheduling.IJobDashboardStore.GetSummaryAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<ZeroAlloc.Scheduling.JobSummary!>!
+ZeroAlloc.Scheduling.IJobDashboardStore.QueryByStatusAsync(ZeroAlloc.Scheduling.JobStatus[]! statuses, int page = 1, int pageSize = 50, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<ZeroAlloc.Scheduling.JobEntry!>!>!
+ZeroAlloc.Scheduling.IJobDashboardStore.RequeueAsync(ZeroAlloc.Scheduling.JobId id, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+ZeroAlloc.Scheduling.IJobSerializer
+ZeroAlloc.Scheduling.IJobSerializer.Deserialize<T>(byte[]! payload) -> T
+ZeroAlloc.Scheduling.IJobSerializer.Serialize<T>(T job) -> byte[]!
+ZeroAlloc.Scheduling.IJobStore
+ZeroAlloc.Scheduling.IJobStore.DeadLetterAsync(ZeroAlloc.Scheduling.JobId id, string! error, System.Threading.CancellationToken ct) -> System.Threading.Tasks.ValueTask
+ZeroAlloc.Scheduling.IJobStore.EnqueueAsync(string! typeName, byte[]! payload, System.DateTimeOffset scheduledAt, int maxAttempts, string? cronExpression, System.Threading.CancellationToken ct) -> System.Threading.Tasks.ValueTask
+ZeroAlloc.Scheduling.IJobStore.FetchPendingAsync(int batchSize, System.Threading.CancellationToken ct) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<ZeroAlloc.Scheduling.JobEntry!>!>
+ZeroAlloc.Scheduling.IJobStore.MarkFailedAsync(ZeroAlloc.Scheduling.JobId id, int attempts, System.DateTimeOffset nextRetryAt, System.Threading.CancellationToken ct) -> System.Threading.Tasks.ValueTask
+ZeroAlloc.Scheduling.IJobStore.MarkSucceededAsync(ZeroAlloc.Scheduling.JobId id, System.DateTimeOffset? nextRunAt, string? cronExpression, int maxAttempts, System.Threading.CancellationToken ct) -> System.Threading.Tasks.ValueTask
+ZeroAlloc.Scheduling.IJobStore.UpsertRecurringAsync(string! typeName, byte[]! payload, System.DateTimeOffset scheduledAt, string? cronExpression, int maxAttempts, System.Threading.CancellationToken ct) -> System.Threading.Tasks.ValueTask
+ZeroAlloc.Scheduling.IJobTypeExecutor
+ZeroAlloc.Scheduling.IJobTypeExecutor.ExecuteAsync(byte[]! payload, ZeroAlloc.Scheduling.JobContext! ctx, System.Threading.CancellationToken ct) -> System.Threading.Tasks.ValueTask
+ZeroAlloc.Scheduling.IJobTypeExecutor.MaxAttempts.get -> int
+ZeroAlloc.Scheduling.IJobTypeExecutor.TypeName.get -> string!
+ZeroAlloc.Scheduling.IScheduler
+ZeroAlloc.Scheduling.IScheduler.EnqueueAsync<TJob>(TJob job, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
+ZeroAlloc.Scheduling.IScheduler.EnqueueAsync<TJob>(TJob job, System.TimeSpan delay, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
+ZeroAlloc.Scheduling.ISchedulingBuilder
+ZeroAlloc.Scheduling.ISchedulingBuilder.Services.get -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+ZeroAlloc.Scheduling.JobAttribute
+ZeroAlloc.Scheduling.JobAttribute.Cron.get -> string?
+ZeroAlloc.Scheduling.JobAttribute.Cron.set -> void
+ZeroAlloc.Scheduling.JobAttribute.Every.get -> ZeroAlloc.Scheduling.Every
+ZeroAlloc.Scheduling.JobAttribute.Every.set -> void
+ZeroAlloc.Scheduling.JobAttribute.JobAttribute() -> void
+ZeroAlloc.Scheduling.JobAttribute.MaxAttempts.get -> int
+ZeroAlloc.Scheduling.JobAttribute.MaxAttempts.set -> void
+ZeroAlloc.Scheduling.JobContext
+ZeroAlloc.Scheduling.JobContext.Attempt.get -> int
+ZeroAlloc.Scheduling.JobContext.Attempt.init -> void
+ZeroAlloc.Scheduling.JobContext.JobContext() -> void
+ZeroAlloc.Scheduling.JobContext.JobId.get -> ZeroAlloc.Scheduling.JobId
+ZeroAlloc.Scheduling.JobContext.JobId.init -> void
+ZeroAlloc.Scheduling.JobContext.ScheduledAt.get -> System.DateTimeOffset
+ZeroAlloc.Scheduling.JobContext.ScheduledAt.init -> void
+ZeroAlloc.Scheduling.JobContext.Services.get -> System.IServiceProvider!
+ZeroAlloc.Scheduling.JobContext.Services.init -> void
+ZeroAlloc.Scheduling.JobEntry
+ZeroAlloc.Scheduling.JobEntry.Attempts.get -> int
+ZeroAlloc.Scheduling.JobEntry.Attempts.init -> void
+ZeroAlloc.Scheduling.JobEntry.CompletedAt.get -> System.DateTimeOffset?
+ZeroAlloc.Scheduling.JobEntry.CompletedAt.init -> void
+ZeroAlloc.Scheduling.JobEntry.CronExpression.get -> string?
+ZeroAlloc.Scheduling.JobEntry.CronExpression.init -> void
+ZeroAlloc.Scheduling.JobEntry.Error.get -> string?
+ZeroAlloc.Scheduling.JobEntry.Error.init -> void
+ZeroAlloc.Scheduling.JobEntry.Id.get -> ZeroAlloc.Scheduling.JobId
+ZeroAlloc.Scheduling.JobEntry.Id.init -> void
+ZeroAlloc.Scheduling.JobEntry.JobEntry() -> void
+ZeroAlloc.Scheduling.JobEntry.MaxAttempts.get -> int
+ZeroAlloc.Scheduling.JobEntry.MaxAttempts.init -> void
+ZeroAlloc.Scheduling.JobEntry.NextRunAt.get -> System.DateTimeOffset?
+ZeroAlloc.Scheduling.JobEntry.NextRunAt.init -> void
+ZeroAlloc.Scheduling.JobEntry.Payload.get -> byte[]!
+ZeroAlloc.Scheduling.JobEntry.Payload.init -> void
+ZeroAlloc.Scheduling.JobEntry.ScheduledAt.get -> System.DateTimeOffset
+ZeroAlloc.Scheduling.JobEntry.ScheduledAt.init -> void
+ZeroAlloc.Scheduling.JobEntry.StartedAt.get -> System.DateTimeOffset?
+ZeroAlloc.Scheduling.JobEntry.StartedAt.init -> void
+ZeroAlloc.Scheduling.JobEntry.Status.get -> ZeroAlloc.Scheduling.JobStatus
+ZeroAlloc.Scheduling.JobEntry.Status.init -> void
+ZeroAlloc.Scheduling.JobEntry.TypeName.get -> string!
+ZeroAlloc.Scheduling.JobEntry.TypeName.init -> void
+ZeroAlloc.Scheduling.JobId
+ZeroAlloc.Scheduling.JobId.CompareTo(ZeroAlloc.Scheduling.JobId other) -> int
+ZeroAlloc.Scheduling.JobId.Equals(ZeroAlloc.Scheduling.JobId other) -> bool
+ZeroAlloc.Scheduling.JobId.JobId() -> void
+ZeroAlloc.Scheduling.JobId.JobId(System.Guid value) -> void
+ZeroAlloc.Scheduling.JobId.Value.get -> System.Guid
+ZeroAlloc.Scheduling.JobStatus
+ZeroAlloc.Scheduling.JobStatus.DeadLetter = 4 -> ZeroAlloc.Scheduling.JobStatus
+ZeroAlloc.Scheduling.JobStatus.Failed = 3 -> ZeroAlloc.Scheduling.JobStatus
+ZeroAlloc.Scheduling.JobStatus.Pending = 0 -> ZeroAlloc.Scheduling.JobStatus
+ZeroAlloc.Scheduling.JobStatus.Running = 1 -> ZeroAlloc.Scheduling.JobStatus
+ZeroAlloc.Scheduling.JobStatus.Succeeded = 2 -> ZeroAlloc.Scheduling.JobStatus
+ZeroAlloc.Scheduling.JobStatusFsm
+ZeroAlloc.Scheduling.JobStatusFsm.Current.get -> ZeroAlloc.Scheduling.JobStatus
+ZeroAlloc.Scheduling.JobStatusFsm.JobStatusFsm(ZeroAlloc.Scheduling.JobStatus current) -> void
+ZeroAlloc.Scheduling.JobStatusFsm.TryFire(ZeroAlloc.Scheduling.JobTrigger trigger) -> bool
+ZeroAlloc.Scheduling.JobSummary
+ZeroAlloc.Scheduling.JobSummary.<Clone>$() -> ZeroAlloc.Scheduling.JobSummary!
+ZeroAlloc.Scheduling.JobSummary.DeadLetter.get -> int
+ZeroAlloc.Scheduling.JobSummary.DeadLetter.init -> void
+ZeroAlloc.Scheduling.JobSummary.Deconstruct(out int Pending, out int Running, out int Succeeded, out int Failed, out int DeadLetter) -> void
+ZeroAlloc.Scheduling.JobSummary.Equals(ZeroAlloc.Scheduling.JobSummary? other) -> bool
+ZeroAlloc.Scheduling.JobSummary.Failed.get -> int
+ZeroAlloc.Scheduling.JobSummary.Failed.init -> void
+ZeroAlloc.Scheduling.JobSummary.JobSummary(int Pending, int Running, int Succeeded, int Failed, int DeadLetter) -> void
+ZeroAlloc.Scheduling.JobSummary.Pending.get -> int
+ZeroAlloc.Scheduling.JobSummary.Pending.init -> void
+ZeroAlloc.Scheduling.JobSummary.Running.get -> int
+ZeroAlloc.Scheduling.JobSummary.Running.init -> void
+ZeroAlloc.Scheduling.JobSummary.Succeeded.get -> int
+ZeroAlloc.Scheduling.JobSummary.Succeeded.init -> void
+ZeroAlloc.Scheduling.JobTrigger
+ZeroAlloc.Scheduling.JobTrigger.Claim = 0 -> ZeroAlloc.Scheduling.JobTrigger
+ZeroAlloc.Scheduling.JobTrigger.DeadLetter = 3 -> ZeroAlloc.Scheduling.JobTrigger
+ZeroAlloc.Scheduling.JobTrigger.Fail = 2 -> ZeroAlloc.Scheduling.JobTrigger
+ZeroAlloc.Scheduling.JobTrigger.Requeue = 4 -> ZeroAlloc.Scheduling.JobTrigger
+ZeroAlloc.Scheduling.JobTrigger.Succeed = 1 -> ZeroAlloc.Scheduling.JobTrigger
+ZeroAlloc.Scheduling.SchedulingOptions
+ZeroAlloc.Scheduling.SchedulingOptions.BatchSize.get -> int
+ZeroAlloc.Scheduling.SchedulingOptions.BatchSize.set -> void
+ZeroAlloc.Scheduling.SchedulingOptions.DefaultMaxAttempts.get -> int
+ZeroAlloc.Scheduling.SchedulingOptions.DefaultMaxAttempts.set -> void
+ZeroAlloc.Scheduling.SchedulingOptions.PollingInterval.get -> System.TimeSpan
+ZeroAlloc.Scheduling.SchedulingOptions.PollingInterval.set -> void
+ZeroAlloc.Scheduling.SchedulingOptions.RetryBaseDelay.get -> System.TimeSpan
+ZeroAlloc.Scheduling.SchedulingOptions.RetryBaseDelay.set -> void
+ZeroAlloc.Scheduling.SchedulingOptions.SchedulingOptions() -> void
+ZeroAlloc.Scheduling.SchedulingServiceCollectionExtensions
+ZeroAlloc.Scheduling.SchedulingWorkerService
+ZeroAlloc.Scheduling.SchedulingWorkerService.SchedulingWorkerService(Microsoft.Extensions.DependencyInjection.IServiceScopeFactory! scopeFactory, Microsoft.Extensions.Options.IOptionsMonitor<ZeroAlloc.Scheduling.SchedulingOptions!>! options, Microsoft.Extensions.Logging.ILogger<ZeroAlloc.Scheduling.SchedulingWorkerService!>! logger, System.Collections.Generic.IEnumerable<ZeroAlloc.Scheduling.IJobTypeExecutor!>! executors) -> void
+override ZeroAlloc.Scheduling.JobId.GetHashCode() -> int
+override ZeroAlloc.Scheduling.JobId.ToString() -> string!
+override ZeroAlloc.Scheduling.JobSummary.Equals(object? obj) -> bool
+override ZeroAlloc.Scheduling.JobSummary.GetHashCode() -> int
+override ZeroAlloc.Scheduling.JobSummary.ToString() -> string!
+static ZeroAlloc.Scheduling.EveryToCron.Convert(ZeroAlloc.Scheduling.Every every) -> string!
+static ZeroAlloc.Scheduling.JobId.New() -> ZeroAlloc.Scheduling.JobId
+static ZeroAlloc.Scheduling.JobId.Parse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider) -> ZeroAlloc.Scheduling.JobId
+static ZeroAlloc.Scheduling.JobId.Parse(string! s, System.IFormatProvider? provider = null) -> ZeroAlloc.Scheduling.JobId
+static ZeroAlloc.Scheduling.JobId.TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out ZeroAlloc.Scheduling.JobId result) -> bool
+static ZeroAlloc.Scheduling.JobId.TryParse(string? s, System.IFormatProvider? provider, out ZeroAlloc.Scheduling.JobId result) -> bool
+static ZeroAlloc.Scheduling.JobId.operator !=(ZeroAlloc.Scheduling.JobId left, ZeroAlloc.Scheduling.JobId right) -> bool
+static ZeroAlloc.Scheduling.JobId.operator <(ZeroAlloc.Scheduling.JobId left, ZeroAlloc.Scheduling.JobId right) -> bool
+static ZeroAlloc.Scheduling.JobId.operator <=(ZeroAlloc.Scheduling.JobId left, ZeroAlloc.Scheduling.JobId right) -> bool
+static ZeroAlloc.Scheduling.JobId.operator ==(ZeroAlloc.Scheduling.JobId left, ZeroAlloc.Scheduling.JobId right) -> bool
+static ZeroAlloc.Scheduling.JobId.operator >(ZeroAlloc.Scheduling.JobId left, ZeroAlloc.Scheduling.JobId right) -> bool
+static ZeroAlloc.Scheduling.JobId.operator >=(ZeroAlloc.Scheduling.JobId left, ZeroAlloc.Scheduling.JobId right) -> bool
+static ZeroAlloc.Scheduling.JobSummary.operator !=(ZeroAlloc.Scheduling.JobSummary? left, ZeroAlloc.Scheduling.JobSummary? right) -> bool
+static ZeroAlloc.Scheduling.JobSummary.operator ==(ZeroAlloc.Scheduling.JobSummary? left, ZeroAlloc.Scheduling.JobSummary? right) -> bool
+static ZeroAlloc.Scheduling.SchedulingServiceCollectionExtensions.AddScheduling(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<ZeroAlloc.Scheduling.SchedulingOptions!>? configure = null) -> ZeroAlloc.Scheduling.ISchedulingBuilder!
+~override ZeroAlloc.Scheduling.JobId.Equals(object obj) -> bool
