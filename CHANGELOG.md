@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.1.1](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.1.0...v1.1.1) (2026-05-03)
+
+
+### Bug Fixes
+
+* **release-please:** drop pre-major flags (package is post-1.0) ([#45](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/45)) ([9a77df9](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/9a77df9b43b4b80d93039e92ff6f01e71dc6a8dc))
+
+
+### CI
+
+* bump release-please-action to [@v5](https://github.com/v5) ([#48](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/48)) ([98d54ed](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/98d54ed832b3e1c939015cc304a00be22845b0cd))
+* remove auto-publish to nuget on every main push ([#47](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/47)) ([ed547cc](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/ed547cc488ce17e8286ba37b695f5bf307605822))
+
 ## [1.1.0](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.0.3...v1.1.0) (2026-05-01)
 
 
