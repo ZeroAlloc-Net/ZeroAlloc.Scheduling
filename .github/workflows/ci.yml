@@ -51,10 +51,6 @@ jobs:
               -p:PackageVersion=${{ steps.gitversion.outputs.version }} -o ./artifacts
           done
 
-      - name: Push to NuGet (pre-release)
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: dotnet nuget push ./artifacts/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
-
   aot-smoke:
     runs-on: ubuntu-latest
     # Publishes samples/ZeroAlloc.Scheduling.AotSmoke with PublishAot=true.
