@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.2](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.1.1...v1.1.2) (2026-05-06)
+
+
+### CI
+
+* **release-please:** use RELEASE_PLEASE_TOKEN to trigger downstream CI ([#49](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/49)) ([d948bd5](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/d948bd5a791a0e38a6c6f742a26fc12b8f534ae7))
+
 ## [1.1.1](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.1.0...v1.1.1) (2026-05-03)
 
 
