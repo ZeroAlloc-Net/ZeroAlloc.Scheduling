@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.3](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.1.2...v1.1.3) (2026-05-07)
+
+
+### CI
+
+* add publish-from-manifest rescue workflow ([#51](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/51)) ([3d6caf8](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/3d6caf82e0e340240813c7a3b5d98e5f61395fbb))
+
 ## [1.1.2](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.1.1...v1.1.2) (2026-05-06)
 
 
