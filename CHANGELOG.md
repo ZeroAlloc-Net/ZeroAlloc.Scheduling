@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.4](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.1.3...v1.1.4) (2026-05-12)
+
+
+### Bug Fixes
+
+* **readme:** absolute GitHub URLs so nuget.org links resolve ([#53](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/53)) ([0c92e8d](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/0c92e8d568579514ab4d0485418010ad60d9dce0))
+
 ## [1.1.3](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.1.2...v1.1.3) (2026-05-07)
 
 
