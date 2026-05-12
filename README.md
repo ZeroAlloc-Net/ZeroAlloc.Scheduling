@@ -71,11 +71,11 @@ app.MapJobsDashboard("/jobs");
 app.MapJobsDashboard("/jobs").RequireAuthorization("AdminPolicy");
 ```
 
-![Scheduler dashboard — desktop](docs/screenshots/dashboard-desktop.png)
+![Scheduler dashboard — desktop](https://raw.githubusercontent.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/main/docs/screenshots/dashboard-desktop.png)
 
-Tablet (768 × 1024) and mobile (375 × 812) captures live in [`docs/screenshots/`](docs/screenshots/).
+Tablet (768 × 1024) and mobile (375 × 812) captures live in [`docs/screenshots/`](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/tree/main/docs/screenshots/).
 
-See [Dashboard](docs/dashboard.md) for the full endpoint reference and the Blazor component.
+See [Dashboard](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/blob/main/docs/dashboard.md) for the full endpoint reference and the Blazor component.
 
 ## Packages
 
@@ -94,13 +94,13 @@ See [Dashboard](docs/dashboard.md) for the full endpoint reference and the Blazo
 
 | Page | Description |
 |------|-------------|
-| [Getting Started](docs/getting-started.md) | Install and schedule your first job in five minutes |
-| [Source Generator](docs/source-generator.md) | `[Job]`, `Every`, `Cron`, generated extension methods |
-| [Backends](docs/stores.md) | InMemory, EF Core, and Redis store configuration |
-| [Dashboard](docs/dashboard.md) | Embedded HTML dashboard and Blazor component |
-| [Mediator Bridge](docs/mediator-bridge.md) | Route job execution through ZeroAlloc.Mediator |
-| [Diagnostics](docs/diagnostics.md) | ZASCH001 compiler warning reference |
-| [Performance](docs/performance.md) | Throughput, allocation profile, and tuning guide |
+| [Getting Started](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/blob/main/docs/getting-started.md) | Install and schedule your first job in five minutes |
+| [Source Generator](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/blob/main/docs/source-generator.md) | `[Job]`, `Every`, `Cron`, generated extension methods |
+| [Backends](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/blob/main/docs/stores.md) | InMemory, EF Core, and Redis store configuration |
+| [Dashboard](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/blob/main/docs/dashboard.md) | Embedded HTML dashboard and Blazor component |
+| [Mediator Bridge](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/blob/main/docs/mediator-bridge.md) | Route job execution through ZeroAlloc.Mediator |
+| [Diagnostics](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/blob/main/docs/diagnostics.md) | ZASCH001 compiler warning reference |
+| [Performance](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/blob/main/docs/performance.md) | Throughput, allocation profile, and tuning guide |
 
 ## License
 
