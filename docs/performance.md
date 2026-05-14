@@ -91,9 +91,36 @@ Overhead becomes relevant when:
 
 For very high throughput, consider batching work into fewer, larger jobs rather than many small ones.
 
-## Benchmark
+## Head-to-head vs Coravel + naive Timer baseline
 
-The [benchmarks/ZeroAlloc.Scheduling.Benchmarks](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/tree/main/benchmarks/ZeroAlloc.Scheduling.Benchmarks) project contains `JobExecuteBenchmark` — a measurement of the generator-emitted job dispatch cost in isolation from the store.
+<!-- BENCH:START -->
+_Last refreshed: 2026-05-14_
+
+.NET 10.0.7, i9-12900HK, BenchmarkDotNet v0.15.4. Coravel 5.0.4 (the de-facto in-process scheduler in .NET) and a hand-rolled `BackgroundService + Timer` baseline (the pattern most apps reach for before adopting a library).
+
+### vs Coravel: registration cost
+
+| Operation | Coravel | ZA.Scheduling | Coravel allocation |
+|---|---:|---:|---:|
+| Single `Schedule()` / `[Job]` registration | 8,211 ns | **compile-time, 0 ns runtime** | 696 B per call |
+| 100 schedule calls (queue accumulation) | 80,217 ns / 77,232 B | **compile-time, 0 ns runtime** | 110× the per-call cost |
+
+**Honest reading**: Coravel's `Schedule()` is a runtime call that allocates an entry the scheduler walks every tick. ZA.Scheduling's `[Job]` registration happens at compile time — the source generator emits one direct dispatcher per attributed type. There is no equivalent runtime registration call in ZA, so the comparison is between Coravel's per-call registration cost and ZA's no-cost-at-all (the cost moved to build time). The "8,211 ns / 696 B per Schedule" is the realistic cost in a Coravel app that schedules jobs dynamically at startup.
+
+### vs naive `BackgroundService + Timer` baseline: dispatch overhead
+
+| Operation | Naive direct call | ZA.Scheduling `IJob.ExecuteAsync` |
+|---|---:|---:|
+| Single dispatch | 0.01 ns | 0.25 ns |
+
+Both rows are in BDN's "ZeroMeasurement" range (warning: "indistinguishable from empty-method duration"). **ZA.Scheduling adds no measurable overhead over a direct method call** — the `[Job]`-attributed proxy compiles to a direct return for synchronous completions, and BDN's JIT inlines both bodies entirely.
+
+The takeaway: if you're considering ZA.Scheduling over a hand-rolled `Timer`, the dispatch cost is identical. The value of the abstraction is the `[Job]` attribute itself (declarative retries, cron, store-backed persistence) — not raw dispatch speed.
+<!-- BENCH:END -->
+
+## Self-benchmark
+
+The [benchmarks/ZeroAlloc.Scheduling.Benchmarks](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/tree/main/benchmarks/ZeroAlloc.Scheduling.Benchmarks) project also contains `JobExecuteBenchmark` — a measurement of the generator-emitted job dispatch cost in isolation from the store.
 
 The benchmark calls `IJob.ExecuteAsync(ctx, ct)` in a tight loop on a pre-constructed job + context. This isolates the dispatch path from store I/O, polling, and serialisation. It is the lower bound on what scheduler overhead can be — store + network costs add on top in a real scheduler.
 

@@ -38,20 +38,37 @@ public class CoravelComparisonBenchmark
     [GlobalSetup]
     public void Setup()
     {
-        var sc = new ServiceCollection();
-        sc.AddScheduler();
-        sc.AddTransient<CoravelNoopInvocable>();
-        _coravelServices = sc.BuildServiceProvider();
-        _coravelScheduler = _coravelServices.GetRequiredService<ICoravelScheduler>();
-
+        // ZA setup is one-shot — IJob.ExecuteAsync is stateless.
         _zaJob = new ZaNoopJob();
         _zaCtx = new JobContext
         {
             JobId = JobId.New(),
             Attempt = 1,
             ScheduledAt = DateTimeOffset.UtcNow,
-            Services = _coravelServices,
+            Services = new ServiceCollection().BuildServiceProvider(),
         };
+
+        // Build a Coravel host once so non-Coravel rows have something to point at.
+        BuildCoravelScheduler();
+    }
+
+    // Coravel's IScheduler mutates persistent state — every Schedule() call adds
+    // an entry the scheduler retains for its lifetime. BDN runs each benchmark
+    // method many times per iteration, so without a reset the queue accumulates
+    // and later iterations measure the cost of walking a million-entry queue,
+    // not the cost of a single schedule. Rebuild the scheduler per iteration so
+    // each iteration measures steady-state cost on an empty queue.
+    [IterationSetup(Targets = [nameof(Coravel_Schedule), nameof(Coravel_Burst100)])]
+    public void ResetCoravelScheduler() => BuildCoravelScheduler();
+
+    private void BuildCoravelScheduler()
+    {
+        (_coravelServices as IDisposable)?.Dispose();
+        var sc = new ServiceCollection();
+        sc.AddScheduler();
+        sc.AddTransient<CoravelNoopInvocable>();
+        _coravelServices = sc.BuildServiceProvider();
+        _coravelScheduler = _coravelServices.GetRequiredService<ICoravelScheduler>();
     }
 
     [GlobalCleanup]
