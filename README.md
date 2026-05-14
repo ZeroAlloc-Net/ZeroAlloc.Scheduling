@@ -49,6 +49,19 @@ public class OrderService(IScheduler scheduler)
 }
 ```
 
+## Performance
+
+Head-to-head vs **Coravel 5.0.4** (de-facto in-process scheduler) and a hand-rolled `BackgroundService + Timer` baseline. .NET 10.0.7, i9-12900HK, BenchmarkDotNet v0.15.4.
+
+| Operation | Coravel | Naive Timer | ZA.Scheduling |
+|---|---:|---:|---:|
+| Job registration | 8,211 ns / 696 B per call | — (compile-time) | **compile-time, 0 ns runtime** |
+| Single dispatch | (registration only) | 0.01 ns | **0.25 ns** (parity, JIT-inlined) |
+
+**Honest reading**: Coravel's `Schedule()` is a runtime call that allocates a queue entry; ZA.Scheduling's `[Job]` registration happens at compile time via source generation — no equivalent runtime cost. For dispatch overhead, ZA matches a hand-written `Timer` (both inlined to near-zero). The value of the abstraction is `[Job]` itself (declarative retries / cron / store-backed persistence), not raw dispatch speed.
+
+Full methodology + design analysis: [docs/performance.md](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/blob/main/docs/performance.md).
+
 ## Features
 
 - **Source generator** — `[Job]` on a class emits a typed executor, DI extension method, and optional recurring startup (`IHostedService`)
