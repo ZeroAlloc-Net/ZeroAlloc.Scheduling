@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.1.4...v1.2.0) (2026-05-14)
+
+
+### Features
+
+* **benchmarks:** add Coravel + naive-Timer comparison ([#55](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/55)) ([484065e](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/484065e59f919daad4a9e5e77a34b081e3ba8b14))
+
 ## [1.1.4](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.1.3...v1.1.4) (2026-05-12)
 
 
