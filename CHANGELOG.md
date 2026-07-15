@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.2.0...v1.2.1) (2026-07-15)
+
+
+### Chores
+
+* **deps:** pin floating versions + fix SQLitePCLRaw CVE ([#57](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/57)) ([a7509d6](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/a7509d6f1241821172df9475dfcb9c658200edf6))
+
 ## [1.2.0](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.1.4...v1.2.0) (2026-05-14)
 
 
