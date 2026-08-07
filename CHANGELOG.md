@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.2.6](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.2.5...v1.2.6) (2026-08-07)
+
+
+### Bug Fixes
+
+* **ci:** remove the duplicate release workflow ([#76](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/76)) ([f1806e1](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/f1806e1d1d74931d676a7cbff89cbc426d1ab213))
+
+
+### Chores
+
+* **deps:** update dependency stackexchange.redis to 2.13.17 ([#74](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/74)) ([f9f5c26](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/f9f5c267367f90e8181272abdd3eb321ead9a707))
+* **deps:** update dependency verify.xunit to 28.16.0 ([#75](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/75)) ([f97cb91](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/f97cb912eb1ad5266c1dc2da86429bbbc8515cee))
+
 ## [1.2.5](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.2.4...v1.2.5) (2026-08-07)
 
 
