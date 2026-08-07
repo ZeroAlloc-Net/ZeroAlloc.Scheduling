@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.3](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.2.2...v1.2.3) (2026-08-07)
+
+
+### Chores
+
+* **deps:** update dependency meziantou.analyzer to 3.0.138 ([#63](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/63)) ([f6d6547](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/f6d65473286f50b39a9990a068daccaae65d8020))
+* **deps:** update dotnet monorepo ([#64](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/64)) ([0dffd5c](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/0dffd5cd7ccede956d3c258cb0162b8cd4bdce77))
+
 ## [1.2.2](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.2.1...v1.2.2) (2026-08-07)
 
 
