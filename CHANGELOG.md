@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.5](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.2.4...v1.2.5) (2026-08-07)
+
+
+### Chores
+
+* **deps:** update dependency cronos to 0.13.0 ([#69](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/69)) ([555bf8f](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/555bf8ff53c4cf6d5e39bfa4dd897a129470689d))
+* **deps:** update dependency gitversion.tool to v6.8.2 ([#70](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/70)) ([d8d61d7](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/d8d61d71f85d31ac1cad8310ca7ab33c6874e477))
+
 ## [1.2.4](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.2.3...v1.2.4) (2026-08-07)
 
 
