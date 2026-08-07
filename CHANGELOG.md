@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.4](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.2.3...v1.2.4) (2026-08-07)
+
+
+### Chores
+
+* **deps:** update microsoft.entityframeworkcore to 9.0.18 ([#65](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/65)) ([4ec3379](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/4ec33797ad4c9d223513b0a10a55f82c40b7660d))
+* **deps:** update microsoft.extensions ([#66](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/66)) ([b27baeb](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/b27baeb4b74bcce04e12f68267211b9197a9d251))
+
 ## [1.2.3](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.2.2...v1.2.3) (2026-08-07)
 
 
