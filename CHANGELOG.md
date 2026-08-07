@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.7](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.2.6...v1.2.7) (2026-08-07)
+
+
+### Chores
+
+* **deps:** update dependency coravel to v6 ([#77](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/77)) ([f586e2d](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/f586e2d8c79cfb2665fcac03e154701c91c5ee45))
+* **deps:** update dependency fluentassertions to v8 ([#78](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/78)) ([df0ee5e](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/df0ee5efca3531f13c8b5e12f2e7f93fc37afbd0))
+
 ## [1.2.6](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.2.5...v1.2.6) (2026-08-07)
 
 
