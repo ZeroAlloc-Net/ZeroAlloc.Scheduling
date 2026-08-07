@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.2](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.2.1...v1.2.2) (2026-08-07)
+
+
+### Chores
+
+* **renovate:** adopt the shared preset, drop the weekly window ([#59](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/59)) ([9db6273](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/9db62739d19c0b8f7d1e59a5e562a7e3691cba10))
+
 ## [1.2.1](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.2.0...v1.2.1) (2026-07-15)
 
 
