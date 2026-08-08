@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.2.8](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.2.7...v1.2.8) (2026-08-08)
+
+
+### Chores
+
+* **deps:** update dependency microsoft.net.test.sdk to v18 ([#81](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/81)) ([20f07be](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/20f07beab4c98109c3dfe05ceea673a24f2c56f7))
+* **deps:** update dependency xunit.runner.visualstudio to v3 ([#86](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/86)) ([bc99d58](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/bc99d5875ae61b67eb966c15934afb3ce76933f7))
+* **deps:** update github actions ([#87](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/87)) ([04baa4f](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/04baa4f487c240a32c5dc38e2bea672c695db3a3))
+* **deps:** update microsoft.codeanalysis to v5 ([#88](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/88)) ([0e81698](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/0e8169810a28677ed8131131d30a1272abeaea35))
+
 ## [1.2.7](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.2.6...v1.2.7) (2026-08-07)
 
 
