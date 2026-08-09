@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.9](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.2.8...v1.2.9) (2026-08-09)
+
+
+### Chores
+
+* **deps:** update dependency meziantou.analyzer to 3.0.139 ([#91](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/91)) ([2ee5dee](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/2ee5deeab4e92d163d82ad94d31e9f19ba6f7a65))
+* **deps:** update microsoft.extensions to v10 ([#90](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/90)) ([89ad743](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/89ad7436640f2bf332dfbec8dd28bbf0b95bae2e))
+
 ## [1.2.8](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.2.7...v1.2.8) (2026-08-08)
 
 
