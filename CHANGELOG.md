@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.10](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.2.9...v1.2.10) (2026-08-09)
+
+
+### Chores
+
+* **deps:** replace FluentAssertions with AwesomeAssertions ([#93](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/93)) ([d7e0d69](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/d7e0d690d674682168d4b4e41dde1cbf318eb986))
+* **deps:** update dependency stackexchange.redis to 3.1.11 ([#94](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/94)) ([cedbb75](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/cedbb752e2a18c3f660cc8478e565a85ac2ec133))
+
 ## [1.2.9](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.2.8...v1.2.9) (2026-08-09)
 
 
