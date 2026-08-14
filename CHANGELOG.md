@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.14](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.2.13...v1.2.14) (2026-08-14)
+
+
+### Chores
+
+* **deps:** update dependency dotnet-sdk to v10.0.400 ([#102](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/102)) ([f1162b2](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/f1162b21630a35df9c331c5f192849f4a727b81a))
+
 ## [1.2.13](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.2.12...v1.2.13) (2026-08-12)
 
 
