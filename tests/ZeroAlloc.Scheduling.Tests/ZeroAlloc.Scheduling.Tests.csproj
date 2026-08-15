@@ -10,8 +10,8 @@
     <PackageReference Include="xunit" Version="2.9.3" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5" PrivateAssets="all" />
     <PackageReference Include="AwesomeAssertions" Version="9.5.0" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.10" />
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.10" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.11" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.11" />
     <ProjectReference Include="..\..\src\ZeroAlloc.Scheduling\ZeroAlloc.Scheduling.csproj" />
     <ProjectReference Include="..\..\src\ZeroAlloc.Scheduling.InMemory\ZeroAlloc.Scheduling.InMemory.csproj" />
     <ProjectReference Include="..\..\src\ZeroAlloc.Scheduling.Mediator\ZeroAlloc.Scheduling.Mediator.csproj" />
