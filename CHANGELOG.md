@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.2.15](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.2.14...v1.2.15) (2026-08-15)
+
+
+### Chores
+
+* **deps:** update dotnet monorepo ([#105](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/105)) ([9ce527b](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/9ce527b6edde48726749adb53d1e1acd53144a2b))
+* **deps:** update microsoft.entityframeworkcore to 9.0.19 ([#107](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/107)) ([f9ae998](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/f9ae998aeace555c55f6534cc27429675dde8b07))
+* **deps:** update microsoft.extensions to 10.0.11 ([#108](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/108)) ([81b3c3d](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/81b3c3d04044d33d0547d4452c70afd3033669d7))
+
 ## [1.2.14](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.2.13...v1.2.14) (2026-08-14)
 
 
