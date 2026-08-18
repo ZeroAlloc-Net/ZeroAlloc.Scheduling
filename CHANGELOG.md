@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.2.18](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.2.17...v1.2.18) (2026-08-18)
+
+
+### Chores
+
+* **deps:** update dependency meziantou.analyzer to 3.0.154 ([#115](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/115)) ([02eabc1](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/02eabc1b32c78ae918048358960e3dea92968b25))
+* **deps:** update dependency meziantou.analyzer to 3.0.156 ([#117](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/117)) ([23ad201](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/23ad201bc32ab8d955e9d687d544ec65f3c8666b))
+* **deps:** update dependency xunit.runner.visualstudio to v4 ([#118](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/118)) ([a89218e](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/a89218e0f33841ffce1d2822ad91920a79f344fc))
+
 ## [1.2.17](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.2.16...v1.2.17) (2026-08-17)
 
 
