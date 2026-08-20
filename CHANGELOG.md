@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.20](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.2.19...v1.2.20) (2026-08-20)
+
+
+### Chores
+
+* **deps:** update roslyn analyzers ([#121](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/121)) ([a96bf20](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/a96bf20475d6e5fe8391538520ceea2491358a44))
+
 ## [1.2.19](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.2.18...v1.2.19) (2026-08-19)
 
 
