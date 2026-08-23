@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.25](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.2.24...v1.2.25) (2026-08-23)
+
+
+### Chores
+
+* **deps:** update dependency awesomeassertions to 9.6.0 ([#137](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/137)) ([9819978](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/9819978416aa5fb967a8a4450bef3637c9286ca6))
+* **deps:** update dependency meziantou.analyzer to 3.0.173 ([#135](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/135)) ([614f68f](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/614f68fd260191dc801ae2b3ee50509633e633bf))
+
 ## [1.2.24](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.2.23...v1.2.24) (2026-08-23)
 
 
