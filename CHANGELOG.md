@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.27](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.2.26...v1.2.27) (2026-08-25)
+
+
+### Chores
+
+* **deps:** update dependency roslynator.analyzers to v5 ([#142](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/142)) ([73f7753](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/73f77539019d5f42607736712901c9a06c41f5c2))
+* **deps:** update dependency stackexchange.redis to 3.1.31 ([#141](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/141)) ([201d07c](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/201d07c47e2fefdd109f484b93dd9f7323f8eee5))
+
 ## [1.2.26](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.2.25...v1.2.26) (2026-08-24)
 
 
