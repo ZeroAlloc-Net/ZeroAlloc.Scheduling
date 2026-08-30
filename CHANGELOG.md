@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.29](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.2.28...v1.2.29) (2026-08-30)
+
+
+### Chores
+
+* **deps:** update dependency meziantou.analyzer to 3.0.184 ([#147](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/147)) ([83ea6dd](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/83ea6dd27569f0c1acb6cb83bcf312b2801b1645))
+* **deps:** update dependency meziantou.analyzer to 3.0.189 ([#149](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/149)) ([85cedd3](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/85cedd343494f2900afc69481fd5fe002213abc0))
+
 ## [1.2.28](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.2.27...v1.2.28) (2026-08-30)
 
 
