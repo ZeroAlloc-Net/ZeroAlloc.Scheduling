@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.41](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.2.40...v1.2.41) (2026-09-12)
+
+
+### Chores
+
+* **deps:** update dependency microsoft.net.test.sdk to 18.10.0 ([#180](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/180)) ([12df095](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/12df095d38eac3e1ca69a64050e673943937cf48))
+
 ## [1.2.40](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.2.39...v1.2.40) (2026-09-12)
 
 
