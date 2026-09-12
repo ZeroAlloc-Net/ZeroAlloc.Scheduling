@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.2.40](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.2.39...v1.2.40) (2026-09-12)
+
+
+### Chores
+
+* **deps:** update dependency meziantou.analyzer to 3.0.231 ([#174](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/174)) ([deb424f](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/deb424f9e1b755481dcf8ccb073064c3568eaa70))
+* **deps:** update dependency microsoft.aspnetcore.components.web to 9.0.2* ([#175](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/175)) ([57cabfd](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/57cabfd2e6cdcaa6a24d77902e0ed92ddb2e6872))
+* **deps:** update dependency microsoft.aspnetcore.mvc.testing to 10.0.12 ([#177](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/177)) ([978c6ed](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/978c6ed853bccf54195d053c845ee0e3cfde967c))
+* **deps:** update microsoft.entityframeworkcore to 9.0.20 ([#178](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/178)) ([caec68a](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/caec68a98f65a76118b467444c9df17e5d4016d0))
+* **deps:** update microsoft.extensions to 10.0.12 ([#179](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/179)) ([1f831b7](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/1f831b72472759cfaf89e28f84dae9a547cd0611))
+
 ## [1.2.39](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.2.38...v1.2.39) (2026-09-11)
 
 
