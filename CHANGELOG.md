@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.43](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.2.42...v1.2.43) (2026-09-13)
+
+
+### Chores
+
+* **deps:** update dependency stackexchange.redis to 3.2.0 ([#184](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/184)) ([cc2c6c5](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/cc2c6c5a638b432817ff86712dba59e17adfdfc9))
+
 ## [1.2.42](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.2.41...v1.2.42) (2026-09-13)
 
 
