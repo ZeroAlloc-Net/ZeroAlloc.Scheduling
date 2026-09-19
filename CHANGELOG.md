@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.49](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.2.48...v1.2.49) (2026-09-18)
+
+
+### Chores
+
+* **deps:** update dependency meziantou.analyzer to 3.0.259 ([#197](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/197)) ([51c5025](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/51c5025211772553b567cb77d7a1c131ec02e293))
+* **deps:** update dependency microsoft.net.test.sdk to 18.10.1 ([#198](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/198)) ([1fa62d1](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/1fa62d15f07b4cc2b3558bc9dcdb6f3618800a35))
+
 ## [1.2.48](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.2.47...v1.2.48) (2026-09-18)
 
 
