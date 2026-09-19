@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.50](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.2.49...v1.2.50) (2026-09-19)
+
+
+### Bug Fixes
+
+* **ci:** stamp the assembly version when publishing from a manifest ([#200](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/200)) ([b200296](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/b2002969975b2d4239d929bb26555bc5e9adcb11))
+
 ## [1.2.49](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.2.48...v1.2.49) (2026-09-18)
 
 
