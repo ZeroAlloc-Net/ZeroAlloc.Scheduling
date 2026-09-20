@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.53](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.2.52...v1.2.53) (2026-09-20)
+
+
+### Bug Fixes
+
+* stamp the assembly with the release version ([#211](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/211)) ([c6afd0c](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/c6afd0cf3c3da986e281d909f541559a2ce7c96c))
+
 ## [1.2.52](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.2.51...v1.2.52) (2026-09-20)
 
 
