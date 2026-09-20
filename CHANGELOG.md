@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.52](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.2.51...v1.2.52) (2026-09-20)
+
+
+### Chores
+
+* stop cutting a release for CI-only commits ([#207](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/207)) ([329fbb2](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/329fbb21cf377d7998fbbb8ffbed39fb3ecc9e2d))
+
 ## [1.2.51](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.2.50...v1.2.51) (2026-09-20)
 
 
