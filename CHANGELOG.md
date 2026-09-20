@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.51](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.2.50...v1.2.51) (2026-09-20)
+
+
+### Chores
+
+* replace Verify with ZeroAlloc.TestHelpers.GeneratorSnapshot ([#202](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/202)) ([3a2b689](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/3a2b6898f13b142be4d0280a3a0d04bcdfcdc67f))
+
 ## [1.2.50](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.2.49...v1.2.50) (2026-09-19)
 
 
