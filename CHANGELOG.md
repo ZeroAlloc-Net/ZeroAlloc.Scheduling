@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.2.54](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.2.53...v1.2.54) (2026-09-20)
+
+
+### Bug Fixes
+
+* **ci:** pin the SDK floor at the .NET 10 GA band, not the newest patch ([#213](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/213)) ([7047746](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/7047746f2618908aa4218cff777f93c49ab3fe61))
+
+
+### Chores
+
+* **deps:** update dependency dotnet-sdk to v10.0.401 ([#215](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/215)) ([c690241](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/c690241b076318ba1f2743c129d369e188a29cce))
+
 ## [1.2.53](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.2.52...v1.2.53) (2026-09-20)
 
 
