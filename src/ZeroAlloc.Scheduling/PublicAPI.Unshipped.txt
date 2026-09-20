@@ -160,3 +160,8 @@ static ZeroAlloc.Scheduling.JobSummary.operator !=(ZeroAlloc.Scheduling.JobSumma
 static ZeroAlloc.Scheduling.JobSummary.operator ==(ZeroAlloc.Scheduling.JobSummary? left, ZeroAlloc.Scheduling.JobSummary? right) -> bool
 static ZeroAlloc.Scheduling.SchedulingServiceCollectionExtensions.AddScheduling(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<ZeroAlloc.Scheduling.SchedulingOptions!>? configure = null) -> ZeroAlloc.Scheduling.ISchedulingBuilder!
 ~override ZeroAlloc.Scheduling.JobId.Equals(object obj) -> bool
+
+ZeroAlloc.Scheduling.JobId.TypedIdJsonConverter
+ZeroAlloc.Scheduling.JobId.TypedIdJsonConverter.TypedIdJsonConverter() -> void
+override ZeroAlloc.Scheduling.JobId.TypedIdJsonConverter.Read(ref System.Text.Json.Utf8JsonReader reader, System.Type! typeToConvert, System.Text.Json.JsonSerializerOptions! options) -> ZeroAlloc.Scheduling.JobId
+override ZeroAlloc.Scheduling.JobId.TypedIdJsonConverter.Write(System.Text.Json.Utf8JsonWriter! writer, ZeroAlloc.Scheduling.JobId value, System.Text.Json.JsonSerializerOptions! options) -> void
