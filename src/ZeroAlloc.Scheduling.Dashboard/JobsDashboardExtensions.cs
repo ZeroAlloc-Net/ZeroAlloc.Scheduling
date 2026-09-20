@@ -7,6 +7,11 @@ using Microsoft.Extensions.Logging;
 
 namespace ZeroAlloc.Scheduling.Dashboard;
 
+// ZeroAlloc.Resilience pulls in the ZeroAlloc.Results namespace, and this file lives under
+// ZeroAlloc.Scheduling.Dashboard, so an unqualified Results binds to that sibling namespace
+// instead of the minimal-API helper. The alias pins it back.
+using Results = Microsoft.AspNetCore.Http.Results;
+
 public static class JobsDashboardExtensions
 {
     public static IEndpointConventionBuilder MapJobsDashboard(
