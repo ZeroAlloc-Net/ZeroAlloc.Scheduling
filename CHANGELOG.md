@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.52](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.2.51...v1.2.52) (2026-09-20)
+
+
+### CI
+
+* run benchmarks in CI ([#204](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/204)) ([29cdd87](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/29cdd87f6006e82008aa26633a75ebbacb895574))
+
 ## [1.2.51](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.2.50...v1.2.51) (2026-09-20)
 
 
