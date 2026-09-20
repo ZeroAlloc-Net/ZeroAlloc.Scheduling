@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.2.52](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.2.51...v1.2.52) (2026-09-20)
+
+
+### Bug Fixes
+
+* declare current sibling package versions ([#210](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/210)) ([29b00d1](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/29b00d10d94c91e356eead7ef8be446a1514b297))
+
+
+### Chores
+
+* **deps:** update actions/upload-artifact action to v7 ([#206](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/206)) ([701bd3c](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/701bd3cb9433f902464a8c501c3791f612eb59fd))
+* stop cutting a release for CI-only commits ([#207](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/207)) ([329fbb2](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/329fbb21cf377d7998fbbb8ffbed39fb3ecc9e2d))
+
 ## [1.2.51](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.2.50...v1.2.51) (2026-09-20)
 
 
