@@ -11,7 +11,7 @@
         { "type": "test",     "section": "Tests"            },
         { "type": "deps",     "section": "Dependencies"     },
         { "type": "build",    "section": "Build System"     },
-        { "type": "ci",       "section": "CI"               },
+        { "type": "ci",       "section": "CI", "hidden": true },
         { "type": "chore",    "section": "Chores"           },
         { "type": "revert",   "section": "Reverts"          }
       ]
