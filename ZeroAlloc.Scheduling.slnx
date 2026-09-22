@@ -9,6 +9,12 @@
   <Project Path="src/ZeroAlloc.Scheduling.Mediator/ZeroAlloc.Scheduling.Mediator.csproj" />
   <Project Path="src/ZeroAlloc.Scheduling.Resilience/ZeroAlloc.Scheduling.Resilience.csproj" />
   <Project Path="src/ZeroAlloc.Scheduling.Telemetry/ZeroAlloc.Scheduling.Telemetry.csproj" />
+  <Folder Name="/src/">
+    <Project Path="src/ZeroAlloc.Scheduling.Orm/ZeroAlloc.Scheduling.Orm.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/ZeroAlloc.Scheduling.Orm.Tests/ZeroAlloc.Scheduling.Orm.Tests.csproj" />
+  </Folder>
   <Project Path="benchmarks/ZeroAlloc.Scheduling.Benchmarks/ZeroAlloc.Scheduling.Benchmarks.csproj" />
   <Project Path="samples/ZeroAlloc.Scheduling.AotSmoke/ZeroAlloc.Scheduling.AotSmoke.csproj" />
   <Project Path="tests/ZeroAlloc.Scheduling.Tests/ZeroAlloc.Scheduling.Tests.csproj" />
