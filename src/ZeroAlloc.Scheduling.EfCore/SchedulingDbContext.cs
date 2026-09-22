@@ -34,6 +34,9 @@ public sealed class SchedulingDbContext : DbContext
             e.Property(j => j.CompletedAt).HasConversion(dtoNullableConverter);
             e.Property(j => j.NextRunAt).HasConversion(dtoNullableConverter);
             e.HasIndex(j => new { j.Status, j.ScheduledAt });
+            // The claim read-back filters on ClaimToken alone, so without this
+            // every poll scans a table that grows without bound.
+            e.HasIndex(j => j.ClaimToken);
         });
     }
 }
