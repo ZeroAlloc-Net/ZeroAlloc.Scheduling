@@ -22,15 +22,26 @@ namespace ZeroAlloc.Scheduling.Orm;
 public sealed class OrmJobStore : IJobStore
 {
     private readonly JobRepository _repo;
+    private readonly IJobDialectQueries _dialectQueries;
 
     /// <summary>
     /// Creates a store over the application's connection.
     /// </summary>
     /// <param name="connection">The connection the job table lives on.</param>
-    public OrmJobStore(IAsyncDbConnection connection)
+    /// <param name="dialect">
+    /// Which database this connection talks to. Selects the spelling of the two
+    /// bounded queries; everything else the store issues is plain ANSI. Defaults
+    /// to SQLite, which shares its spelling with PostgreSQL.
+    /// </param>
+    public OrmJobStore(IAsyncDbConnection connection, OrmSchedulingDialect dialect = OrmSchedulingDialect.Sqlite)
     {
         ArgumentNullException.ThrowIfNull(connection);
         _repo = new JobRepository(connection);
+        _dialectQueries = dialect switch
+        {
+            OrmSchedulingDialect.SqlServer => new FetchFirstJobQueries(connection),
+            _ => new LimitJobQueries(connection),
+        };
     }
 
     /// <inheritdoc />
@@ -52,21 +63,31 @@ public sealed class OrmJobStore : IJobStore
 
     /// <inheritdoc />
     /// <remarks>
-    /// Claims and reads in one statement via <c>RETURNING</c>, so the rows
-    /// returned are exactly the rows this call claimed. See
-    /// <see cref="JobRepository.ClaimPendingAsync"/> for why that matters.
+    /// Claims under a token this call generates, then reads back by that token,
+    /// so the rows returned are exactly the rows this call claimed even when
+    /// several pollers run concurrently. See
+    /// <see cref="JobRepository.ReadClaimedAsync"/> for why that matters.
     /// </remarks>
     public async ValueTask<IReadOnlyList<JobEntry>> FetchPendingAsync(int batchSize, CancellationToken ct)
     {
         if (batchSize <= 0) return [];
 
-        var rows = await _repo.ClaimPendingAsync(
+        var claimToken = Guid.NewGuid();
+
+        var claimed = await _dialectQueries.ClaimPendingAsync(
             (int)JobStatus.Running,
             (int)JobStatus.Pending,
             (int)JobStatus.Failed,
             DateTimeOffset.UtcNow,
             batchSize,
+            claimToken,
             ct).ConfigureAwait(false);
+
+        // Skip the read-back when the UPDATE took nothing, which is the common
+        // case for an idle scheduler polling on a timer.
+        if (claimed == 0) return [];
+
+        var rows = await _repo.ReadClaimedAsync(claimToken, ct).ConfigureAwait(false);
 
         var result = new List<JobEntry>(rows.Count);
         foreach (var row in rows)
@@ -143,7 +164,7 @@ public sealed class OrmJobStore : IJobStore
         ArgumentNullException.ThrowIfNull(typeName);
         ArgumentNullException.ThrowIfNull(payload);
 
-        var existing = await _repo.FindRecurringAsync(typeName, ct).ConfigureAwait(false);
+        var existing = await _dialectQueries.FindRecurringAsync(typeName, ct).ConfigureAwait(false);
 
         if (existing is null)
         {

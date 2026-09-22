@@ -76,10 +76,11 @@ public sealed class OrmJobStoreTests
     [Fact]
     public async Task Two_Competing_Pollers_Never_Claim_The_Same_Job()
     {
-        // The reason this adapter claims with UPDATE ... RETURNING rather than
+        // The reason this adapter stamps a claim token rather than doing
         // select-then-update-then-reread. A read-back that filters on "candidate
         // and now Running" cannot tell our claim from someone else's, so two
         // pollers with overlapping candidates can both be handed the same job.
+        // Filtering on a token only this call generated cannot confuse the two.
         await using var fx = new SqliteFixture();
         await fx.MigrateAsync();
         var seed = await StoreAsync(fx);

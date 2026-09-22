@@ -14,6 +14,11 @@ public static class OrmSchedulingServiceCollectionExtensions
     /// <see cref="IAsyncDbConnection"/> already registered in the container.
     /// </summary>
     /// <param name="builder">The scheduling builder.</param>
+    /// <param name="dialect">
+    /// Which database the registered connection talks to. Only the two bounded
+    /// queries differ between providers; everything else is plain ANSI. Defaults
+    /// to SQLite, which shares its spelling with PostgreSQL.
+    /// </param>
     /// <returns>The same builder, for chaining.</returns>
     /// <remarks>
     /// <para>
@@ -36,14 +41,17 @@ public static class OrmSchedulingServiceCollectionExtensions
     /// <example>
     /// <code>
     /// services.AddScheduling().WithOrm();
+    /// services.AddScheduling().WithOrm(OrmSchedulingDialect.SqlServer);
     /// </code>
     /// </example>
-    public static ISchedulingBuilder WithOrm(this ISchedulingBuilder builder)
+    public static ISchedulingBuilder WithOrm(
+        this ISchedulingBuilder builder,
+        OrmSchedulingDialect dialect = OrmSchedulingDialect.Sqlite)
     {
         ArgumentNullException.ThrowIfNull(builder);
 
         builder.Services.TryAddScoped<IJobStore>(sp =>
-            new OrmJobStore(sp.GetRequiredService<IAsyncDbConnection>()));
+            new OrmJobStore(sp.GetRequiredService<IAsyncDbConnection>(), dialect));
 
         return builder;
     }
