@@ -52,14 +52,25 @@ jobs:
 
       - name: Pack
         run: |
-          for pkg in ZeroAlloc.Scheduling ZeroAlloc.Scheduling.Generator ZeroAlloc.Scheduling.EfCore \
-                     ZeroAlloc.Scheduling.InMemory ZeroAlloc.Scheduling.Redis \
-                     ZeroAlloc.Scheduling.Dashboard ZeroAlloc.Scheduling.Dashboard.Blazor \
-                     ZeroAlloc.Scheduling.Mediator ZeroAlloc.Scheduling.Resilience \
-                     ZeroAlloc.Scheduling.Telemetry; do
-            dotnet pack src/$pkg/$pkg.csproj -c Release \
+          # Discovered, not listed. The previous hardcoded list silently omitted any
+          # newly added package: the release still went green and the package simply
+          # never appeared on NuGet. ZeroAlloc.Scheduling.Orm was missing from it.
+          # Defaulting to pack means a new src project ships unless it opts out, so
+          # the failure mode is a surplus package someone notices rather than a
+          # missing one nobody does.
+          for csproj in src/*/*.csproj; do
+            if grep -q "<IsPackable>false</IsPackable>" "$csproj"; then
+              echo "Skipping $csproj (IsPackable=false)"
+              continue
+            fi
+            echo "Packing $csproj"
+            dotnet pack "$csproj" -c Release \
               -p:PackageVersion=${{ needs.release-please.outputs.version }} --no-build -o ./artifacts
           done
+          if ! ls ./artifacts/*.nupkg >/dev/null 2>&1; then
+            echo "::error::no packages were produced"
+            exit 1
+          fi
 
       - name: Push to NuGet
         run: |
