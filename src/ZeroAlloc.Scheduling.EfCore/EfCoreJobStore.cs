@@ -24,6 +24,11 @@ public sealed class EfCoreJobStore : IJobStore, IJobDashboardStore
     {
         var now = DateTimeOffset.UtcNow;
 
+        // Identifies this poll's claim. The read-back below filters on it, so it
+        // returns exactly the rows this call claimed and nothing a competing
+        // poller claimed.
+        var claimToken = Guid.NewGuid();
+
         // Step 1: Select candidate IDs only (no tracking, cheap)
         var candidateIds = await _db.Jobs
             .Where(j => (j.Status == JobStatus.Pending || j.Status == JobStatus.Failed)
@@ -36,19 +41,28 @@ public sealed class EfCoreJobStore : IJobStore, IJobDashboardStore
         if (candidateIds.Count == 0)
             return Array.Empty<JobEntry>();
 
-        // Step 2: Conditional atomic claim — only rows still Pending/Failed get marked Running.
-        // A second worker racing here finds Status already Running and updates 0 rows.
+        // Step 2: Conditional atomic claim — only rows still Pending/Failed get marked
+        // Running, and each gets this poll's token. A second worker racing here finds
+        // Status already Running and updates 0 rows.
         await _db.Jobs
             .Where(j => candidateIds.Contains(j.Id)
                      && (j.Status == JobStatus.Pending || j.Status == JobStatus.Failed))
             .ExecuteUpdateAsync(s => s
                 .SetProperty(j => j.Status, JobStatus.Running)
-                .SetProperty(j => j.StartedAt, now), ct).ConfigureAwait(false);
+                .SetProperty(j => j.StartedAt, now)
+                .SetProperty(j => j.ClaimToken, claimToken), ct).ConfigureAwait(false);
 
-        // Step 3: Read back only the rows we actually claimed
+        // Step 3: Read back this poll's claim, by token.
+        //
+        // Filtering on "candidate and now Running" instead, as this did
+        // previously, cannot distinguish our claim from anyone else's: two
+        // pollers whose candidate sets overlap both matched every Running row in
+        // that set, so the loser of step 2 still returned jobs it had not
+        // claimed. Concurrently, with both selecting before either updated, that
+        // meant both received the full batch and every job ran twice.
         var claimed = await _db.Jobs
             .AsNoTracking()
-            .Where(j => candidateIds.Contains(j.Id) && j.Status == JobStatus.Running)
+            .Where(j => j.ClaimToken == claimToken)
             .ToListAsync(ct).ConfigureAwait(false);
 
         return claimed.Select(e => e.ToJobEntry()).ToList();
