@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.3.0](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.2.58...v1.3.0) (2026-09-22)
+
+
+### Features
+
+* add ZeroAlloc.Scheduling.Orm job store ([#223](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/223)) ([e2872fd](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/e2872fd27b31d911edd15ed8db2c281e28489a12))
+
+
+### Bug Fixes
+
+* claim jobs by token so concurrent pollers cannot share a job ([#228](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/228)) ([28a3574](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/28a3574f1eac616dae23dff1ef744822d09e846c))
+
 ## [1.2.58](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.2.57...v1.2.58) (2026-09-22)
 
 
