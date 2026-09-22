@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.1](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.4.0...v1.4.1) (2026-09-22)
+
+
+### Chores
+
+* **deps:** update dependency microsoft.data.sqlclient to v7 ([#233](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/233)) ([7589f5f](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/7589f5fdcdb682383ec7f07801ee6460aae204e7))
+
 ## [1.4.0](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.3.0...v1.4.0) (2026-09-22)
 
 
