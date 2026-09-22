@@ -11,14 +11,10 @@ public static class OrmSchedulingServiceCollectionExtensions
 {
     /// <summary>
     /// Persists jobs through ZeroAlloc.ORM, against the
-    /// <see cref="IAsyncDbConnection"/> already registered in the container.
+    /// <see cref="IAsyncDbConnection"/> already registered in the container,
+    /// using the SQLite query spelling, which PostgreSQL also accepts.
     /// </summary>
     /// <param name="builder">The scheduling builder.</param>
-    /// <param name="dialect">
-    /// Which database the registered connection talks to. Only the two bounded
-    /// queries differ between providers; everything else is plain ANSI. Defaults
-    /// to SQLite, which shares its spelling with PostgreSQL.
-    /// </param>
     /// <returns>The same builder, for chaining.</returns>
     /// <remarks>
     /// <para>
@@ -44,9 +40,18 @@ public static class OrmSchedulingServiceCollectionExtensions
     /// services.AddScheduling().WithOrm(OrmSchedulingDialect.SqlServer);
     /// </code>
     /// </example>
+    public static ISchedulingBuilder WithOrm(this ISchedulingBuilder builder)
+        => builder.WithOrm(OrmSchedulingDialect.Sqlite);
+
+    /// <inheritdoc cref="WithOrm(ISchedulingBuilder)" />
+    /// <param name="builder">The scheduling builder.</param>
+    /// <param name="dialect">
+    /// Which database the registered connection talks to. Only the two bounded
+    /// queries differ between providers; everything else is plain ANSI.
+    /// </param>
     public static ISchedulingBuilder WithOrm(
         this ISchedulingBuilder builder,
-        OrmSchedulingDialect dialect = OrmSchedulingDialect.Sqlite)
+        OrmSchedulingDialect dialect)
     {
         ArgumentNullException.ThrowIfNull(builder);
 

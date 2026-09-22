@@ -25,15 +25,29 @@ public sealed class OrmJobStore : IJobStore
     private readonly IJobDialectQueries _dialectQueries;
 
     /// <summary>
+    /// Creates a store over the application's connection, against SQLite.
+    /// </summary>
+    /// <param name="connection">The connection the job table lives on.</param>
+    /// <remarks>
+    /// Kept as its own overload rather than folded into the one below with a
+    /// default argument, because a default would delete this signature from the
+    /// assembly: code compiled against an earlier version calls it by name and
+    /// would fail at runtime without being recompiled.
+    /// </remarks>
+    public OrmJobStore(IAsyncDbConnection connection)
+        : this(connection, OrmSchedulingDialect.Sqlite)
+    {
+    }
+
+    /// <summary>
     /// Creates a store over the application's connection.
     /// </summary>
     /// <param name="connection">The connection the job table lives on.</param>
     /// <param name="dialect">
     /// Which database this connection talks to. Selects the spelling of the two
-    /// bounded queries; everything else the store issues is plain ANSI. Defaults
-    /// to SQLite, which shares its spelling with PostgreSQL.
+    /// bounded queries; everything else the store issues is plain ANSI.
     /// </param>
-    public OrmJobStore(IAsyncDbConnection connection, OrmSchedulingDialect dialect = OrmSchedulingDialect.Sqlite)
+    public OrmJobStore(IAsyncDbConnection connection, OrmSchedulingDialect dialect)
     {
         ArgumentNullException.ThrowIfNull(connection);
         _repo = new JobRepository(connection);
