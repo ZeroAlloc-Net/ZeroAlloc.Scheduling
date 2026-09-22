@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.3.0...v1.4.0) (2026-09-22)
+
+
+### Features
+
+* support SQL Server in ZeroAlloc.Scheduling.Orm ([#230](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/230)) ([0809350](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/080935030b6c1c7f5dbb2a755c28c1d166d3b03d))
+
 ## [1.3.0](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.2.58...v1.3.0) (2026-09-22)
 
 
