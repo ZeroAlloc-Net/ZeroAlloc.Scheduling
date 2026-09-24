@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.4.5](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.4.4...v1.4.5) (2026-09-24)
+
+
+### Chores
+
+* **deps:** update dependency zeroalloc.collections to 1.1.7 ([#244](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/244)) ([29bd674](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/29bd674b55fef157b3250bb7965eddd899eeab74))
+* **deps:** update dependency zeroalloc.serialisation to 2.4.4 ([#246](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/246)) ([46186c9](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/46186c90d9514cb4e23aec600d4e739ada8f60e5))
+* let renovate update first-party zeroalloc packages ([#241](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/241)) ([6b5c376](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/6b5c376ed05132fa411a6efac0abc9e73fc088ce))
+
 ## [1.4.4](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.4.3...v1.4.4) (2026-09-24)
 
 
