@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.4.6](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.4.5...v1.4.6) (2026-09-24)
+
+
+### Chores
+
+* **deps:** update dependency zeroalloc.telemetry to 1.6.3 ([#249](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/249)) ([18b46d2](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/18b46d25e2d6cd6ea29b858e3e3433a7c2fabdd7))
+* **deps:** update zeroalloc.valueobjects to 2.0.9 ([#252](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/252)) ([85782a9](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/85782a952f31d8ea81f176a4f586cf261d42d4a3))
+
 ## [1.4.5](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.4.4...v1.4.5) (2026-09-24)
 
 
