@@ -17,7 +17,7 @@
     <ProjectReference Include="..\..\src\ZeroAlloc.Scheduling.Mediator\ZeroAlloc.Scheduling.Mediator.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="ZeroAlloc.Mediator" Version="5.1.0" />
+    <PackageReference Include="ZeroAlloc.Mediator" Version="5.1.5" />
   </ItemGroup>
   <ItemGroup>
     <Using Include="Xunit" />

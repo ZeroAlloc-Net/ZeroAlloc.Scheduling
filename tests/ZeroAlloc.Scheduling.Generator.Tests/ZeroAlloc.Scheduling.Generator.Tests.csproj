@@ -10,7 +10,7 @@
     <PackageReference Include="xunit.runner.visualstudio" Version="4.0.0" PrivateAssets="all" />
     <PackageReference Include="AwesomeAssertions" Version="9.6.0" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.9.0" />
-    <PackageReference Include="ZeroAlloc.Mediator" Version="5.1.0" />
+    <PackageReference Include="ZeroAlloc.Mediator" Version="5.1.5" />
     <ProjectReference Include="..\..\src\ZeroAlloc.Scheduling\ZeroAlloc.Scheduling.csproj" />
     <ProjectReference Include="..\..\src\ZeroAlloc.Scheduling.Generator\ZeroAlloc.Scheduling.Generator.csproj" />
     <ProjectReference Include="..\..\src\ZeroAlloc.Scheduling.Mediator\ZeroAlloc.Scheduling.Mediator.csproj" />
