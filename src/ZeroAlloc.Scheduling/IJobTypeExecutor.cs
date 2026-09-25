@@ -1,19 +1,21 @@
-using ZeroAlloc.Resilience;
-
 namespace ZeroAlloc.Scheduling;
 
 /// <summary>Non-generic executor for a specific job type — looked up by <see cref="TypeName"/> in the worker.</summary>
 /// <remarks>
 /// <para>
-/// <see cref="ExecuteAsync"/> is annotated with <see cref="RetryAttribute"/> so the Resilience
-/// generator can emit a proxy for any single-implementation wrapping scenario.
+/// This interface carries no ZeroAlloc.Resilience attributes. <c>SchedulingWorkerService</c>
+/// looks executors up by <see cref="TypeName"/> in a registry of every registered
+/// implementation, and a generated resilience proxy wraps a single implementation, so a proxy of
+/// this interface could not interpose on the worker. For in-process retries around execution,
+/// wrap your own executor interface with <c>WithResilience</c> from
+/// ZeroAlloc.Scheduling.Resilience.
 /// </para>
 /// <para>
 /// <b>Scheduling#18 — Store-level backoff replacement: deferred (semantic mismatch).</b><br/>
 /// The hand-rolled exponential backoff in <c>SchedulingWorkerService.ProcessEntryAsync</c>
 /// (<c>nextRetry = DateTimeOffset.UtcNow.Add(delay)</c> written to the durable store via
 /// <c>IJobStore.MarkFailedAsync</c>) operates at a fundamentally different layer than the
-/// in-process retry loop that <c>[Retry]</c> generates. The store-level <c>nextRetry</c>
+/// in-process retry loop that a <c>[Retry]</c> proxy runs. The store-level <c>nextRetry</c>
 /// timestamp survives process restarts, load-balancer failover, and competing polling workers;
 /// it is a <em>durable cross-poll schedule</em>. The Resilience-generated proxy retries
 /// immediately inside the same call stack, within the same polling loop iteration, with no
@@ -31,12 +33,5 @@ public interface IJobTypeExecutor
     int MaxAttempts { get; }   // 0 = use global default
 
     /// <summary>Executes the job for the given <paramref name="payload"/> and <paramref name="ctx"/>.</summary>
-    /// <remarks>
-    /// Annotated with <see cref="RetryAttribute"/> so the Resilience generator produces a proxy
-    /// for single-implementation wrappers. Default: 3 attempts, 200 ms exponential backoff.
-    /// The <c>IReadOnlyDictionary&lt;string, IJobTypeExecutor&gt;</c> registry in
-    /// <c>SchedulingWorkerService</c> is not automatically wrapped — see interface-level remarks.
-    /// </remarks>
-    [Retry(MaxAttempts = 3, BackoffMs = 200)]
     ValueTask ExecuteAsync(byte[] payload, JobContext ctx, CancellationToken ct);
 }
