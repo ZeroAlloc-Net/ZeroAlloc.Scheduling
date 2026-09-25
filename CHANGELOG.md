@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.4.9](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.4.8...v1.4.9) (2026-09-25)
+
+
+### Chores
+
+* **deps:** update dependency zeroalloc.analyzers to 1.5.3 ([#254](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/254)) ([66ce774](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/66ce774534ca21ef212775d8553a80dc265b4694))
+* **deps:** update dependency zeroalloc.mediator to 5.1.5 ([#245](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/245)) ([14627b4](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/14627b4f480be4b6586b82c91b59db616477d5d5))
+* **deps:** update dependency zeroalloc.resilience to v3 ([#261](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/261)) ([2d1eb7f](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/2d1eb7fa605f15e3a9677e0483fd1734f51fe443))
+* **deps:** update dependency zeroalloc.statemachine to 1.5.4 ([#248](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/248)) ([cb42704](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/cb42704a04ef2f27baf578354b553924ca228633))
+* **deps:** update zeroalloc.orm to 1.7.1 ([#251](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/251)) ([0671bc8](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/0671bc85bb94d75b2f8136c49ab2545eb2df78da))
+
 ## [1.4.8](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.4.7...v1.4.8) (2026-09-25)
 
 
