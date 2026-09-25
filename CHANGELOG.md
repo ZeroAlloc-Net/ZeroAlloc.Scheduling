@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.4.8](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.4.7...v1.4.8) (2026-09-25)
+
+
+### Bug Fixes
+
+* drop the unused retry attribute from IJobTypeExecutor ([#259](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/259)) ([974efdc](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/974efdc3e9501fc212f13de0bdcbc2a11a124466))
+
+
+### Chores
+
+* **deps:** update dependency meziantou.analyzer to 3.0.270 ([#257](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/257)) ([d47d665](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/d47d6652dfdb37f6ce1dbe346c586839919b7c40))
+* **deps:** update dependency zeroalloc.resilience to v2 ([#247](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/247)) ([5510def](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/5510defcc7f3b636b8683b6e11a17992cf3f636f))
+
 ## [1.4.7](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.4.6...v1.4.7) (2026-09-25)
 
 
