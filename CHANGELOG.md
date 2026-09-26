@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.4.10](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.4.9...v1.4.10) (2026-09-26)
+
+
+### Chores
+
+* **deps:** update dependency meziantou.analyzer to 3.0.279 ([#264](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/264)) ([0a46aed](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/0a46aed6c708387c7228e1e5309e4d8d99cb979a))
+* **deps:** update dependency meziantou.analyzer to 3.0.283 ([#269](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/269)) ([fc6cb3d](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/fc6cb3d5078b83e0783fa9ff203bd25e4f127f5a))
+* **deps:** update dependency stackexchange.redis to 3.3.1 ([#262](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/262)) ([eacf78c](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/eacf78c52aee93eecda3761b0ceded2482d6463d))
+* **deps:** update dependency zeroalloc.analyzers to 1.5.4 ([#263](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/263)) ([6f51b48](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/6f51b48c32a0bfd47ee7bc62bcf15acab95625c2))
+* **deps:** update dependency zeroalloc.collections to 1.1.8 ([#265](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/265)) ([4be4f2f](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/4be4f2fba79bf6760fecaf886df7d83cd5dcfb64))
+* **deps:** update dependency zeroalloc.outbox to 2.7.2 ([#266](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/266)) ([364e891](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/364e89109240eab304d0d3fa3b3cf069f1127d4b))
+* **deps:** update zeroalloc.orm to v2 ([#267](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/267)) ([46c2712](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/46c2712101b730fcf37703a6260680a9aeec2859))
+
 ## [1.4.9](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.4.8...v1.4.9) (2026-09-25)
 
 
