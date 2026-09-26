@@ -10,6 +10,6 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="9.0.20" />
     <PackageReference Include="ZeroAlloc.ValueObjects.EfCore" Version="2.0.9" />
     <ProjectReference Include="..\ZeroAlloc.Scheduling\ZeroAlloc.Scheduling.csproj" />
-    <PackageReference Include="ZeroAlloc.Outbox" Version="2.7.1" />
+    <PackageReference Include="ZeroAlloc.Outbox" Version="2.7.2" />
   </ItemGroup>
 </Project>
