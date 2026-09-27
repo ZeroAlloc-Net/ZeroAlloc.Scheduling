@@ -53,7 +53,6 @@ Register — the generator detects `IRequest<Unit>` and emits a mediator-aware `
 ```csharp
 services.AddScheduling()
         .WithInMemoryStore()
-        .WithMediator()               // no-op, retained for source compatibility
         .AddGenerateInvoicesJob();    // registers MediatorJobTypeExecutor<T>
 ```
 

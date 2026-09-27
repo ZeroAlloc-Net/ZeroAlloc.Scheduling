@@ -2,7 +2,6 @@ using AwesomeAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using ZeroAlloc.Scheduling;
 using ZeroAlloc.Scheduling.InMemory;
-using ZeroAlloc.Scheduling.Mediator;
 
 namespace ZeroAlloc.Scheduling.Tests;
 
@@ -31,18 +30,6 @@ public class SchedulingBuilderTests
 
         var sp = services.BuildServiceProvider();
         sp.GetService<IJobStore>().Should().NotBeNull();
-    }
-
-    [Fact]
-    public void WithMediator_ReturnsSameBuilder()
-    {
-        var services = new ServiceCollection();
-        services.AddLogging();
-
-        var builder = services.AddScheduling();
-        var result = builder.WithMediator();
-
-        result.Should().BeSameAs(builder);
     }
 
 }
