@@ -5,8 +5,6 @@
     <Description>ZeroAlloc.Telemetry bridge for ZeroAlloc.Scheduling — wraps IJobTypeExecutor with a source-generated OpenTelemetry proxy.</Description>
     <Version>0.0.0-local</Version>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
-    <!-- Generator emits a catch block that observes ex.Message; ErrorProne EPC12 false-positives. -->
-    <NoWarn>$(NoWarn);EPC12</NoWarn>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <CompilerGeneratedFilesOutputPath>$(BaseIntermediateOutputPath)$(Configuration)\$(TargetFramework)\generated</CompilerGeneratedFilesOutputPath>
   </PropertyGroup>
