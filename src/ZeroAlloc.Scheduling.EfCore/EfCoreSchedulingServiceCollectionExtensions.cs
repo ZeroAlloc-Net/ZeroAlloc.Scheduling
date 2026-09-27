@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -53,19 +52,28 @@ public static class EfCoreSchedulingServiceCollectionExtensions
     /// <c>DbTransaction</c> as a business write (Scheduling#17).
     /// </summary>
     /// <remarks>
-    /// Requires <see cref="IOutboxStore"/> and <see cref="IOutboxSerializer"/> to be
-    /// registered in the DI container (e.g. via <c>AddOutbox()</c> + <c>WithEfCore()</c>
-    /// from <c>ZeroAlloc.Outbox</c>).
+    /// <para>
+    /// Requires <see cref="IOutboxStore"/> and <see cref="IOutboxSerializer"/> in the DI container.
+    /// Register the store with <c>AddOutbox()</c> and a store adapter such as
+    /// <c>WithEfCore&lt;TContext&gt;()</c>. Since ZeroAlloc.Outbox 4.0, <c>AddOutbox()</c> no longer
+    /// falls back to a serializer, so choose one explicitly:
+    /// </para>
+    /// <list type="bullet">
+    ///   <item><c>services.AddSerializerDispatcher()</c> from <c>ZeroAlloc.Serialisation</c>: trim- and
+    ///   AOT-safe. Annotate <typeparamref name="TJob"/> with <c>[ZeroAllocSerializable]</c>.</item>
+    ///   <item><c>.WithSystemTextJsonSerializer()</c> on the outbox builder: reflection-based
+    ///   System.Text.Json, which warns at that call under trimming or NativeAOT.</item>
+    /// </list>
+    /// <para>
+    /// Without either, resolving <see cref="IOutboxWriter{TJob}"/> throws an
+    /// <see cref="InvalidOperationException"/> that names both options.
+    /// </para>
     /// </remarks>
-    [RequiresUnreferencedCode("Serialization may require types that cannot be statically analyzed.")]
-    [RequiresDynamicCode("Serialization may require dynamic code generation.")]
     public static ISchedulingBuilder WithOutboxWriter<TJob>(
         this ISchedulingBuilder builder)
         where TJob : notnull
     {
-#pragma warning disable IL2026, IL2091
         builder.Services.TryAddScoped<IOutboxWriter<TJob>, OutboxJobWriter<TJob>>();
-#pragma warning restore IL2026, IL2091
         return builder;
     }
 
@@ -74,15 +82,11 @@ public static class EfCoreSchedulingServiceCollectionExtensions
     /// Will be removed in the next major.
     /// </summary>
     [Obsolete("Use AddScheduling().WithOutboxWriter<TJob>() instead. Will be removed in the next major.", DiagnosticId = "ZASCH003")]
-    [RequiresUnreferencedCode("Serialization may require types that cannot be statically analyzed.")]
-    [RequiresDynamicCode("Serialization may require dynamic code generation.")]
     public static IServiceCollection AddSchedulingOutboxWriter<TJob>(
         this IServiceCollection services)
         where TJob : notnull
     {
-#pragma warning disable IL2026, IL2091
         services.TryAddScoped<IOutboxWriter<TJob>, OutboxJobWriter<TJob>>();
-#pragma warning restore IL2026, IL2091
         return services;
     }
 
@@ -92,8 +96,6 @@ public static class EfCoreSchedulingServiceCollectionExtensions
     /// Will be removed in the next major.
     /// </summary>
     [Obsolete("Use AddScheduling().WithOutboxWriter<TJob>() instead. Will be removed in the next major.", DiagnosticId = "ZASCH003")]
-    [RequiresUnreferencedCode("Serialization may require types that cannot be statically analyzed.")]
-    [RequiresDynamicCode("Serialization may require dynamic code generation.")]
     public static ISchedulingBuilder AddSchedulingOutboxWriter<TJob>(
         this ISchedulingBuilder builder)
         where TJob : notnull
