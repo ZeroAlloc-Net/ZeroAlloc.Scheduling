@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.4.11](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.4.10...v1.4.11) (2026-09-27)
+
+
+### Build System
+
+* fail pack when no release version is supplied ([#281](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/281)) ([af4bc96](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/af4bc9696f901cf285ff9c1fc51b857aee8c61d8))
+
+
+### Chores
+
+* **deps:** update dependency meziantou.analyzer to 3.0.290 ([#270](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/270)) ([87aba96](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/87aba96f11b2a7d1b36715c62dc75527759bdea6))
+* **deps:** update dependency zeroalloc.resilience to 3.2.0 ([#275](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/275)) ([f873133](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/f873133daa70e5c4c25e2cd1ff68f41745717410))
+* **deps:** update dependency zeroalloc.serialisation to 2.4.5 ([#271](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/271)) ([bf533b1](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/bf533b1961b470e8c567c7cf90fc0b794b6709cb))
+* **deps:** update dependency zeroalloc.telemetry to 1.6.4 ([#272](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/272)) ([97244de](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/97244defb53c81b7b0c5d0a8374c9ef376170ae5))
+* **deps:** update zeroalloc.orm to 2.0.1 ([#273](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/273)) ([22a4af7](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/22a4af7f9937400164b556f28f3a9d72c4483d32))
+* **deps:** update zeroalloc.valueobjects to 2.0.10 ([#274](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/274)) ([798d5b8](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/798d5b844526265f877a70a9d0e4179e76184b7a))
+* remove ErrorProne.NET, enforce readonly structs with IDE0250/IDE0251 ([#280](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/280)) ([8ed527a](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/8ed527adc6ee1758d3383390d703512ed4c6d42e))
+
 ## [1.4.10](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.4.9...v1.4.10) (2026-09-26)
 
 
