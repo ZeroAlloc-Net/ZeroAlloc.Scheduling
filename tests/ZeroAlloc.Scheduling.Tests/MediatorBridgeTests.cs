@@ -1,5 +1,3 @@
-#pragma warning disable IL2026, IL3050 // DefaultJobSerializer uses reflection-based JSON; acceptable in tests
-
 using Microsoft.Extensions.DependencyInjection;
 using ZeroAlloc.Mediator;
 using ZeroAlloc.Scheduling.InMemory;
@@ -14,7 +12,7 @@ public sealed class MediatorBridgeTests
     {
         bool handled = false;
 
-        var serializer = new DefaultJobSerializer();
+        var serializer = new SystemTextJsonJobSerializer();
         var handler = new FakeHandler(() =>
         {
             handled = true;

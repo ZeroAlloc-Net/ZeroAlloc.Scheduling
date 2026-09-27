@@ -1,8 +1,8 @@
 namespace ZeroAlloc.Scheduling.Tests;
 
-public sealed class DefaultJobSerializerTests
+public sealed class SystemTextJsonJobSerializerTests
 {
-    private readonly IJobSerializer _sut = new DefaultJobSerializer();
+    private readonly IJobSerializer _sut = new SystemTextJsonJobSerializer();
 
     private sealed record TestJob(string Name, int Value);
 

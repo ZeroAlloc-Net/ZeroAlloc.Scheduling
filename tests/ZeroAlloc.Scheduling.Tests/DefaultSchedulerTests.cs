@@ -1,5 +1,3 @@
-#pragma warning disable IL2026, IL3050 // DefaultScheduler uses reflection-based JSON serializer; acceptable in tests
-
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using ZeroAlloc.Scheduling.InMemory;
@@ -9,7 +7,7 @@ namespace ZeroAlloc.Scheduling.Tests;
 public sealed class DefaultSchedulerTests
 {
     private readonly InMemoryJobStore _store = new();
-    private readonly IJobSerializer _serializer = new DefaultJobSerializer();
+    private readonly IJobSerializer _serializer = new SystemTextJsonJobSerializer();
     private readonly IOptionsMonitor<SchedulingOptions> _options;
 
     public DefaultSchedulerTests()

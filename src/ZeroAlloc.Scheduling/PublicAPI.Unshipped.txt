@@ -1,8 +1,8 @@
 #nullable enable
-ZeroAlloc.Scheduling.DefaultJobSerializer
-ZeroAlloc.Scheduling.DefaultJobSerializer.DefaultJobSerializer() -> void
-ZeroAlloc.Scheduling.DefaultJobSerializer.Deserialize<T>(byte[]! payload) -> T
-ZeroAlloc.Scheduling.DefaultJobSerializer.Serialize<T>(T job) -> byte[]!
+ZeroAlloc.Scheduling.SystemTextJsonJobSerializer
+ZeroAlloc.Scheduling.SystemTextJsonJobSerializer.SystemTextJsonJobSerializer() -> void
+ZeroAlloc.Scheduling.SystemTextJsonJobSerializer.Deserialize<T>(byte[]! payload) -> T
+ZeroAlloc.Scheduling.SystemTextJsonJobSerializer.Serialize<T>(T job) -> byte[]!
 ZeroAlloc.Scheduling.DispatchingJobSerializer
 ZeroAlloc.Scheduling.DispatchingJobSerializer.Deserialize<T>(byte[]! payload) -> T
 ZeroAlloc.Scheduling.DispatchingJobSerializer.DispatchingJobSerializer(ZeroAlloc.Serialisation.ISerializerDispatcher! dispatcher) -> void
@@ -158,6 +158,7 @@ static ZeroAlloc.Scheduling.JobId.operator >(ZeroAlloc.Scheduling.JobId left, Ze
 static ZeroAlloc.Scheduling.JobId.operator >=(ZeroAlloc.Scheduling.JobId left, ZeroAlloc.Scheduling.JobId right) -> bool
 static ZeroAlloc.Scheduling.JobSummary.operator !=(ZeroAlloc.Scheduling.JobSummary? left, ZeroAlloc.Scheduling.JobSummary? right) -> bool
 static ZeroAlloc.Scheduling.JobSummary.operator ==(ZeroAlloc.Scheduling.JobSummary? left, ZeroAlloc.Scheduling.JobSummary? right) -> bool
+static ZeroAlloc.Scheduling.SchedulingServiceCollectionExtensions.WithSystemTextJsonSerializer(this ZeroAlloc.Scheduling.ISchedulingBuilder! builder) -> ZeroAlloc.Scheduling.ISchedulingBuilder!
 static ZeroAlloc.Scheduling.SchedulingServiceCollectionExtensions.AddScheduling(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<ZeroAlloc.Scheduling.SchedulingOptions!>? configure = null) -> ZeroAlloc.Scheduling.ISchedulingBuilder!
 ~override ZeroAlloc.Scheduling.JobId.Equals(object obj) -> bool
 

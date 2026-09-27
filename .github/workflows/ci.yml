@@ -72,9 +72,9 @@ jobs:
   aot-smoke:
     runs-on: ubuntu-latest
     # Publishes samples/ZeroAlloc.Scheduling.AotSmoke with PublishAot=true.
-    # Exercises the generator-emitted IJobTypeExecutor + AddSendEmailJob
-    # extension via real DI resolution — the executor's payload deserialiser
-    # is where reflection could leak.
+    # Runs a job end to end through AddSerializerDispatcher() + AddScheduling(), the
+    # IScheduler, the worker and the generator-emitted executor, with every trim and
+    # AOT warning an error. The payload serializer is where reflection could leak.
     steps:
       - uses: actions/checkout@v7
         with:
