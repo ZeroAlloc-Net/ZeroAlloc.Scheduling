@@ -1,5 +1,26 @@
 # Changelog
 
+## [2.0.0](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.4.11...v2.0.0) (2026-09-27)
+
+
+### ⚠ BREAKING CHANGES
+
+* ISchedulingBuilder.WithMediator() is removed. It did nothing; delete the call. See docs/migrating-to-v2.md.
+* a job type whose name ends in Job registers with Add{Name}Job instead of Add{Name}JobJob, and the new error ZASCH011 reports two jobs in one namespace that map to the same generated name. See docs/migrating-to-v2.md.
+* AddScheduling no longer falls back to reflection-based JSON; call services.AddSerializerDispatcher for the AOT-safe serializer or chain WithSystemTextJsonSerializer, otherwise the host fails to start. DefaultJobSerializer is renamed SystemTextJsonJobSerializer. ZeroAlloc.Scheduling.EfCore requires ZeroAlloc.Outbox 4.0, whose AddOutbox also needs an explicit serializer. The obsolete 1.x DI aliases ZASCH001-ZASCH006 and the generated IServiceCollection Add{Job}Job alias ZASCH010 are removed. See docs/migrating-to-v2.md.
+
+### Features
+
+* AddScheduling is trim- and AOT-safe and WithSystemTextJsonSerializer is the reflection opt-in ([f659397](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/f6593973bd300c37660be81cfe19e1d25ebb7285))
+* remove WithMediator, a no-op kept for source compatibility ([69aa2e5](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/69aa2e55268c0560249a734206d151826e91103f))
+* ship Scheduling 2.0 with explicit serializers, ZeroAlloc.Outbox 4.0 and no 1.x aliases ([f659397](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/f6593973bd300c37660be81cfe19e1d25ebb7285))
+* stop doubling the Job suffix in generated registration names ([b7b8662](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/b7b8662216719927f6db8cfb222c502415ce3237))
+
+
+### Bug Fixes
+
+* drop stale trim and AOT attributes from WithOutboxWriter and the outbox job writer ([f659397](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/f6593973bd300c37660be81cfe19e1d25ebb7285))
+
 ## [1.4.11](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.4.10...v1.4.11) (2026-09-27)
 
 
