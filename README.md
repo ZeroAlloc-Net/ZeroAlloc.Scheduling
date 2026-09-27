@@ -33,7 +33,9 @@ public sealed class CleanupExpiredSessionsJob : IJob
         => await _repo.DeleteExpiredAsync(ct);
 }
 
-// 2. Register — generated AddCleanupExpiredSessionsJob() wires executor + recurring startup
+// 2. Register — generated AddCleanupExpiredSessionsJob() wires executor + recurring startup.
+//    AddSerializerDispatcher() is the AOT-safe job serializer; see docs/migrating-to-v2.md.
+services.AddSerializerDispatcher();
 services.AddScheduling()
         .WithInMemoryStore()
         .AddCleanupExpiredSessionsJob();

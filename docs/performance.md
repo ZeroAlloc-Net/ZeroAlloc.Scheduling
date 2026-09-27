@@ -17,14 +17,14 @@ The hot path — polling the store, claiming jobs, deserialising payloads, execu
 | Step | Allocation |
 |------|-----------|
 | `FetchPendingAsync` SQL/Redis query | Network buffer (store-dependent) |
-| Payload deserialisation (`DefaultJobSerializer`) | Boxed job object (JSON reflection) |
+| Payload deserialisation (`IJobSerializer`) | The job object |
 | `IServiceScope` creation per job | 1 managed object |
 | Executor dispatch | 0 (compile-time static call via generated class) |
 | `ValueTask` returned by `ExecuteAsync` | 0 if synchronous completion |
 
 The executor dispatch itself is zero-allocation — the generator emits a concrete class with a direct `_serializer.Deserialize<T>` call. There is no dictionary lookup, no `Type.GetType`, no virtual dispatch on the executor.
 
-The serialiser (`DefaultJobSerializer`) uses `System.Text.Json` with reflection-based serialisation by default. For AOT scenarios, register a source-generated `JsonSerializerContext`.
+The serialiser is the one you chose. `services.AddSerializerDispatcher()` selects `DispatchingJobSerializer`, which calls the serializer the ZeroAlloc.Serialisation generator emitted for each `[ZeroAllocSerializable]` job, through its `JsonSerializerContext`: no reflection, and trim- and AOT-safe. `.WithSystemTextJsonSerializer()` selects the reflection-based `SystemTextJsonJobSerializer`. See [Migrating to v2](migrating-to-v2.md#choose-a-job-serializer).
 
 ## Tuning Parameters
 

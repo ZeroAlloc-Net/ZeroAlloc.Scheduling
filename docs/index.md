@@ -23,6 +23,7 @@ Source-generated background job scheduler for .NET 8 and .NET 10.
 | 7 | [Telemetry Bridge](telemetry-bridge.md) | Emit OpenTelemetry spans, counters, and histograms per job execution |
 | 8 | [Diagnostics](diagnostics.md) | ZASCH001 compiler warning reference |
 | 9 | [Performance](performance.md) | Throughput, allocation profile, and tuning guide |
+| 10 | [Migrating to v2](migrating-to-v2.md) | Choose a job serializer, adopt Outbox 4.0, replace the removed 1.x aliases |
 
 ## Quick Reference
 
@@ -33,6 +34,7 @@ public sealed class SendWelcomeEmailJob : IJob
 {
     public async ValueTask ExecuteAsync(JobContext ctx, CancellationToken ct) { ... }
 }
+services.AddSerializerDispatcher();   // AOT-safe serializer; see Getting Started
 services.AddScheduling().WithInMemoryStore().AddSendWelcomeEmailJob();
 await scheduler.EnqueueAsync(new SendWelcomeEmailJob { To = "user@example.com" }, ct);
 
