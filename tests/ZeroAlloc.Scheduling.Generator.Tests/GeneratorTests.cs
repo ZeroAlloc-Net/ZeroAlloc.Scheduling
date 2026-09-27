@@ -1,3 +1,5 @@
+using Microsoft.CodeAnalysis;
+
 namespace ZeroAlloc.Scheduling.Generator.Tests;
 
 public sealed class GeneratorTests
@@ -44,6 +46,93 @@ public sealed class GeneratorTests
         source.Should().NotContain("Obsolete");
         source.Should().NotContain("RequiresUnreferencedCode");
         source.Should().NotContain("RequiresDynamicCode");
+    }
+
+    private const string JobBody =
+        "{ public System.Threading.Tasks.ValueTask ExecuteAsync(JobContext ctx, System.Threading.CancellationToken ct) => default; }";
+
+    [Fact]
+    public void JobNameEndingInJob_DoesNotDoubleTheSuffix()
+    {
+        var (sources, diagnostics, errors) = GeneratorTestHelper.RunAll($$"""
+            using ZeroAlloc.Scheduling;
+            namespace MyApp;
+            [Job]
+            public sealed class SendWelcomeEmailJob : IJob {{JobBody}}
+            """);
+
+        diagnostics.Should().BeEmpty();
+        errors.Should().BeEmpty();
+        var source = sources.Should().ContainSingle().Subject;
+        source.Should().Contain("ISchedulingBuilder AddSendWelcomeEmailJob(");
+        source.Should().Contain("class SendWelcomeEmailJobTypeExecutor ");
+        source.Should().NotContain("JobJob");
+    }
+
+    [Fact]
+    public void JobNameWithoutSuffix_GetsJobAppended()
+    {
+        var (sources, diagnostics, errors) = GeneratorTestHelper.RunAll($$"""
+            using ZeroAlloc.Scheduling;
+            namespace MyApp;
+            [Job(Every = Every.Hour)]
+            public sealed class Cleanup : IJob {{JobBody}}
+            """);
+
+        diagnostics.Should().BeEmpty();
+        errors.Should().BeEmpty();
+        var source = sources.Should().ContainSingle().Subject;
+        source.Should().Contain("ISchedulingBuilder AddCleanupJob(");
+        source.Should().Contain("class CleanupJobTypeExecutor ");
+        source.Should().Contain("class CleanupRecurringStartup ");
+    }
+
+    [Fact]
+    public void JobSuffixMatch_IsCaseSensitive()
+    {
+        var (sources, _, errors) = GeneratorTestHelper.RunAll($$"""
+            using ZeroAlloc.Scheduling;
+            namespace MyApp;
+            [Job]
+            public sealed class ImportJOB : IJob {{JobBody}}
+            """);
+
+        errors.Should().BeEmpty();
+        sources.Should().ContainSingle().Which.Should().Contain("ISchedulingBuilder AddImportJOBJob(");
+    }
+
+    [Fact]
+    public void TwoJobsMappingToTheSameName_ReportZASCH011OnBoth_AndGenerateNeither()
+    {
+        var (sources, diagnostics, errors) = GeneratorTestHelper.RunAll($$"""
+            using ZeroAlloc.Scheduling;
+            namespace MyApp;
+            [Job]
+            public sealed class Cleanup : IJob {{JobBody}}
+            [Job]
+            public sealed class CleanupJob : IJob {{JobBody}}
+            """);
+
+        diagnostics.Should().HaveCount(2).And.OnlyContain(d => d.Id == "ZASCH011");
+        diagnostics.Should().OnlyContain(d => d.Severity == DiagnosticSeverity.Error);
+        diagnostics.Select(d => d.GetMessage(System.Globalization.CultureInfo.InvariantCulture))
+            .Should().OnlyContain(m => m.Contains("AddCleanupJob", StringComparison.Ordinal));
+        sources.Should().BeEmpty();
+        errors.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void SameNameInDifferentNamespaces_IsNotACollision()
+    {
+        var (sources, diagnostics, errors) = GeneratorTestHelper.RunAll($$"""
+            using ZeroAlloc.Scheduling;
+            namespace A { [Job] public sealed class Cleanup : IJob {{JobBody}} }
+            namespace B { [Job] public sealed class CleanupJob : IJob {{JobBody}} }
+            """);
+
+        diagnostics.Should().BeEmpty();
+        errors.Should().BeEmpty();
+        sources.Should().HaveCount(2);
     }
 
     [Fact]
@@ -97,7 +186,7 @@ public sealed class GeneratorTests
         diagnostics.Should().BeEmpty();
         source.Should().Contain("MediatorJobTypeExecutor");
         source.Should().Contain("AddSendWelcomeEmailJob");
-        source.Should().NotContain("SendWelcomeEmailJobJobTypeExecutor"); // no direct executor class
+        source.Should().NotContain("TypeExecutor : global::ZeroAlloc.Scheduling.IJobTypeExecutor"); // no direct executor class
     }
 
     [Fact]
@@ -118,7 +207,7 @@ public sealed class GeneratorTests
         source.Should().Contain("MediatorJobTypeExecutor");
         source.Should().Contain("AddHourlyReportJob");
         source.Should().Contain("IHostedService");         // recurring startup still emitted
-        source.Should().NotContain("HourlyReportJobJobTypeExecutor"); // no direct executor
+        source.Should().NotContain("TypeExecutor : global::ZeroAlloc.Scheduling.IJobTypeExecutor"); // no direct executor
     }
 
     [Fact]

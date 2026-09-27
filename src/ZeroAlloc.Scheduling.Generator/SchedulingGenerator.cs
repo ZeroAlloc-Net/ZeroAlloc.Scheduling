@@ -17,6 +17,14 @@ public sealed class SchedulingGenerator : IIncrementalGenerator
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
 
+    private static readonly DiagnosticDescriptor RegistrationNameCollision = new(
+        id: "ZASCH011",
+        title: "Two jobs map to the same generated registration method",
+        messageFormat: "Job types '{0}' and '{1}' in namespace '{2}' both map to the generated method '{3}()', because a trailing 'Job' is not appended twice. Rename one of them.",
+        category: "ZeroAlloc.Scheduling",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
         var models = context.SyntaxProvider
@@ -26,16 +34,48 @@ public sealed class SchedulingGenerator : IIncrementalGenerator
             .Where(static m => m is not null)
             .Select(static (m, _) => m!);
 
-        context.RegisterSourceOutput(models, static (ctx, model) =>
+        // Collected, so jobs whose generated names collide can be reported instead of emitting
+        // code that cannot compile.
+        context.RegisterSourceOutput(models.Collect(), static (ctx, all) =>
         {
-            bool hasErrors = false;
-            foreach (var d in model.Diagnostics)
+            var byName = new Dictionary<(string Namespace, string Method), List<JobModel>>();
+            foreach (var model in all)
             {
-                ctx.ReportDiagnostic(d);
-                if (d.Severity == DiagnosticSeverity.Error) hasErrors = true;
+                var key = (model.Namespace ?? string.Empty, JobNames.RegistrationMethod(model.TypeName));
+                if (!byName.TryGetValue(key, out var jobs))
+                    byName[key] = jobs = new List<JobModel>();
+                jobs.Add(model);
             }
-            if (!hasErrors)
-                SchedulingCodeWriter.Write(ctx, model);
+
+            var colliding = new HashSet<JobModel>();
+            foreach (var entry in byName)
+            {
+                var jobs = entry.Value;
+                if (jobs.Count < 2) continue;
+                jobs.Sort(static (x, y) => string.CompareOrdinal(x.TypeName, y.TypeName));
+                var ns = entry.Key.Namespace.Length == 0 ? "<global>" : entry.Key.Namespace;
+                for (var i = 0; i < jobs.Count; i++)
+                {
+                    var job = jobs[i];
+                    var other = jobs[i == 0 ? 1 : 0];
+                    colliding.Add(job);
+                    ctx.ReportDiagnostic(Diagnostic.Create(RegistrationNameCollision,
+                        job.Location?.ToLocation() ?? Location.None,
+                        job.TypeName, other.TypeName, ns, entry.Key.Method));
+                }
+            }
+
+            foreach (var model in all)
+            {
+                bool hasErrors = colliding.Contains(model);
+                foreach (var d in model.Diagnostics)
+                {
+                    ctx.ReportDiagnostic(d);
+                    if (d.Severity == DiagnosticSeverity.Error) hasErrors = true;
+                }
+                if (!hasErrors)
+                    SchedulingCodeWriter.Write(ctx, model);
+            }
         });
     }
 
@@ -92,7 +132,7 @@ public sealed class SchedulingGenerator : IIncrementalGenerator
         var diagnostics = BuildDiagnostics(symbol, isMediatorBridge, maxAttempts);
 
         return new JobModel(ns, symbol.Name, fqn, isRecurring, cron, every, maxAttempts,
-            isMediatorBridge, diagnostics);
+            isMediatorBridge, diagnostics, LocationInfo.From(symbol.Locations.FirstOrDefault()));
     }
 
     private static ImmutableArray<Diagnostic> BuildDiagnostics(

@@ -11,9 +11,9 @@ internal static class SchedulingCodeWriter
     {
         var sb = new StringBuilder();
         var typeFqn = $"global::{model.TypeFqn}";
-        var executorName = $"{model.TypeName}JobTypeExecutor";
-        var diMethodName = $"Add{model.TypeName}Job";
-        var startupName = $"{model.TypeName}RecurringStartup";
+        var executorName = JobNames.Executor(model.TypeName);
+        var diMethodName = JobNames.RegistrationMethod(model.TypeName);
+        var startupName = JobNames.RecurringStartup(model.TypeName);
 
         AppendHeader(sb, model.Namespace);
 
