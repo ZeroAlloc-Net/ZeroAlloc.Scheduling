@@ -2,8 +2,6 @@
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <IsPackable>false</IsPackable>
-    <!-- Builder-pattern migration: legacy [Obsolete] shims emit custom DiagnosticIds that #pragma cannot suppress while TreatWarningsAsErrors=true. -->
-    <NoWarn>$(NoWarn);ZASCH001;ZASCH002;ZASCH003;ZASCH004;ZASCH005</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.10.1" />
@@ -14,6 +12,7 @@
     <!-- CVE-2025-6965 / GHSA-2m69-gcr7-jv3q: pin the native SQLite binary (3.50.3) pulled
          transitively by Microsoft.Data.Sqlite / EF Core Sqlite (2.1.x is vulnerable). -->
     <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3" Version="3.50.3" />
+    <PackageReference Include="ZeroAlloc.Outbox.InMemory" Version="4.0.0" />
     <ProjectReference Include="..\..\src\ZeroAlloc.Scheduling\ZeroAlloc.Scheduling.csproj" />
     <ProjectReference Include="..\..\src\ZeroAlloc.Scheduling.EfCore\ZeroAlloc.Scheduling.EfCore.csproj" />
   </ItemGroup>

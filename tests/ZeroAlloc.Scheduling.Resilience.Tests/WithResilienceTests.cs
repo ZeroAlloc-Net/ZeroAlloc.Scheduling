@@ -6,8 +6,7 @@ namespace ZeroAlloc.Scheduling.Resilience.Tests;
 
 /// <summary>
 /// Validates that the <see cref="ISchedulingBuilder"/>-shaped <c>WithResilience</c> entrypoint
-/// wires the Resilience proxy as <see cref="IJobTypeExecutor"/>, and the legacy
-/// <c>AddSchedulingResilience</c> shim still works.
+/// wires the Resilience proxy as <see cref="IJobTypeExecutor"/>.
 /// </summary>
 public class WithResilienceTests
 {
@@ -17,23 +16,8 @@ public class WithResilienceTests
         var services = new ServiceCollection();
         services.AddTransient<SendEmailJobExecutorImpl>();
 
-#pragma warning disable IL2026, IL3050
         services.AddScheduling()
                 .WithResilience<ISendEmailJobExecutor, SendEmailJobExecutorProxy>();
-#pragma warning restore IL2026, IL3050
-
-        var provider = services.BuildServiceProvider();
-        provider.GetRequiredService<IJobTypeExecutor>()
-                .Should().BeOfType<SendEmailJobExecutorProxy>();
-    }
-
-    [Fact]
-    public void AddSchedulingResilience_LegacyShim_RegistersProxyAsExecutor()
-    {
-        var services = new ServiceCollection();
-        services.AddTransient<SendEmailJobExecutorImpl>();
-
-        services.AddSchedulingResilience<ISendEmailJobExecutor, SendEmailJobExecutorProxy>();
 
         var provider = services.BuildServiceProvider();
         provider.GetRequiredService<IJobTypeExecutor>()

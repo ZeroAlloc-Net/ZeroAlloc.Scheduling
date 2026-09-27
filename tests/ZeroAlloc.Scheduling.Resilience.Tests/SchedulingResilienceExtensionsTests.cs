@@ -5,30 +5,17 @@ using ZeroAlloc.Scheduling.Resilience;
 namespace ZeroAlloc.Scheduling.Resilience.Tests;
 
 /// <summary>
-/// Validates that AddSchedulingResilience wires a proxy as IJobTypeExecutor.
+/// Validates that the proxy WithResilience registers delegates to the inner executor.
 /// Uses a hand-written proxy to represent what the Resilience generator would emit.
 /// </summary>
 public class SchedulingResilienceExtensionsTests
 {
     [Fact]
-    public void AddSchedulingResilience_RegistersProxyAsExecutor()
+    public async Task WithResilience_ProxyDelegatesToInnerExecutor()
     {
         var services = new ServiceCollection();
         services.AddTransient<SendEmailJobExecutorImpl>();
-        services.AddSchedulingResilience<ISendEmailJobExecutor, SendEmailJobExecutorProxy>();
-
-        var provider = services.BuildServiceProvider();
-        var executor = provider.GetRequiredService<IJobTypeExecutor>();
-
-        executor.Should().BeOfType<SendEmailJobExecutorProxy>();
-    }
-
-    [Fact]
-    public async Task AddSchedulingResilience_ProxyDelegatesToInnerExecutor()
-    {
-        var services = new ServiceCollection();
-        services.AddTransient<SendEmailJobExecutorImpl>();
-        services.AddSchedulingResilience<ISendEmailJobExecutor, SendEmailJobExecutorProxy>();
+        services.AddScheduling().WithResilience<ISendEmailJobExecutor, SendEmailJobExecutorProxy>();
 
         var provider = services.BuildServiceProvider();
         var executor = provider.GetRequiredService<IJobTypeExecutor>();

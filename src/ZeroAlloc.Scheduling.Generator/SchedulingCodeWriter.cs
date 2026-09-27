@@ -131,16 +131,6 @@ internal static class SchedulingCodeWriter
             sb.AppendLine($"        builder.Services.AddHostedService<{startupName}>();");
         sb.AppendLine("        return builder;");
         sb.AppendLine("    }");
-        sb.AppendLine();
-        sb.AppendLine($"    [global::System.Obsolete(\"Use AddScheduling().{diMethodName}() instead. Will be removed in the next major.\", DiagnosticId = \"ZASCH010\")]");
-        sb.AppendLine("    [global::System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode(\"AddScheduling may register DefaultJobSerializer which uses reflection-based JSON. Call services.AddSerializerDispatcher() first for AOT-safe serialisation.\")]");
-        sb.AppendLine("    [global::System.Diagnostics.CodeAnalysis.RequiresDynamicCode(\"AddScheduling may register DefaultJobSerializer which may require runtime code generation. Call services.AddSerializerDispatcher() first for AOT-safe serialisation.\")]");
-        sb.AppendLine($"    public static global::Microsoft.Extensions.DependencyInjection.IServiceCollection {diMethodName}(");
-        sb.AppendLine("        this global::Microsoft.Extensions.DependencyInjection.IServiceCollection services)");
-        sb.AppendLine("    {");
-        sb.AppendLine($"        services.AddScheduling().{diMethodName}();");
-        sb.AppendLine("        return services;");
-        sb.AppendLine("    }");
         sb.AppendLine("}");
     }
 }

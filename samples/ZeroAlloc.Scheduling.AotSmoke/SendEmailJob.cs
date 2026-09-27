@@ -1,23 +1,22 @@
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 using ZeroAlloc.Scheduling;
+using ZeroAlloc.Serialisation;
 
 namespace ZeroAlloc.Scheduling.AotSmoke;
 
+// [ZeroAllocSerializable] makes the ZeroAlloc.Serialisation generator emit a serializer for the job
+// and include it in AddSerializerDispatcher(), the AOT-safe choice for AddScheduling().
 [Job(MaxAttempts = 3)]
+[ZeroAllocSerializable(SerializationFormat.SystemTextJson)]
 public sealed class SendEmailJob : IJob
 {
     public string To { get; init; } = "";
 
-    // Static counter is kept non-public to satisfy MA0069 — the smoke reads it via the
-    // internal accessor below rather than touching the field directly.
-    private static int s_invocationCount;
-    internal static int InvocationCount => Volatile.Read(ref s_invocationCount);
-    internal static void ResetInvocationCount() => Volatile.Write(ref s_invocationCount, 0);
-
     public ValueTask ExecuteAsync(JobContext ctx, CancellationToken ct)
     {
-        Interlocked.Increment(ref s_invocationCount);
+        ctx.Services.GetRequiredService<DeliverySink>().Delivered.TrySetResult(To);
         return ValueTask.CompletedTask;
     }
 }

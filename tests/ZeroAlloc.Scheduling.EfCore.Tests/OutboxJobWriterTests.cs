@@ -1,8 +1,6 @@
 using System.Data;
 using System.Data.Common;
-using System.Diagnostics.CodeAnalysis;
 using System.Text;
-using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using ZeroAlloc.Outbox;
 using ZeroAlloc.Scheduling.EfCore;
@@ -10,7 +8,7 @@ using ZeroAlloc.Scheduling.EfCore;
 namespace ZeroAlloc.Scheduling.EfCore.Tests;
 
 /// <summary>
-/// Verifies that <see cref="EfCoreSchedulingServiceCollectionExtensions.AddSchedulingOutboxWriter{TJob}"/>
+/// Verifies that <see cref="EfCoreSchedulingServiceCollectionExtensions.WithOutboxWriter{TJob}"/>
 /// correctly wires <see cref="IOutboxWriter{TJob}"/> and that <c>WriteAsync</c> serializes
 /// the job and forwards it to <see cref="IOutboxStore"/>.
 /// </summary>
@@ -19,15 +17,13 @@ public sealed class OutboxJobWriterTests
     private sealed record SampleJob(string Name, int Priority);
 
     [Fact]
-    public async Task AddSchedulingOutboxWriter_RegistersIOutboxWriter()
+    public async Task WithOutboxWriter_RegistersIOutboxWriter()
     {
         var services = new ServiceCollection();
         services.AddSingleton<IOutboxStore, StubOutboxStore>();
         services.AddSingleton<IOutboxSerializer, StubOutboxSerializer>();
 
-#pragma warning disable IL2026, IL2091
-        services.AddSchedulingOutboxWriter<SampleJob>();
-#pragma warning restore IL2026, IL2091
+        services.AddScheduling().WithOutboxWriter<SampleJob>();
 
         await using var provider = services.BuildServiceProvider();
         using var scope = provider.CreateScope();
@@ -43,9 +39,7 @@ public sealed class OutboxJobWriterTests
         services.AddSingleton<IOutboxStore>(store);
         services.AddSingleton<IOutboxSerializer, StubOutboxSerializer>();
 
-#pragma warning disable IL2026, IL2091
-        services.AddSchedulingOutboxWriter<SampleJob>();
-#pragma warning restore IL2026, IL2091
+        services.AddScheduling().WithOutboxWriter<SampleJob>();
 
         await using var provider = services.BuildServiceProvider();
         using var scope = provider.CreateScope();
@@ -68,9 +62,7 @@ public sealed class OutboxJobWriterTests
         services.AddSingleton<IOutboxStore>(store);
         services.AddSingleton<IOutboxSerializer, StubOutboxSerializer>();
 
-#pragma warning disable IL2026, IL2091
-        services.AddSchedulingOutboxWriter<SampleJob>();
-#pragma warning restore IL2026, IL2091
+        services.AddScheduling().WithOutboxWriter<SampleJob>();
 
         await using var provider = services.BuildServiceProvider();
         using var scope = provider.CreateScope();
@@ -86,6 +78,7 @@ public sealed class OutboxJobWriterTests
 
     // ---- stubs ----
 
+    /// <summary>Records enqueues. The writer must never touch the worker-side members.</summary>
     private sealed class StubOutboxStore : IOutboxStore
     {
         public List<(string TypeName, ReadOnlyMemory<byte> Payload, DbTransaction? Transaction)> Entries { get; } = [];
@@ -97,23 +90,37 @@ public sealed class OutboxJobWriterTests
             return ValueTask.CompletedTask;
         }
 
-        public ValueTask<IReadOnlyList<OutboxEntry>> FetchPendingAsync(int batchSize, CancellationToken ct)
-            => ValueTask.FromResult<IReadOnlyList<OutboxEntry>>([]);
+        public ValueTask<IReadOnlyList<OutboxEntry>> ClaimPendingAsync(int batchSize, OutboxLease lease, CancellationToken ct)
+            => throw new NotSupportedException();
 
-        public ValueTask MarkSucceededAsync(OutboxMessageId id, CancellationToken ct) => ValueTask.CompletedTask;
-        public ValueTask MarkFailedAsync(OutboxMessageId id, int retryCount, DateTimeOffset nextRetryAt, CancellationToken ct) => ValueTask.CompletedTask;
-        public ValueTask DeadLetterAsync(OutboxMessageId id, string error, CancellationToken ct) => ValueTask.CompletedTask;
+        public ValueTask<bool> RenewLeaseAsync(OutboxMessageId id, OutboxLease lease, CancellationToken ct)
+            => throw new NotSupportedException();
+
+        public ValueTask<int> ReleaseLeasesAsync(IReadOnlyList<OutboxMessageId> ids, OutboxLease lease, CancellationToken ct)
+            => throw new NotSupportedException();
+
+        public ValueTask<bool> MarkSucceededAsync(OutboxMessageId id, OutboxLease lease, CancellationToken ct)
+            => throw new NotSupportedException();
+
+        public ValueTask<bool> MarkFailedAsync(
+            OutboxMessageId id, int retryCount, DateTimeOffset nextRetryAt, OutboxLease lease, CancellationToken ct)
+            => throw new NotSupportedException();
+
+        public ValueTask<bool> DeadLetterAsync(OutboxMessageId id, string error, OutboxLease lease, CancellationToken ct)
+            => throw new NotSupportedException();
     }
 
-    [SuppressMessage("Trimming", "IL2026", Justification = "Test code.")]
-    [SuppressMessage("AOT", "IL3050", Justification = "Test code.")]
+    /// <summary>
+    /// Writes the job's <see cref="object.ToString"/> as UTF-8, enough to see that the writer
+    /// serialized the job it was given. <see cref="OutboxSerializerChoiceTests"/> covers the real
+    /// serializers.
+    /// </summary>
     private sealed class StubOutboxSerializer : IOutboxSerializer
     {
         public ReadOnlyMemory<byte> Serialize<T>(T value)
-            => JsonSerializer.SerializeToUtf8Bytes(value);
+            => Encoding.UTF8.GetBytes(value?.ToString() ?? string.Empty);
 
-        public T Deserialize<T>(ReadOnlyMemory<byte> data)
-            => JsonSerializer.Deserialize<T>(data.Span)!;
+        public T Deserialize<T>(ReadOnlyMemory<byte> data) => throw new NotSupportedException();
     }
 
     private sealed class StubDbTransaction : DbTransaction

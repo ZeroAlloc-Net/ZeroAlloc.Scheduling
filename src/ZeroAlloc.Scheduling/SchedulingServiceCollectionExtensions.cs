@@ -9,20 +9,38 @@ namespace ZeroAlloc.Scheduling;
 
 public static partial class SchedulingServiceCollectionExtensions
 {
+    internal const string MissingSerializerMessage =
+        "ZeroAlloc.Scheduling: no IJobSerializer is configured. Since Scheduling 2.0, AddScheduling() no " +
+        "longer falls back to reflection-based JSON; choose a serializer explicitly:\n" +
+        "  AOT-safe:   annotate your job types with [ZeroAllocSerializable] and call " +
+        "services.AddSerializerDispatcher() from ZeroAlloc.Serialisation.\n" +
+        "  Reflection: call services.AddScheduling().WithSystemTextJsonSerializer() " +
+        "for System.Text.Json, which is not trim- or AOT-safe.\n" +
+        "Or register your own IJobSerializer. " +
+        "See https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/blob/main/docs/migrating-to-v2.md";
+
     /// <summary>
-    /// Registers ZeroAlloc.Scheduling services. When an <see cref="ISerializerDispatcher"/>
-    /// has already been registered (e.g. via <c>services.AddSerializerDispatcher()</c> from
-    /// <c>ZeroAlloc.Serialisation</c>), the AOT-safe <see cref="DispatchingJobSerializer"/>
-    /// is used automatically. Otherwise the reflection-based <see cref="DefaultJobSerializer"/>
-    /// is registered as a fallback.
+    /// Registers the scheduling worker, the default <see cref="IScheduler"/> and the job serializer.
+    /// Register a store separately, for example with <c>.WithInMemoryStore()</c> or
+    /// <c>.WithEfCore(...)</c>, and each job with its generated <c>Add{Job}Job()</c>.
     /// </summary>
     /// <remarks>
-    /// For full AOT safety, annotate your job types with <c>[ZeroAllocSerializable]</c>,
-    /// call <c>services.AddSerializerDispatcher()</c> before this method, and suppress the
-    /// <c>IL2026</c>/<c>IL3050</c> warnings on the <c>AddScheduling</c> call site.
+    /// <para>
+    /// This method is trim- and AOT-safe. It never registers the reflection-based
+    /// <see cref="SystemTextJsonJobSerializer"/> on its own. The <see cref="IJobSerializer"/> it
+    /// registers resolves to the AOT-safe <see cref="DispatchingJobSerializer"/> when an
+    /// <see cref="ISerializerDispatcher"/> is registered, before or after this call, for example with
+    /// <c>services.AddSerializerDispatcher()</c> from <c>ZeroAlloc.Serialisation</c>.
+    /// </para>
+    /// <para>
+    /// When there is none, resolving <see cref="IJobSerializer"/> throws an
+    /// <see cref="InvalidOperationException"/> that names both options. Every generated job executor
+    /// needs the serializer, and the worker builds the executors when the host starts, so a
+    /// missing choice fails the host start. Opt in to reflection-based JSON with
+    /// <see cref="WithSystemTextJsonSerializer"/>. An <see cref="IJobSerializer"/> the application
+    /// registered itself before this call is kept.
+    /// </para>
     /// </remarks>
-    [RequiresUnreferencedCode("AddScheduling may register DefaultJobSerializer which uses reflection-based JSON. Call services.AddSerializerDispatcher() first for AOT-safe serialisation.")]
-    [RequiresDynamicCode("AddScheduling may register DefaultJobSerializer which may require runtime code generation. Call services.AddSerializerDispatcher() first for AOT-safe serialisation.")]
     public static ISchedulingBuilder AddScheduling(
         this IServiceCollection services,
         Action<SchedulingOptions>? configure = null)
@@ -36,19 +54,14 @@ public static partial class SchedulingServiceCollectionExtensions
         services.TryAddSingleton<ILoggerFactory>(NullLoggerFactory.Instance);
         services.TryAddSingleton(typeof(ILogger<>), typeof(Logger<>));
 
-        // Scheduling#15: if the caller has already registered an ISerializerDispatcher
-        // (via services.AddSerializerDispatcher() from ZeroAlloc.Serialisation), prefer
-        // the AOT-safe DispatchingJobSerializer. Fall back to DefaultJobSerializer only
-        // when no dispatcher is present.
+        // The dispatcher is looked up when the serializer is first resolved, so
+        // AddSerializerDispatcher() may run before or after AddScheduling().
         services.TryAddSingleton<IJobSerializer>(sp =>
         {
             var dispatcher = sp.GetService<ISerializerDispatcher>();
-            if (dispatcher != null)
-                return new DispatchingJobSerializer(dispatcher);
-
-#pragma warning disable IL2026, IL3050
-            return new DefaultJobSerializer();
-#pragma warning restore IL2026, IL3050
+            return dispatcher is not null
+                ? new DispatchingJobSerializer(dispatcher)
+                : throw new InvalidOperationException(MissingSerializerMessage);
         });
 
         services.TryAddScoped<IScheduler, DefaultScheduler>();
@@ -56,5 +69,26 @@ public static partial class SchedulingServiceCollectionExtensions
         services.AddHostedService(sp => sp.GetRequiredService<SchedulingWorkerService>());
 
         return new SchedulingBuilder(services);
+    }
+
+    /// <summary>
+    /// Serializes job payloads with the reflection-based <see cref="SystemTextJsonJobSerializer"/>.
+    /// </summary>
+    /// <remarks>
+    /// This replaces every <see cref="IJobSerializer"/> registered so far, including the
+    /// <see cref="DispatchingJobSerializer"/> default that <c>AddScheduling()</c> selects when an
+    /// <see cref="ISerializerDispatcher"/> is registered. It writes the same format as the 1.x
+    /// fallback, so jobs already in a store stay readable. It is not trim- or AOT-safe; for
+    /// NativeAOT, call <c>services.AddSerializerDispatcher()</c> instead and leave this out.
+    /// </remarks>
+    [RequiresUnreferencedCode("WithSystemTextJsonSerializer registers SystemTextJsonJobSerializer, which uses reflection-based System.Text.Json and may not work after trimming. For trim- and AOT-safe serialisation, call services.AddSerializerDispatcher() instead.")]
+    [RequiresDynamicCode("WithSystemTextJsonSerializer registers SystemTextJsonJobSerializer, which uses reflection-based System.Text.Json and may need runtime code generation. For AOT-safe serialisation, call services.AddSerializerDispatcher() instead.")]
+    public static ISchedulingBuilder WithSystemTextJsonSerializer(this ISchedulingBuilder builder)
+    {
+        ArgumentNullException.ThrowIfNull(builder);
+
+        builder.Services.RemoveAll<IJobSerializer>();
+        builder.Services.AddSingleton<IJobSerializer>(new SystemTextJsonJobSerializer());
+        return builder;
     }
 }

@@ -34,17 +34,6 @@ public class SchedulingBuilderTests
     }
 
     [Fact]
-    public void AddSchedulingInMemory_LegacyShim_StillRegistersStore()
-    {
-        var services = new ServiceCollection();
-        services.AddLogging();
-
-        services.AddSchedulingInMemory();
-
-        services.BuildServiceProvider().GetService<IJobStore>().Should().NotBeNull();
-    }
-
-    [Fact]
     public void WithMediator_ReturnsSameBuilder()
     {
         var services = new ServiceCollection();
@@ -56,14 +45,4 @@ public class SchedulingBuilderTests
         result.Should().BeSameAs(builder);
     }
 
-    [Fact]
-    public void AddSchedulingMediator_LegacyShim_ReturnsSameServices()
-    {
-        var services = new ServiceCollection();
-        services.AddLogging();
-
-        var result = services.AddSchedulingMediator();
-
-        result.Should().BeSameAs(services);
-    }
 }

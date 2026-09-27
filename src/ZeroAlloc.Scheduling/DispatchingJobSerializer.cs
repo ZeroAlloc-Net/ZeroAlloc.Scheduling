@@ -8,10 +8,11 @@ namespace ZeroAlloc.Scheduling;
 /// </summary>
 /// <remarks>
 /// Register by annotating your job types with <c>[ZeroAllocSerializable]</c> in the
-/// consuming assembly and calling <c>services.AddSerializerDispatcher()</c> before
-/// <c>AddScheduling()</c>. When an <see cref="ISerializerDispatcher"/> is present in
-/// the DI container, <c>AddScheduling</c> automatically uses this class instead of the
-/// reflection-based <see cref="DefaultJobSerializer"/>.
+/// consuming assembly and calling <c>services.AddSerializerDispatcher()</c>, before or after
+/// <c>AddScheduling()</c>. <c>AddScheduling</c> then resolves <see cref="IJobSerializer"/> to this
+/// class. It is the trim- and AOT-safe choice; the reflection-based
+/// <see cref="SystemTextJsonJobSerializer"/> is used only when the application opts in with
+/// <c>WithSystemTextJsonSerializer()</c>.
 /// </remarks>
 public sealed class DispatchingJobSerializer : IJobSerializer
 {

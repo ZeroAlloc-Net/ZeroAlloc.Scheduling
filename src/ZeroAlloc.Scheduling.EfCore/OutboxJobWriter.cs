@@ -1,5 +1,4 @@
 using System.Data.Common;
-using System.Diagnostics.CodeAnalysis;
 using ZeroAlloc.Outbox;
 
 namespace ZeroAlloc.Scheduling.EfCore;
@@ -11,7 +10,8 @@ namespace ZeroAlloc.Scheduling.EfCore;
 /// <remarks>
 /// Enqueuing within the same <see cref="DbTransaction"/> as the business write ensures
 /// atomicity: if the surrounding transaction rolls back the outbox row is also rolled back.
-/// This class is intentionally not AOT-safe — EF Core itself is not AOT-compatible.
+/// The writer itself needs no reflection: whether serialization is trim- and AOT-safe depends only
+/// on the <see cref="IOutboxSerializer"/> the application registered.
 /// </remarks>
 internal sealed class OutboxJobWriter<TJob> : IOutboxWriter<TJob>
     where TJob : notnull
@@ -26,8 +26,6 @@ internal sealed class OutboxJobWriter<TJob> : IOutboxWriter<TJob>
     }
 
     /// <inheritdoc />
-    [RequiresUnreferencedCode("Serialization may require types that cannot be statically analyzed.")]
-    [RequiresDynamicCode("Serialization may require dynamic code generation.")]
     public ValueTask WriteAsync(
         TJob message,
         DbTransaction? transaction = null,
