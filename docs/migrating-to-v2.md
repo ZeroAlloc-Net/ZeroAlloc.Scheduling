@@ -8,12 +8,13 @@ sidebar_position: 10
 
 # Migrating to v2
 
-ZeroAlloc.Scheduling 2.0 bundles four breaking changes:
+ZeroAlloc.Scheduling 2.0 bundles five breaking changes:
 
 1. `AddScheduling()` no longer falls back to a reflection-based serializer. You choose one.
 2. `ZeroAlloc.Scheduling.EfCore` depends on ZeroAlloc.Outbox 4.0, which makes the same change for the outbox serializer.
 3. The 1.x aliases that have been `[Obsolete]` since the builder API arrived are removed.
 4. A job type whose name ends in `Job` no longer gets the suffix twice in its generated registration method.
+5. `ISchedulingBuilder.WithMediator()` is removed.
 
 ## Choose a job serializer
 
@@ -109,8 +110,8 @@ The 1.x DI extensions have been `[Obsolete]` since the builder API arrived, and 
 | `services.AddScheduling().AddSchedulingEfCore(...)` | `ZASCH002` | `services.AddScheduling().WithEfCore(...)` |
 | `services.AddSchedulingOutboxWriter<TJob>()` | `ZASCH003` | `services.AddScheduling().WithOutboxWriter<TJob>()` |
 | `services.AddScheduling().AddSchedulingOutboxWriter<TJob>()` | `ZASCH003` | `services.AddScheduling().WithOutboxWriter<TJob>()` |
-| `services.AddSchedulingMediator()` | `ZASCH004` | `services.AddScheduling().WithMediator()` |
-| `services.AddScheduling().AddSchedulingMediator()` | `ZASCH004` | `services.AddScheduling().WithMediator()` |
+| `services.AddSchedulingMediator()` | `ZASCH004` | `services.AddScheduling()` |
+| `services.AddScheduling().AddSchedulingMediator()` | `ZASCH004` | `services.AddScheduling()` |
 | `services.AddSchedulingResilience<TInterface, TProxy>()` | `ZASCH005` | `services.AddScheduling().WithResilience<TInterface, TProxy>()` |
 | `services.AddScheduling().AddSchedulingResilience<TInterface, TProxy>()` | `ZASCH005` | `services.AddScheduling().WithResilience<TInterface, TProxy>()` |
 | `services.AddSchedulingRedis(connectionString)` | `ZASCH006` | `services.AddScheduling().WithRedis(connectionString)` |
@@ -120,6 +121,14 @@ The 1.x DI extensions have been `[Obsolete]` since the builder API arrived, and 
 The `IServiceCollection` forms registered only their own piece. The generated one also called `AddScheduling()` for you, so it carried the same trim warnings. The replacements hang off `AddScheduling()`, so call it once and chain everything on the builder it returns.
 
 The obsolete IDs `ZASCH002`–`ZASCH006` and `ZASCH010` are retired and will not be reused, so a `NoWarn` entry that names them is now dead and can be deleted. `ZASCH001` was also the obsolete ID of `AddSchedulingInMemory`; from 2.0 it means only the generator warning [MaxAttempts ignored for mediator bridge job](diagnostics.md), so a `NoWarn` for `ZASCH001` now hides that warning.
+
+## WithMediator() removed
+
+`WithMediator()` is removed; it did nothing — delete the call. The source generator has always
+registered the `MediatorJobTypeExecutor<TJob>` for a `[Job]` type that also implements
+`IRequest<Unit>` through the generated `AddXxxJob()` method, so `WithMediator()` had already
+become a no-op kept for source compatibility. Remove it from `AddScheduling()` chains; nothing
+else changes.
 
 ## Generated registration names
 
