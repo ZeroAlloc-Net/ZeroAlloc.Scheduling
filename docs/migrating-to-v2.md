@@ -8,11 +8,12 @@ sidebar_position: 10
 
 # Migrating to v2
 
-ZeroAlloc.Scheduling 2.0 bundles three breaking changes:
+ZeroAlloc.Scheduling 2.0 bundles four breaking changes:
 
 1. `AddScheduling()` no longer falls back to a reflection-based serializer. You choose one.
 2. `ZeroAlloc.Scheduling.EfCore` depends on ZeroAlloc.Outbox 4.0, which makes the same change for the outbox serializer.
 3. The 1.x aliases that have been `[Obsolete]` since the builder API arrived are removed.
+4. A job type whose name ends in `Job` no longer gets the suffix twice in its generated registration method.
 
 ## Choose a job serializer
 
@@ -119,3 +120,17 @@ The 1.x DI extensions have been `[Obsolete]` since the builder API arrived, and 
 The `IServiceCollection` forms registered only their own piece. The generated one also called `AddScheduling()` for you, so it carried the same trim warnings. The replacements hang off `AddScheduling()`, so call it once and chain everything on the builder it returns.
 
 The obsolete IDs `ZASCH002`–`ZASCH006` and `ZASCH010` are retired and will not be reused, so a `NoWarn` entry that names them is now dead and can be deleted. `ZASCH001` was also the obsolete ID of `AddSchedulingInMemory`; from 2.0 it means only the generator warning [MaxAttempts ignored for mediator bridge job](diagnostics.md), so a `NoWarn` for `ZASCH001` now hides that warning.
+
+## Generated registration names
+
+Up to 1.x the generator always appended `Job` to the type name, so `SendWelcomeEmailJob` registered with `AddSendWelcomeEmailJobJob()`. The documentation showed `AddSendWelcomeEmailJob()`, which did not compile. In 2.0 a type name that already ends in `Job` does not get the suffix twice:
+
+| Job type | 1.x | 2.0 |
+|---|---|---|
+| `SendWelcomeEmailJob` | `AddSendWelcomeEmailJobJob()` | `AddSendWelcomeEmailJob()` |
+| `Cleanup` | `AddCleanupJob()` | `AddCleanupJob()`, unchanged |
+| `ImportJOB` | `AddImportJOBJob()` | `AddImportJOBJob()`, unchanged: the match is case-sensitive |
+
+Replace every `Add{Name}JobJob()` call with `Add{Name}Job()`. The compiler finds them all, since the old names no longer exist. The internal executor class is renamed the same way, from `SendWelcomeEmailJobJobTypeExecutor` to `SendWelcomeEmailJobTypeExecutor`.
+
+Two job types in the same namespace whose names differ only by the suffix, such as `Cleanup` and `CleanupJob`, now map to the same method. The generator reports that as the error [ZASCH011](diagnostics.md#zasch011--two-jobs-map-to-the-same-generated-registration-method); rename one of them.

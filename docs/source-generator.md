@@ -85,10 +85,10 @@ For a type `MyApp.SendInvoiceJob` decorated with `[Job(MaxAttempts = 5)]`, the g
 namespace MyApp;
 
 // 1. Executor — implements IJobTypeExecutor, wired by SchedulingWorkerService
-internal sealed class SendInvoiceJobJobTypeExecutor : IJobTypeExecutor
+internal sealed class SendInvoiceJobTypeExecutor : IJobTypeExecutor
 {
     private readonly IJobSerializer _serializer;
-    public SendInvoiceJobJobTypeExecutor(IJobSerializer serializer) => _serializer = serializer;
+    public SendInvoiceJobTypeExecutor(IJobSerializer serializer) => _serializer = serializer;
 
     public string TypeName    => "MyApp.SendInvoiceJob";
     public int    MaxAttempts => 5;
@@ -101,15 +101,27 @@ internal sealed class SendInvoiceJobJobTypeExecutor : IJobTypeExecutor
 }
 
 // 2. DI extension — call this on the ISchedulingBuilder returned by AddScheduling()
-public static partial class SchedulingBuilderExtensions
+public static partial class SchedulingServiceCollectionExtensions
 {
     public static ISchedulingBuilder AddSendInvoiceJob(this ISchedulingBuilder builder)
     {
-        builder.Services.AddTransient<IJobTypeExecutor, SendInvoiceJobJobTypeExecutor>();
+        builder.Services.AddTransient<IJobTypeExecutor, SendInvoiceJobTypeExecutor>();
         return builder;
     }
 }
 ```
+
+### Generated names
+
+The registration method is `Add{Name}Job()`, and a type name that already ends in `Job` does not get the suffix twice. The executor follows the same rule:
+
+| Job type | Registration method | Executor |
+|---|---|---|
+| `SendInvoiceJob` | `AddSendInvoiceJob()` | `SendInvoiceJobTypeExecutor` |
+| `Cleanup` | `AddCleanupJob()` | `CleanupJobTypeExecutor` |
+| `ImportJOB` | `AddImportJOBJob()` | `ImportJOBJobTypeExecutor` |
+
+The match is ordinal and case-sensitive, as the last row shows: only the exact suffix `Job` counts. Two job types in the same namespace that map to the same method, such as `Cleanup` and `CleanupJob`, are reported as the error [ZASCH011](diagnostics.md#zasch011--two-jobs-map-to-the-same-generated-registration-method) and neither is generated. Up to 1.x the suffix was always appended, so `SendInvoiceJob` registered with `AddSendInvoiceJobJob()`; see [Migrating to v2](migrating-to-v2.md#generated-registration-names).
 
 For a recurring job (`[Job(Every = Every.Hour)]`), the generator additionally emits an `IHostedService` that calls `IJobStore.UpsertRecurringAsync` at startup to seed the first scheduled run.
 

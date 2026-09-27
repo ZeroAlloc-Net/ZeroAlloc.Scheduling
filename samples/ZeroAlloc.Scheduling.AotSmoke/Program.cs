@@ -19,7 +19,7 @@ builder.Services.AddSerializerDispatcher();
 builder.Services
     .AddScheduling(o => o.PollingInterval = TimeSpan.FromMilliseconds(50))
     .WithInMemoryStore()
-    .AddSendEmailJobJob();
+    .AddSendEmailJob();
 
 using var host = builder.Build();
 
