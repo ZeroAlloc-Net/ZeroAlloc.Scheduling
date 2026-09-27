@@ -12,4 +12,5 @@ internal sealed record JobModel(
     string? EveryValue,
     int MaxAttempts,
     bool IsMediatorBridge,
-    ImmutableArray<Diagnostic> Diagnostics);
+    ImmutableArray<Diagnostic> Diagnostics,
+    LocationInfo? Location);

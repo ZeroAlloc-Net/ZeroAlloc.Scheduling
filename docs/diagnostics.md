@@ -2,7 +2,7 @@
 id: diagnostics
 title: Diagnostics
 slug: /docs/diagnostics
-description: ZASCH001 compiler diagnostic reference — causes, examples, and fixes.
+description: ZASCH001 and ZASCH011 compiler diagnostic reference — causes, examples, and fixes.
 sidebar_position: 6
 ---
 
@@ -70,3 +70,28 @@ For full per-job MaxAttempts control on the mediator path, implement a custom `I
 public sealed class SendReportJob : IJob, IRequest<Unit> { ... }
 #pragma warning restore ZASCH001
 ```
+
+## ZASCH011 — Two jobs map to the same generated registration method
+
+**Severity:** Error
+
+**Message:**
+```
+Job types 'A' and 'B' in namespace 'N' both map to the generated method 'AddXJob()', because a
+trailing 'Job' is not appended twice. Rename one of them.
+```
+
+### Cause
+
+The generated registration method is `Add{Name}Job()`, and a type name that already ends in `Job` does not get the suffix twice. Two `[Job]` types in the same namespace whose names differ only by that suffix therefore map to the same method, and to the same executor class:
+
+```csharp
+[Job] public sealed class Cleanup : IJob { ... }      // ← ZASCH011: AddCleanupJob()
+[Job] public sealed class CleanupJob : IJob { ... }   // ← ZASCH011: AddCleanupJob()
+```
+
+The generated code could not compile, so the generator reports the error on both types and generates neither.
+
+### Fix
+
+Rename one of the types, or move it to another namespace. Each namespace gets its own generated `SchedulingServiceCollectionExtensions` class, so the same method name in two namespaces does not collide.
