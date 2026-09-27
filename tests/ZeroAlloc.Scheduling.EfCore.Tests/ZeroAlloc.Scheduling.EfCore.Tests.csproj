@@ -2,8 +2,6 @@
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <IsPackable>false</IsPackable>
-    <!-- Builder-pattern migration: legacy [Obsolete] shims emit custom DiagnosticIds that #pragma cannot suppress while TreatWarningsAsErrors=true. -->
-    <NoWarn>$(NoWarn);ZASCH001;ZASCH002;ZASCH003;ZASCH004;ZASCH005</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.10.1" />

@@ -45,32 +45,4 @@ public static class SchedulingResilienceServiceCollectionExtensions
         builder.Services.AddTransient<IJobTypeExecutor>(sp => sp.GetRequiredService<TResilienceProxy>());
         return builder;
     }
-
-    /// <summary>
-    /// Legacy shim that preserves the v1.x extension shape on <see cref="IServiceCollection"/>.
-    /// Will be removed in the next major.
-    /// </summary>
-    [Obsolete("Use AddScheduling().WithResilience<TInterface, TProxy>() instead. Will be removed in the next major.", DiagnosticId = "ZASCH005")]
-    public static IServiceCollection AddSchedulingResilience<TExecutorInterface, TResilienceProxy>(
-        this IServiceCollection services)
-        where TExecutorInterface : class, IJobTypeExecutor
-        where TResilienceProxy : class, TExecutorInterface
-    {
-        services.AddTransient<TResilienceProxy>();
-        services.AddTransient<IJobTypeExecutor>(sp => sp.GetRequiredService<TResilienceProxy>());
-        return services;
-    }
-
-    /// <summary>
-    /// Legacy shim that preserves the v1.x extension name when chained from
-    /// <see cref="ISchedulingBuilder"/>. Delegates to
-    /// <see cref="WithResilience{TExecutorInterface, TResilienceProxy}"/>.
-    /// Will be removed in the next major.
-    /// </summary>
-    [Obsolete("Use AddScheduling().WithResilience<TInterface, TProxy>() instead. Will be removed in the next major.", DiagnosticId = "ZASCH005")]
-    public static ISchedulingBuilder AddSchedulingResilience<TExecutorInterface, TResilienceProxy>(
-        this ISchedulingBuilder builder)
-        where TExecutorInterface : class, IJobTypeExecutor
-        where TResilienceProxy : class, TExecutorInterface
-        => builder.WithResilience<TExecutorInterface, TResilienceProxy>();
 }

@@ -8,8 +8,7 @@ namespace ZeroAlloc.Scheduling.EfCore.Tests;
 
 /// <summary>
 /// Verifies the builder-pattern entrypoints in <see cref="EfCoreSchedulingServiceCollectionExtensions"/>:
-/// <c>WithEfCore</c>, <c>WithOutboxWriter&lt;TJob&gt;</c>, and their legacy <c>AddSchedulingEfCore</c> /
-/// <c>AddSchedulingOutboxWriter</c> shims.
+/// <c>WithEfCore</c> and <c>WithOutboxWriter&lt;TJob&gt;</c>.
 /// </summary>
 public sealed class WithEfCoreTests
 {
@@ -23,18 +22,6 @@ public sealed class WithEfCoreTests
 
         services.AddScheduling()
                 .WithEfCore(o => o.UseSqlite("DataSource=:memory:"));
-
-        using var scope = services.BuildServiceProvider().CreateScope();
-        scope.ServiceProvider.GetService<IJobStore>().Should().NotBeNull();
-    }
-
-    [Fact]
-    public void AddSchedulingEfCore_LegacyShim_StillRegistersJobStore()
-    {
-        var services = new ServiceCollection();
-        services.AddLogging();
-
-        services.AddSchedulingEfCore(o => o.UseSqlite("DataSource=:memory:"));
 
         using var scope = services.BuildServiceProvider().CreateScope();
         scope.ServiceProvider.GetService<IJobStore>().Should().NotBeNull();
@@ -55,17 +42,4 @@ public sealed class WithEfCoreTests
         scope.ServiceProvider.GetRequiredService<IOutboxWriter<SampleJob>>().Should().NotBeNull();
     }
 
-    [Fact]
-    public void AddSchedulingOutboxWriter_LegacyShim_StillRegistersWriter()
-    {
-        var services = new ServiceCollection();
-        services.AddLogging();
-        services.AddSerializerDispatcher();
-        services.AddOutbox().WithInMemoryStore();
-
-        services.AddSchedulingOutboxWriter<SampleJob>();
-
-        using var scope = services.BuildServiceProvider().CreateScope();
-        scope.ServiceProvider.GetRequiredService<IOutboxWriter<SampleJob>>().Should().NotBeNull();
-    }
 }

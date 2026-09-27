@@ -8,7 +8,7 @@ using ZeroAlloc.Scheduling.EfCore;
 namespace ZeroAlloc.Scheduling.EfCore.Tests;
 
 /// <summary>
-/// Verifies that <see cref="EfCoreSchedulingServiceCollectionExtensions.AddSchedulingOutboxWriter{TJob}"/>
+/// Verifies that <see cref="EfCoreSchedulingServiceCollectionExtensions.WithOutboxWriter{TJob}"/>
 /// correctly wires <see cref="IOutboxWriter{TJob}"/> and that <c>WriteAsync</c> serializes
 /// the job and forwards it to <see cref="IOutboxStore"/>.
 /// </summary>
@@ -17,13 +17,13 @@ public sealed class OutboxJobWriterTests
     private sealed record SampleJob(string Name, int Priority);
 
     [Fact]
-    public async Task AddSchedulingOutboxWriter_RegistersIOutboxWriter()
+    public async Task WithOutboxWriter_RegistersIOutboxWriter()
     {
         var services = new ServiceCollection();
         services.AddSingleton<IOutboxStore, StubOutboxStore>();
         services.AddSingleton<IOutboxSerializer, StubOutboxSerializer>();
 
-        services.AddSchedulingOutboxWriter<SampleJob>();
+        services.AddScheduling().WithOutboxWriter<SampleJob>();
 
         await using var provider = services.BuildServiceProvider();
         using var scope = provider.CreateScope();
@@ -39,7 +39,7 @@ public sealed class OutboxJobWriterTests
         services.AddSingleton<IOutboxStore>(store);
         services.AddSingleton<IOutboxSerializer, StubOutboxSerializer>();
 
-        services.AddSchedulingOutboxWriter<SampleJob>();
+        services.AddScheduling().WithOutboxWriter<SampleJob>();
 
         await using var provider = services.BuildServiceProvider();
         using var scope = provider.CreateScope();
@@ -62,7 +62,7 @@ public sealed class OutboxJobWriterTests
         services.AddSingleton<IOutboxStore>(store);
         services.AddSingleton<IOutboxSerializer, StubOutboxSerializer>();
 
-        services.AddSchedulingOutboxWriter<SampleJob>();
+        services.AddScheduling().WithOutboxWriter<SampleJob>();
 
         await using var provider = services.BuildServiceProvider();
         using var scope = provider.CreateScope();

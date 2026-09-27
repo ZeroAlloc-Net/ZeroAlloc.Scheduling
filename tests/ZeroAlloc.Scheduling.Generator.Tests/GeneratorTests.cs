@@ -25,6 +25,28 @@ public sealed class GeneratorTests
     }
 
     [Fact]
+    public void ValidJob_EmitsOnlyTheBuilderExtension_WithNoTrimOrAotAnnotations()
+    {
+        // 2.0 removed the IServiceCollection alias, obsolete as ZASCH010, which carried
+        // RequiresUnreferencedCode and RequiresDynamicCode for the old fallback serializer.
+        var (source, _) = GeneratorTestHelper.Run("""
+            using ZeroAlloc.Scheduling;
+            namespace MyApp;
+            [Job]
+            public sealed class SendEmail : IJob
+            {
+                public System.Threading.Tasks.ValueTask ExecuteAsync(JobContext ctx, System.Threading.CancellationToken ct) => default;
+            }
+            """);
+
+        source.Should().Contain("ISchedulingBuilder AddSendEmailJob(");
+        source.Should().NotContain("IServiceCollection AddSendEmailJob(");
+        source.Should().NotContain("Obsolete");
+        source.Should().NotContain("RequiresUnreferencedCode");
+        source.Should().NotContain("RequiresDynamicCode");
+    }
+
+    [Fact]
     public void RecurringJob_WithCron_GeneratesStartupService()
     {
         var (source, _) = GeneratorTestHelper.Run("""

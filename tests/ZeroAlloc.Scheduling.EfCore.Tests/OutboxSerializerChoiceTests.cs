@@ -77,9 +77,9 @@ public sealed class OutboxSerializerChoiceTests
         // an app that chose AddSerializerDispatcher must get no IL2026 or IL3050 from here.
         var methods = typeof(EfCoreSchedulingServiceCollectionExtensions)
             .GetMethods(BindingFlags.Public | BindingFlags.Static)
-            .Where(m => m.Name is "WithOutboxWriter" or "AddSchedulingOutboxWriter")
+            .Where(m => string.Equals(m.Name, "WithOutboxWriter", StringComparison.Ordinal))
             .ToList();
-        methods.Should().HaveCount(3);
+        methods.Should().ContainSingle();
 
         var writeAsync = typeof(EfCoreSchedulingServiceCollectionExtensions).Assembly
             .GetType("ZeroAlloc.Scheduling.EfCore.OutboxJobWriter`1", throwOnError: true)!

@@ -2,8 +2,6 @@
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <IsPackable>false</IsPackable>
-    <!-- Builder-pattern migration: legacy [Obsolete] shims emit custom DiagnosticIds that #pragma cannot suppress while TreatWarningsAsErrors=true. -->
-    <NoWarn>$(NoWarn);ZASCH001;ZASCH002;ZASCH003;ZASCH004;ZASCH005</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.10.1" />
@@ -15,6 +13,11 @@
     <ProjectReference Include="..\..\src\ZeroAlloc.Scheduling\ZeroAlloc.Scheduling.csproj" />
     <ProjectReference Include="..\..\src\ZeroAlloc.Scheduling.InMemory\ZeroAlloc.Scheduling.InMemory.csproj" />
     <ProjectReference Include="..\..\src\ZeroAlloc.Scheduling.Mediator\ZeroAlloc.Scheduling.Mediator.csproj" />
+    <!-- The main lib's generator reference is PrivateAssets="all", so attach it here to generate
+         the executor and AddPingJob() for Ping. -->
+    <ProjectReference Include="..\..\src\ZeroAlloc.Scheduling.Generator\ZeroAlloc.Scheduling.Generator.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="ZeroAlloc.Mediator" Version="5.1.5" />

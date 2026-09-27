@@ -21,32 +21,6 @@ public static class EfCoreSchedulingServiceCollectionExtensions
     }
 
     /// <summary>
-    /// Legacy shim that preserves the v1.x extension shape on <see cref="IServiceCollection"/>.
-    /// Will be removed in the next major.
-    /// </summary>
-    [Obsolete("Use AddScheduling().WithEfCore(...) instead. Will be removed in the next major.", DiagnosticId = "ZASCH002")]
-    public static IServiceCollection AddSchedulingEfCore(
-        this IServiceCollection services,
-        Action<DbContextOptionsBuilder> configure)
-    {
-        services.AddDbContext<SchedulingDbContext>(configure);
-        services.TryAddScoped<IJobStore, EfCoreJobStore>();
-        services.TryAddScoped<IJobDashboardStore>(sp => (IJobDashboardStore)sp.GetRequiredService<IJobStore>());
-        return services;
-    }
-
-    /// <summary>
-    /// Legacy shim that preserves the v1.x extension name when chained from
-    /// <see cref="ISchedulingBuilder"/>. Delegates to <see cref="WithEfCore"/>.
-    /// Will be removed in the next major.
-    /// </summary>
-    [Obsolete("Use AddScheduling().WithEfCore(...) instead. Will be removed in the next major.", DiagnosticId = "ZASCH002")]
-    public static ISchedulingBuilder AddSchedulingEfCore(
-        this ISchedulingBuilder builder,
-        Action<DbContextOptionsBuilder> configure)
-        => builder.WithEfCore(configure);
-
-    /// <summary>
     /// Registers <see cref="IOutboxWriter{TJob}"/> so that a job of type
     /// <typeparamref name="TJob"/> can be enqueued into the outbox store within the same
     /// <c>DbTransaction</c> as a business write (Scheduling#17).
@@ -76,28 +50,4 @@ public static class EfCoreSchedulingServiceCollectionExtensions
         builder.Services.TryAddScoped<IOutboxWriter<TJob>, OutboxJobWriter<TJob>>();
         return builder;
     }
-
-    /// <summary>
-    /// Legacy shim that preserves the v1.x extension shape on <see cref="IServiceCollection"/>.
-    /// Will be removed in the next major.
-    /// </summary>
-    [Obsolete("Use AddScheduling().WithOutboxWriter<TJob>() instead. Will be removed in the next major.", DiagnosticId = "ZASCH003")]
-    public static IServiceCollection AddSchedulingOutboxWriter<TJob>(
-        this IServiceCollection services)
-        where TJob : notnull
-    {
-        services.TryAddScoped<IOutboxWriter<TJob>, OutboxJobWriter<TJob>>();
-        return services;
-    }
-
-    /// <summary>
-    /// Legacy shim that preserves the v1.x extension name when chained from
-    /// <see cref="ISchedulingBuilder"/>. Delegates to <see cref="WithOutboxWriter{TJob}"/>.
-    /// Will be removed in the next major.
-    /// </summary>
-    [Obsolete("Use AddScheduling().WithOutboxWriter<TJob>() instead. Will be removed in the next major.", DiagnosticId = "ZASCH003")]
-    public static ISchedulingBuilder AddSchedulingOutboxWriter<TJob>(
-        this ISchedulingBuilder builder)
-        where TJob : notnull
-        => builder.WithOutboxWriter<TJob>();
 }
