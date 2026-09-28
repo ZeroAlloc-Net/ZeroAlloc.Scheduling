@@ -1,0 +1,5 @@
+#nullable enable
+static ZeroAlloc.Scheduling.Telemetry.SchedulingTelemetryBuilderExtensions.WithTelemetry(this ZeroAlloc.Scheduling.ISchedulingBuilder! builder) -> ZeroAlloc.Scheduling.ISchedulingBuilder!
+ZeroAlloc.Scheduling.Telemetry.IJobExecutorTelemetry
+ZeroAlloc.Scheduling.Telemetry.IJobExecutorTelemetry.ExecuteAsync(byte[]! payload, ZeroAlloc.Scheduling.JobContext! ctx, System.Threading.CancellationToken ct) -> System.Threading.Tasks.ValueTask
+ZeroAlloc.Scheduling.Telemetry.SchedulingTelemetryBuilderExtensions

@@ -1,0 +1,3 @@
+#nullable enable
+static ZeroAlloc.Scheduling.Dashboard.JobsDashboardExtensions.MapJobsDashboard(this Microsoft.AspNetCore.Routing.IEndpointRouteBuilder! endpoints, string! prefix, System.Action<Microsoft.AspNetCore.Builder.IEndpointConventionBuilder!>? configure = null) -> Microsoft.AspNetCore.Builder.IEndpointConventionBuilder!
+ZeroAlloc.Scheduling.Dashboard.JobsDashboardExtensions
