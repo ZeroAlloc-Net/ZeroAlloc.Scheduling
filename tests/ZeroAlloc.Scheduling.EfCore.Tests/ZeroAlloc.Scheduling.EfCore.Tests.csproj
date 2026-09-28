@@ -15,7 +15,7 @@
     <PackageReference Include="ZeroAlloc.Outbox.InMemory" Version="4.0.0" />
     <!-- ZeroAlloc.Outbox brings ZeroAlloc.Mediator in transitively at its 5.1.5 floor; run the
          tests against the newest major, as the Mediator-facing test projects do. -->
-    <PackageReference Include="ZeroAlloc.Mediator" Version="6.0.0" />
+    <PackageReference Include="ZeroAlloc.Mediator" Version="6.0.1" />
     <ProjectReference Include="..\..\src\ZeroAlloc.Scheduling\ZeroAlloc.Scheduling.csproj" />
     <ProjectReference Include="..\..\src\ZeroAlloc.Scheduling.EfCore\ZeroAlloc.Scheduling.EfCore.csproj" />
   </ItemGroup>
