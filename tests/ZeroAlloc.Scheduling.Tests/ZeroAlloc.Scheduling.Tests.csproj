@@ -20,7 +20,7 @@
                       ReferenceOutputAssembly="false" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="ZeroAlloc.Mediator" Version="5.1.5" />
+    <PackageReference Include="ZeroAlloc.Mediator" Version="6.0.0" />
   </ItemGroup>
   <ItemGroup>
     <Using Include="Xunit" />
