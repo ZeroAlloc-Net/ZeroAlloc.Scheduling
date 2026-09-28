@@ -58,10 +58,21 @@
     referencing only ZeroAlloc.Scheduling. The standalone
     ZeroAlloc.Scheduling.Generator package is still published for backwards
     compatibility, but new consumers should reference the main package only.
+
+    Bundle the generator DLL the build actually produced. Asking the generator project for its
+    target path, instead of hardcoding bin\$(Configuration)\netstandard2.0, follows any output
+    redirection such as artifacts-path. The hardcoded path silently bundled whatever stale DLL
+    sat in the repository's bin folder, at whatever version that DLL had been built with.
+    See ZeroAlloc-Net/.github#43.
   -->
   <Target Name="IncludeGeneratorInPackage" BeforeTargets="_GetPackageFiles">
+    <MSBuild Projects="..\ZeroAlloc.Scheduling.Generator\ZeroAlloc.Scheduling.Generator.csproj"
+             Targets="GetTargetPath"
+             RemoveProperties="TargetFramework;RuntimeIdentifier;SelfContained">
+      <Output TaskParameter="TargetOutputs" ItemName="_ZeroAllocSchedulingGeneratorAssembly" />
+    </MSBuild>
     <ItemGroup>
-      <None Include="$(MSBuildThisFileDirectory)..\ZeroAlloc.Scheduling.Generator\bin\$(Configuration)\netstandard2.0\ZeroAlloc.Scheduling.Generator.dll"
+      <None Include="@(_ZeroAllocSchedulingGeneratorAssembly)"
             Pack="true"
             PackagePath="analyzers/dotnet/cs"
             Visible="false" />
