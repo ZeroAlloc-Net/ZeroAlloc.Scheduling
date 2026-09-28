@@ -12,7 +12,7 @@
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.9.0" />
     <!-- src stays on the ZeroAlloc.Mediator 5.1.5 floor it ships with; the tests run against
          the newest major so a consumer who upgrades Mediator is covered. -->
-    <PackageReference Include="ZeroAlloc.Mediator" Version="6.0.1" />
+    <PackageReference Include="ZeroAlloc.Mediator" Version="6.0.2" />
     <ProjectReference Include="..\..\src\ZeroAlloc.Scheduling\ZeroAlloc.Scheduling.csproj" />
     <ProjectReference Include="..\..\src\ZeroAlloc.Scheduling.Generator\ZeroAlloc.Scheduling.Generator.csproj" />
     <ProjectReference Include="..\..\src\ZeroAlloc.Scheduling.Mediator\ZeroAlloc.Scheduling.Mediator.csproj" />
