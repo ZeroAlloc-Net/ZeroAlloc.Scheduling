@@ -17,6 +17,45 @@ internal static class GeneratorTestHelper
     /// </summary>
     public static (IReadOnlyList<string> GeneratedSources, IReadOnlyList<Diagnostic> Diagnostics, IReadOnlyList<Diagnostic> CompilationErrors) RunAll(string source)
     {
+        var compilation = CreateCompilation([CSharpSyntaxTree.ParseText(source)]);
+
+        var generator = new SchedulingGenerator();
+        var driver = CSharpGeneratorDriver.Create(generator)
+            .RunGeneratorsAndUpdateCompilation(compilation, out var output, out _);
+        var result = driver.GetRunResult();
+
+        var generated = result.GeneratedTrees
+            .Select(t => t.GetText().ToString())
+            .ToList();
+        var errors = output.GetDiagnostics()
+            .Where(d => d.Severity == DiagnosticSeverity.Error)
+            .ToList();
+
+        return (generated, result.Diagnostics, errors);
+    }
+
+    /// <summary>The file path given to the source tree by <see cref="RunOnFile"/>.</summary>
+    public const string TestFilePath = "/src/Jobs.cs";
+
+    /// <summary>
+    /// Runs the generator on a source tree with the file path <see cref="TestFilePath"/> and returns
+    /// its diagnostics, as the driver filters them: a <c>#pragma warning disable</c> marks the ones
+    /// it covers as suppressed.
+    /// </summary>
+    public static IReadOnlyList<Diagnostic> RunOnFile(
+        string source, IReadOnlyDictionary<string, ReportDiagnostic>? severities = null)
+    {
+        var compilation = CreateCompilation([CSharpSyntaxTree.ParseText(source, path: TestFilePath)]);
+        if (severities is not null)
+            compilation = compilation.WithOptions(compilation.Options.WithSpecificDiagnosticOptions(severities));
+
+        var driver = CSharpGeneratorDriver.Create(new SchedulingGenerator()).RunGenerators(compilation);
+        return driver.GetRunResult().Diagnostics;
+    }
+
+    /// <summary>A compilation of the given trees, with every reference the generated code needs.</summary>
+    public static CSharpCompilation CreateCompilation(IEnumerable<SyntaxTree> trees)
+    {
         var refs = AppDomain.CurrentDomain.GetAssemblies()
             .Where(a => !a.IsDynamic && !string.IsNullOrEmpty(a.Location))
             .Select(a => MetadataReference.CreateFromFile(a.Location))
@@ -33,24 +72,10 @@ internal static class GeneratorTestHelper
         refs.Add(MetadataReference.CreateFromFile(typeof(Microsoft.Extensions.Options.IOptions<>).Assembly.Location));
         refs.Add(MetadataReference.CreateFromFile(typeof(Cronos.CronExpression).Assembly.Location));
 
-        var compilation = CSharpCompilation.Create(
+        return CSharpCompilation.Create(
             "TestAssembly",
-            [CSharpSyntaxTree.ParseText(source)],
+            trees,
             refs,
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
-
-        var generator = new SchedulingGenerator();
-        var driver = CSharpGeneratorDriver.Create(generator)
-            .RunGeneratorsAndUpdateCompilation(compilation, out var output, out _);
-        var result = driver.GetRunResult();
-
-        var generated = result.GeneratedTrees
-            .Select(t => t.GetText().ToString())
-            .ToList();
-        var errors = output.GetDiagnostics()
-            .Where(d => d.Severity == DiagnosticSeverity.Error)
-            .ToList();
-
-        return (generated, result.Diagnostics, errors);
     }
 }
