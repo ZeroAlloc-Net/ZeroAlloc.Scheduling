@@ -1,0 +1,16 @@
+#nullable enable
+static ZeroAlloc.Scheduling.Redis.RedisSchedulingServiceCollectionExtensions.WithRedis(this ZeroAlloc.Scheduling.ISchedulingBuilder! builder, string! connectionString) -> ZeroAlloc.Scheduling.ISchedulingBuilder!
+ZeroAlloc.Scheduling.Redis.RedisJobStore
+ZeroAlloc.Scheduling.Redis.RedisJobStore.DeadLetterAsync(ZeroAlloc.Scheduling.JobId id, string! error, System.Threading.CancellationToken ct) -> System.Threading.Tasks.ValueTask
+ZeroAlloc.Scheduling.Redis.RedisJobStore.DeleteAsync(ZeroAlloc.Scheduling.JobId id, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+ZeroAlloc.Scheduling.Redis.RedisJobStore.EnqueueAsync(string! typeName, byte[]! payload, System.DateTimeOffset scheduledAt, int maxAttempts, string? cronExpression, System.Threading.CancellationToken ct) -> System.Threading.Tasks.ValueTask
+ZeroAlloc.Scheduling.Redis.RedisJobStore.FetchPendingAsync(int batchSize, System.Threading.CancellationToken ct) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<ZeroAlloc.Scheduling.JobEntry!>!>
+ZeroAlloc.Scheduling.Redis.RedisJobStore.GetRecurringAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<ZeroAlloc.Scheduling.JobEntry!>!>!
+ZeroAlloc.Scheduling.Redis.RedisJobStore.GetSummaryAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<ZeroAlloc.Scheduling.JobSummary!>!
+ZeroAlloc.Scheduling.Redis.RedisJobStore.MarkFailedAsync(ZeroAlloc.Scheduling.JobId id, int attempts, System.DateTimeOffset nextRetryAt, System.Threading.CancellationToken ct) -> System.Threading.Tasks.ValueTask
+ZeroAlloc.Scheduling.Redis.RedisJobStore.MarkSucceededAsync(ZeroAlloc.Scheduling.JobId id, System.DateTimeOffset? nextRunAt, string? cronExpression, int maxAttempts, System.Threading.CancellationToken ct) -> System.Threading.Tasks.ValueTask
+ZeroAlloc.Scheduling.Redis.RedisJobStore.QueryByStatusAsync(ZeroAlloc.Scheduling.JobStatus[]! statuses, int page = 1, int pageSize = 50, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<ZeroAlloc.Scheduling.JobEntry!>!>!
+ZeroAlloc.Scheduling.Redis.RedisJobStore.RedisJobStore(StackExchange.Redis.IDatabase! db) -> void
+ZeroAlloc.Scheduling.Redis.RedisJobStore.RequeueAsync(ZeroAlloc.Scheduling.JobId id, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+ZeroAlloc.Scheduling.Redis.RedisJobStore.UpsertRecurringAsync(string! typeName, byte[]! payload, System.DateTimeOffset scheduledAt, string? cronExpression, int maxAttempts, System.Threading.CancellationToken ct) -> System.Threading.Tasks.ValueTask
+ZeroAlloc.Scheduling.Redis.RedisSchedulingServiceCollectionExtensions

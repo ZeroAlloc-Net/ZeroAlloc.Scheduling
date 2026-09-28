@@ -1,0 +1,3 @@
+#nullable enable
+static ZeroAlloc.Scheduling.Resilience.SchedulingResilienceServiceCollectionExtensions.WithResilience<TExecutorInterface, TResilienceProxy>(this ZeroAlloc.Scheduling.ISchedulingBuilder! builder) -> ZeroAlloc.Scheduling.ISchedulingBuilder!
+ZeroAlloc.Scheduling.Resilience.SchedulingResilienceServiceCollectionExtensions

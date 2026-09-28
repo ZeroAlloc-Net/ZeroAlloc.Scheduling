@@ -1,0 +1,21 @@
+#nullable enable
+static ZeroAlloc.Scheduling.Orm.OrmSchedulingServiceCollectionExtensions.WithOrm(this ZeroAlloc.Scheduling.ISchedulingBuilder! builder) -> ZeroAlloc.Scheduling.ISchedulingBuilder!
+static ZeroAlloc.Scheduling.Orm.OrmSchedulingServiceCollectionExtensions.WithOrm(this ZeroAlloc.Scheduling.ISchedulingBuilder! builder, ZeroAlloc.Scheduling.Orm.OrmSchedulingDialect dialect) -> ZeroAlloc.Scheduling.ISchedulingBuilder!
+static ZeroAlloc.Scheduling.Orm.SchedulingOrmMigrations.Postgres.get -> ZeroAlloc.ORM.Migrations.IMigrationSource!
+static ZeroAlloc.Scheduling.Orm.SchedulingOrmMigrations.Sqlite.get -> ZeroAlloc.ORM.Migrations.IMigrationSource!
+static ZeroAlloc.Scheduling.Orm.SchedulingOrmMigrations.SqlServer.get -> ZeroAlloc.ORM.Migrations.IMigrationSource!
+ZeroAlloc.Scheduling.Orm.OrmJobStore
+ZeroAlloc.Scheduling.Orm.OrmJobStore.DeadLetterAsync(ZeroAlloc.Scheduling.JobId id, string! error, System.Threading.CancellationToken ct) -> System.Threading.Tasks.ValueTask
+ZeroAlloc.Scheduling.Orm.OrmJobStore.EnqueueAsync(string! typeName, byte[]! payload, System.DateTimeOffset scheduledAt, int maxAttempts, string? cronExpression, System.Threading.CancellationToken ct) -> System.Threading.Tasks.ValueTask
+ZeroAlloc.Scheduling.Orm.OrmJobStore.FetchPendingAsync(int batchSize, System.Threading.CancellationToken ct) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<ZeroAlloc.Scheduling.JobEntry!>!>
+ZeroAlloc.Scheduling.Orm.OrmJobStore.MarkFailedAsync(ZeroAlloc.Scheduling.JobId id, int attempts, System.DateTimeOffset nextRetryAt, System.Threading.CancellationToken ct) -> System.Threading.Tasks.ValueTask
+ZeroAlloc.Scheduling.Orm.OrmJobStore.MarkSucceededAsync(ZeroAlloc.Scheduling.JobId id, System.DateTimeOffset? nextRunAt, string? cronExpression, int maxAttempts, System.Threading.CancellationToken ct) -> System.Threading.Tasks.ValueTask
+ZeroAlloc.Scheduling.Orm.OrmJobStore.OrmJobStore(System.Data.Async.IAsyncDbConnection! connection) -> void
+ZeroAlloc.Scheduling.Orm.OrmJobStore.OrmJobStore(System.Data.Async.IAsyncDbConnection! connection, ZeroAlloc.Scheduling.Orm.OrmSchedulingDialect dialect) -> void
+ZeroAlloc.Scheduling.Orm.OrmJobStore.UpsertRecurringAsync(string! typeName, byte[]! payload, System.DateTimeOffset scheduledAt, string? cronExpression, int maxAttempts, System.Threading.CancellationToken ct) -> System.Threading.Tasks.ValueTask
+ZeroAlloc.Scheduling.Orm.OrmSchedulingDialect
+ZeroAlloc.Scheduling.Orm.OrmSchedulingDialect.Postgres = 1 -> ZeroAlloc.Scheduling.Orm.OrmSchedulingDialect
+ZeroAlloc.Scheduling.Orm.OrmSchedulingDialect.Sqlite = 0 -> ZeroAlloc.Scheduling.Orm.OrmSchedulingDialect
+ZeroAlloc.Scheduling.Orm.OrmSchedulingDialect.SqlServer = 2 -> ZeroAlloc.Scheduling.Orm.OrmSchedulingDialect
+ZeroAlloc.Scheduling.Orm.OrmSchedulingServiceCollectionExtensions
+ZeroAlloc.Scheduling.Orm.SchedulingOrmMigrations

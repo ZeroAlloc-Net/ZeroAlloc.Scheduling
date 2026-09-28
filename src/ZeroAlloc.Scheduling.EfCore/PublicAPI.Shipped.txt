@@ -1,0 +1,49 @@
+#nullable enable
+static ZeroAlloc.Scheduling.EfCore.EfCoreSchedulingServiceCollectionExtensions.WithEfCore(this ZeroAlloc.Scheduling.ISchedulingBuilder! builder, System.Action<Microsoft.EntityFrameworkCore.DbContextOptionsBuilder!>! configure) -> ZeroAlloc.Scheduling.ISchedulingBuilder!
+static ZeroAlloc.Scheduling.EfCore.EfCoreSchedulingServiceCollectionExtensions.WithOutboxWriter<TJob>(this ZeroAlloc.Scheduling.ISchedulingBuilder! builder) -> ZeroAlloc.Scheduling.ISchedulingBuilder!
+ZeroAlloc.Scheduling.EfCore.EfCoreJobStore
+ZeroAlloc.Scheduling.EfCore.EfCoreJobStore.DeadLetterAsync(ZeroAlloc.Scheduling.JobId id, string! error, System.Threading.CancellationToken ct) -> System.Threading.Tasks.ValueTask
+ZeroAlloc.Scheduling.EfCore.EfCoreJobStore.DeleteAsync(ZeroAlloc.Scheduling.JobId id, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+ZeroAlloc.Scheduling.EfCore.EfCoreJobStore.EfCoreJobStore(ZeroAlloc.Scheduling.EfCore.SchedulingDbContext! db) -> void
+ZeroAlloc.Scheduling.EfCore.EfCoreJobStore.EnqueueAsync(string! typeName, byte[]! payload, System.DateTimeOffset scheduledAt, int maxAttempts, string? cronExpression, System.Threading.CancellationToken ct) -> System.Threading.Tasks.ValueTask
+ZeroAlloc.Scheduling.EfCore.EfCoreJobStore.FetchPendingAsync(int batchSize, System.Threading.CancellationToken ct) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<ZeroAlloc.Scheduling.JobEntry!>!>
+ZeroAlloc.Scheduling.EfCore.EfCoreJobStore.GetRecurringAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<ZeroAlloc.Scheduling.JobEntry!>!>!
+ZeroAlloc.Scheduling.EfCore.EfCoreJobStore.GetSummaryAsync(System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<ZeroAlloc.Scheduling.JobSummary!>!
+ZeroAlloc.Scheduling.EfCore.EfCoreJobStore.MarkFailedAsync(ZeroAlloc.Scheduling.JobId id, int attempts, System.DateTimeOffset nextRetryAt, System.Threading.CancellationToken ct) -> System.Threading.Tasks.ValueTask
+ZeroAlloc.Scheduling.EfCore.EfCoreJobStore.MarkSucceededAsync(ZeroAlloc.Scheduling.JobId id, System.DateTimeOffset? nextRunAt, string? cronExpression, int maxAttempts, System.Threading.CancellationToken ct) -> System.Threading.Tasks.ValueTask
+ZeroAlloc.Scheduling.EfCore.EfCoreJobStore.QueryByStatusAsync(ZeroAlloc.Scheduling.JobStatus[]! statuses, int page = 1, int pageSize = 50, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<ZeroAlloc.Scheduling.JobEntry!>!>!
+ZeroAlloc.Scheduling.EfCore.EfCoreJobStore.RequeueAsync(ZeroAlloc.Scheduling.JobId id, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+ZeroAlloc.Scheduling.EfCore.EfCoreJobStore.UpsertRecurringAsync(string! typeName, byte[]! payload, System.DateTimeOffset scheduledAt, string? cronExpression, int maxAttempts, System.Threading.CancellationToken ct) -> System.Threading.Tasks.ValueTask
+ZeroAlloc.Scheduling.EfCore.EfCoreSchedulingServiceCollectionExtensions
+ZeroAlloc.Scheduling.EfCore.JobEntryEntity
+ZeroAlloc.Scheduling.EfCore.JobEntryEntity.Attempts.get -> int
+ZeroAlloc.Scheduling.EfCore.JobEntryEntity.Attempts.set -> void
+ZeroAlloc.Scheduling.EfCore.JobEntryEntity.ClaimToken.get -> System.Guid?
+ZeroAlloc.Scheduling.EfCore.JobEntryEntity.ClaimToken.set -> void
+ZeroAlloc.Scheduling.EfCore.JobEntryEntity.CompletedAt.get -> System.DateTimeOffset?
+ZeroAlloc.Scheduling.EfCore.JobEntryEntity.CompletedAt.set -> void
+ZeroAlloc.Scheduling.EfCore.JobEntryEntity.CronExpression.get -> string?
+ZeroAlloc.Scheduling.EfCore.JobEntryEntity.CronExpression.set -> void
+ZeroAlloc.Scheduling.EfCore.JobEntryEntity.Error.get -> string?
+ZeroAlloc.Scheduling.EfCore.JobEntryEntity.Error.set -> void
+ZeroAlloc.Scheduling.EfCore.JobEntryEntity.Id.get -> ZeroAlloc.Scheduling.JobId
+ZeroAlloc.Scheduling.EfCore.JobEntryEntity.Id.set -> void
+ZeroAlloc.Scheduling.EfCore.JobEntryEntity.JobEntryEntity() -> void
+ZeroAlloc.Scheduling.EfCore.JobEntryEntity.MaxAttempts.get -> int
+ZeroAlloc.Scheduling.EfCore.JobEntryEntity.MaxAttempts.set -> void
+ZeroAlloc.Scheduling.EfCore.JobEntryEntity.NextRunAt.get -> System.DateTimeOffset?
+ZeroAlloc.Scheduling.EfCore.JobEntryEntity.NextRunAt.set -> void
+ZeroAlloc.Scheduling.EfCore.JobEntryEntity.Payload.get -> byte[]!
+ZeroAlloc.Scheduling.EfCore.JobEntryEntity.Payload.set -> void
+ZeroAlloc.Scheduling.EfCore.JobEntryEntity.ScheduledAt.get -> System.DateTimeOffset
+ZeroAlloc.Scheduling.EfCore.JobEntryEntity.ScheduledAt.set -> void
+ZeroAlloc.Scheduling.EfCore.JobEntryEntity.StartedAt.get -> System.DateTimeOffset?
+ZeroAlloc.Scheduling.EfCore.JobEntryEntity.StartedAt.set -> void
+ZeroAlloc.Scheduling.EfCore.JobEntryEntity.Status.get -> ZeroAlloc.Scheduling.JobStatus
+ZeroAlloc.Scheduling.EfCore.JobEntryEntity.Status.set -> void
+ZeroAlloc.Scheduling.EfCore.JobEntryEntity.ToJobEntry() -> ZeroAlloc.Scheduling.JobEntry!
+ZeroAlloc.Scheduling.EfCore.JobEntryEntity.TypeName.get -> string!
+ZeroAlloc.Scheduling.EfCore.JobEntryEntity.TypeName.set -> void
+ZeroAlloc.Scheduling.EfCore.SchedulingDbContext
+ZeroAlloc.Scheduling.EfCore.SchedulingDbContext.Jobs.get -> Microsoft.EntityFrameworkCore.DbSet<ZeroAlloc.Scheduling.EfCore.JobEntryEntity!>!
+ZeroAlloc.Scheduling.EfCore.SchedulingDbContext.SchedulingDbContext(Microsoft.EntityFrameworkCore.DbContextOptions<ZeroAlloc.Scheduling.EfCore.SchedulingDbContext!>! options) -> void

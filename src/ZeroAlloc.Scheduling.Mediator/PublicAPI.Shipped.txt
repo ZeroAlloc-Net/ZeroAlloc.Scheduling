@@ -1,0 +1,6 @@
+#nullable enable
+ZeroAlloc.Scheduling.Mediator.MediatorJobTypeExecutor<TJob>
+ZeroAlloc.Scheduling.Mediator.MediatorJobTypeExecutor<TJob>.ExecuteAsync(byte[]! payload, ZeroAlloc.Scheduling.JobContext! ctx, System.Threading.CancellationToken ct) -> System.Threading.Tasks.ValueTask
+ZeroAlloc.Scheduling.Mediator.MediatorJobTypeExecutor<TJob>.MaxAttempts.get -> int
+ZeroAlloc.Scheduling.Mediator.MediatorJobTypeExecutor<TJob>.MediatorJobTypeExecutor(ZeroAlloc.Scheduling.IJobSerializer! serializer, ZeroAlloc.Mediator.IRequestHandler<TJob, ZeroAlloc.Mediator.Unit>! handler) -> void
+ZeroAlloc.Scheduling.Mediator.MediatorJobTypeExecutor<TJob>.TypeName.get -> string!
