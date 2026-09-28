@@ -1,5 +1,34 @@
 # Changelog
 
+## [2.0.1](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v2.0.0...v2.0.1) (2026-09-28)
+
+
+### Bug Fixes
+
+* generate a partial job whose other part has an attribute instead of reporting ZASCH011 against itself ([13fc154](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/13fc154bb3945f8d754c3ab6455a3f6e694ed515))
+* mark released analyzer rules and public api as shipped and automate the move ([#299](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/299)) ([63a6373](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/63a63730e8272c01650a255158d8ac399583076c))
+* report ZASCH diagnostics at a source location that #pragma can suppress ([13fc154](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/13fc154bb3945f8d754c3ab6455a3f6e694ed515))
+
+
+### Tests
+
+* run the test projects against ZeroAlloc.Mediator 6.0.0 ([#297](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/297)) ([af22be2](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/af22be22766b394a1c5e48f0844a93cf0441824d))
+
+
+### Build System
+
+* pack the source generator from GetTargetPath instead of a bin path ([#298](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/298)) ([9800f91](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/9800f916a80e82f787acc0bd0f56070c51c225fd))
+* stop suppressing RS0026 now that the public api is shipped ([#301](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/301)) ([74557a3](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/74557a3a4403e60950f3d524d1e61fe84ec0dff9))
+
+
+### Chores
+
+* **deps:** update dependency zeroalloc.collections to 1.1.9 ([#285](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/285)) ([ec1760c](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/ec1760c38c883b785ccfc51b3e82a85a20742c66))
+* **deps:** update dependency zeroalloc.resilience to 3.3.0 ([#286](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/286)) ([7cf9835](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/7cf9835c6e6c039ca9acd7d88b19f223302fabcb))
+* **deps:** update dependency zeroalloc.statemachine to 1.6.0 ([#292](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/292)) ([ad0b7dd](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/ad0b7dd54c6078e8525e751036031fb228c55282))
+* **deps:** update dependency zeroalloc.telemetry to 1.7.0 ([#293](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/293)) ([6114bc5](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/6114bc53139d65a06295946869b72a9ceda64e58))
+* **deps:** update zeroalloc.orm to 2.1.0 ([#294](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/294)) ([7f1016b](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/7f1016ba4c1afac9c218205b74de991b4ecb6fcf))
+
 ## [2.0.0](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v1.4.11...v2.0.0) (2026-09-27)
 
 
