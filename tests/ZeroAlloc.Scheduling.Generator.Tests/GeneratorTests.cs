@@ -122,6 +122,23 @@ public sealed class GeneratorTests
     }
 
     [Fact]
+    public void PartialJob_WhoseOtherPartHasAnAttribute_IsGeneratedOnce_AndDoesNotCollideWithItself()
+    {
+        var (sources, diagnostics, errors) = GeneratorTestHelper.RunAll($$"""
+            using ZeroAlloc.Scheduling;
+            namespace MyApp;
+            [System.Serializable]
+            public sealed partial class Cleanup { }
+            [Job]
+            public sealed partial class Cleanup : IJob {{JobBody}}
+            """);
+
+        diagnostics.Should().BeEmpty();
+        errors.Should().BeEmpty();
+        sources.Should().ContainSingle().Which.Should().Contain("ISchedulingBuilder AddCleanupJob(");
+    }
+
+    [Fact]
     public void SameNameInDifferentNamespaces_IsNotACollision()
     {
         var (sources, diagnostics, errors) = GeneratorTestHelper.RunAll($$"""

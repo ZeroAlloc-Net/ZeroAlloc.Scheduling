@@ -14,6 +14,8 @@ The ZeroAlloc.Scheduling source generator emits compiler diagnostics to catch mi
 
 **Severity:** Warning (build succeeds)
 
+**Reported at:** the `MaxAttempts = N` argument of `[Job]`.
+
 **Message:**
 ```
 Job type 'T' specifies MaxAttempts=N but implements IRequest<Unit> — MaxAttempts is not
@@ -74,6 +76,8 @@ public sealed class SendReportJob : IJob, IRequest<Unit> { ... }
 ## ZASCH011 — Two jobs map to the same generated registration method
 
 **Severity:** Error
+
+**Reported at:** the class name of each colliding type.
 
 **Message:**
 ```

@@ -1,4 +1,3 @@
-using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
@@ -27,16 +26,18 @@ public sealed class SchedulingGenerator : IIncrementalGenerator
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
+        // ForAttributeWithMetadataName visits the declaration that carries [Job], once, so a
+        // partial job whose other parts have attributes of their own is not parsed twice.
         var models = context.SyntaxProvider
-            .CreateSyntaxProvider(
-                predicate: static (node, _) => node is TypeDeclarationSyntax { AttributeLists.Count: > 0 },
-                transform: static (ctx, ct) => TryParse(ctx, ct))
-            .Where(static m => m is not null)
-            .Select(static (m, _) => m!);
+            .ForAttributeWithMetadataName(
+                JobAttributeFqn,
+                predicate: static (node, _) => node is TypeDeclarationSyntax,
+                transform: static (ctx, ct) => Parse(ctx, ct))
+            .WithTrackingName(TrackingNames.Jobs);
 
         // Collected, so jobs whose generated names collide can be reported instead of emitting
         // code that cannot compile.
-        context.RegisterSourceOutput(models.Collect(), static (ctx, all) =>
+        context.RegisterSourceOutput(models.Collect().WithTrackingName(TrackingNames.AllJobs), static (ctx, all) =>
         {
             var byName = new Dictionary<(string Namespace, string Method), List<JobModel>>();
             foreach (var model in all)
@@ -60,42 +61,30 @@ public sealed class SchedulingGenerator : IIncrementalGenerator
                     var other = jobs[i == 0 ? 1 : 0];
                     colliding.Add(job);
                     ctx.ReportDiagnostic(Diagnostic.Create(RegistrationNameCollision,
-                        job.Location?.ToLocation() ?? Location.None,
+                        job.Location.ToLocation(),
                         job.TypeName, other.TypeName, ns, entry.Key.Method));
                 }
             }
 
             foreach (var model in all)
             {
-                bool hasErrors = colliding.Contains(model);
-                foreach (var d in model.Diagnostics)
+                if (model.MaxAttemptsIgnoredLocation is { } maxAttempts)
                 {
-                    ctx.ReportDiagnostic(d);
-                    if (d.Severity == DiagnosticSeverity.Error) hasErrors = true;
+                    ctx.ReportDiagnostic(Diagnostic.Create(MediatorMaxAttemptsIgnored,
+                        maxAttempts.ToLocation(), model.TypeName, model.MaxAttempts));
                 }
-                if (!hasErrors)
+                if (!colliding.Contains(model))
                     SchedulingCodeWriter.Write(ctx, model);
             }
         });
     }
 
-    private static JobModel? TryParse(GeneratorSyntaxContext ctx, System.Threading.CancellationToken ct)
+    private static JobModel Parse(GeneratorAttributeSyntaxContext ctx, System.Threading.CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
 
-        if (ctx.SemanticModel.GetDeclaredSymbol(ctx.Node, ct) is not INamedTypeSymbol symbol)
-            return null;
-
-        AttributeData? jobAttr = null;
-        foreach (var attr in symbol.GetAttributes())
-        {
-            if (string.Equals(attr.AttributeClass?.ToDisplayString(), JobAttributeFqn, System.StringComparison.Ordinal))
-            {
-                jobAttr = attr;
-                break;
-            }
-        }
-        if (jobAttr is null) return null;
+        var symbol = (INamedTypeSymbol)ctx.TargetSymbol;
+        var jobAttr = ctx.Attributes[0];
 
         var ns = symbol.ContainingNamespace.IsGlobalNamespace ? null
             : symbol.ContainingNamespace.ToDisplayString();
@@ -129,22 +118,28 @@ public sealed class SchedulingGenerator : IIncrementalGenerator
         }
 
         bool isRecurring = cron != null || every != null;
-        var diagnostics = BuildDiagnostics(symbol, isMediatorBridge, maxAttempts);
+        var identifier = LocationInfo.From(((TypeDeclarationSyntax)ctx.TargetNode).Identifier);
+        var maxAttemptsIgnored = isMediatorBridge && maxAttempts > 0
+            ? MaxAttemptsLocation(jobAttr, identifier, ct)
+            : null;
 
         return new JobModel(ns, symbol.Name, fqn, isRecurring, cron, every, maxAttempts,
-            isMediatorBridge, diagnostics, LocationInfo.From(symbol.Locations.FirstOrDefault()));
+            isMediatorBridge, identifier, maxAttemptsIgnored);
     }
 
-    private static ImmutableArray<Diagnostic> BuildDiagnostics(
-        INamedTypeSymbol symbol, bool isMediatorBridge, int maxAttempts)
+    // ZASCH001 is about the MaxAttempts argument: the fix is to remove it.
+    private static LocationInfo MaxAttemptsLocation(
+        AttributeData jobAttr, LocationInfo fallback, System.Threading.CancellationToken ct)
     {
-        if (!isMediatorBridge || maxAttempts <= 0)
-            return ImmutableArray<Diagnostic>.Empty;
+        if (jobAttr.ApplicationSyntaxReference?.GetSyntax(ct) is not AttributeSyntax attribute)
+            return fallback;
 
-        var location = symbol.Locations.FirstOrDefault() ?? Location.None;
-        return ImmutableArray.Create(
-            Diagnostic.Create(MediatorMaxAttemptsIgnored, location,
-                symbol.Name, maxAttempts));
+        foreach (var argument in attribute.ArgumentList?.Arguments ?? default)
+        {
+            if (string.Equals(argument.NameEquals?.Name.Identifier.ValueText, "MaxAttempts", System.StringComparison.Ordinal))
+                return LocationInfo.From(argument);
+        }
+        return LocationInfo.From(attribute);
     }
 
     // Maps Every enum integer values to names without depending on the ZeroAlloc.Scheduling assembly.
