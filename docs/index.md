@@ -21,7 +21,7 @@ Source-generated background job scheduler for .NET 8 and .NET 10.
 | 5 | [Mediator Bridge](mediator-bridge.md) | Route job execution through ZeroAlloc.Mediator |
 | 6 | [Resilience Bridge](resilience-bridge.md) | Wrap executors in retry, circuit-breaker, and timeout policies |
 | 7 | [Telemetry Bridge](telemetry-bridge.md) | Emit OpenTelemetry spans, counters, and histograms per job execution |
-| 8 | [Diagnostics](diagnostics.md) | ZASCH001 and ZASCH011 compiler diagnostic reference |
+| 8 | [Diagnostics](diagnostics.md) | ZASCH001, ZASCH011, ZASCH012 and ZASCH013 compiler diagnostic reference |
 | 9 | [Performance](performance.md) | Throughput, allocation profile, and tuning guide |
 | 10 | [Migrating to v2](migrating-to-v2.md) | Choose a job serializer, adopt Outbox 4.0, replace the removed 1.x aliases |
 

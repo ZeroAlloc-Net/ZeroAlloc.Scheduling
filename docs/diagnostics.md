@@ -2,7 +2,7 @@
 id: diagnostics
 title: Diagnostics
 slug: /docs/diagnostics
-description: ZASCH001 and ZASCH011 compiler diagnostic reference — causes, examples, and fixes.
+description: ZASCH001, ZASCH011, ZASCH012 and ZASCH013 compiler diagnostic reference — causes, examples, and fixes.
 sidebar_position: 6
 ---
 
@@ -99,6 +99,68 @@ The generated code could not compile, so the generator reports the error on both
 ### Fix
 
 Rename one of the types, or move it to another namespace. Each namespace gets its own generated `SchedulingServiceCollectionExtensions` class, so the same method name in two namespaces does not collide.
+
+## ZASCH012 — [Job] type is nested or generic
+
+**Severity:** Error
+
+**Reported at:** the class name of the job type.
+
+**Message:**
+```
+Job type 'N.Outer.Cleanup' is nested in type 'N.Outer'. [Job] supports only non-generic types
+declared directly in a namespace, so no code is generated for it.
+```
+
+### Cause
+
+The generated executor, registration method and recurring startup name the job by its namespace and type name, which is also the job type name the stores persist. That name cannot refer to a type nested in another type, and it has no type arguments for a generic type, so the generated code could not compile:
+
+```csharp
+namespace N;
+
+public static class Outer
+{
+    [Job] public sealed class Cleanup : IJob { ... }   // ← ZASCH012: nested in type 'N.Outer'
+}
+
+[Job] public sealed class Box<T> : IJob { ... }        // ← ZASCH012: generic
+```
+
+The generator reports the error and generates nothing for the type. It takes part in no other check, so it reports no ZASCH001, ZASCH011 or ZASCH013 either. Other jobs are generated as usual.
+
+### Fix
+
+Declare the job type directly in a namespace, and give it no type parameters. A job that needs to vary by type can carry that as data in its properties.
+
+## ZASCH013 — Two jobs need generated files whose names differ only in case
+
+**Severity:** Error
+
+**Reported at:** the class name of each job but the first.
+
+**Message:**
+```
+Job type 'App.cleanup' needs the generated file 'App.cleanup.Scheduling.g.cs', whose name differs
+only in case from the file of job type 'App.Cleanup'. Rename one of them.
+```
+
+### Cause
+
+Each job gets a generated file named after its namespace and type, such as `App.Cleanup.Scheduling.g.cs`. The compiler compares those file names ignoring case, so two jobs whose qualified names differ only in case cannot both have one:
+
+```csharp
+namespace App;
+
+[Job] public sealed class Cleanup : IJob { ... }
+[Job] public sealed class cleanup : IJob { ... }   // ← ZASCH013
+```
+
+The job declared first, by file path and then position in the file, is generated. Every later one gets the error and is not generated. Other jobs are generated as usual. Namespaces count too: `App.Cleanup` and `app.Cleanup` collide the same way.
+
+### Fix
+
+Rename one of the types, or one of the namespaces, so that the names differ in more than case.
 
 ## Release tracking
 

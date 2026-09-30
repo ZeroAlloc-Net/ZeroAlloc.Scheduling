@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
@@ -24,6 +25,22 @@ public sealed class SchedulingGenerator : IIncrementalGenerator
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
+    private static readonly DiagnosticDescriptor UnsupportedJobShape = new(
+        id: "ZASCH012",
+        title: "[Job] type is nested or generic",
+        messageFormat: "Job type '{0}' is {1}. [Job] supports only non-generic types declared directly in a namespace, so no code is generated for it.",
+        category: "ZeroAlloc.Scheduling",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
+    private static readonly DiagnosticDescriptor FileNameDiffersOnlyInCase = new(
+        id: "ZASCH013",
+        title: "Two jobs need generated files whose names differ only in case",
+        messageFormat: "Job type '{0}' needs the generated file '{1}', whose name differs only in case from the file of job type '{2}'. Rename one of them.",
+        category: "ZeroAlloc.Scheduling",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
         // ForAttributeWithMetadataName visits the declaration that carries [Job], once, so a
@@ -37,46 +54,112 @@ public sealed class SchedulingGenerator : IIncrementalGenerator
 
         // Collected, so jobs whose generated names collide can be reported instead of emitting
         // code that cannot compile.
-        context.RegisterSourceOutput(models.Collect().WithTrackingName(TrackingNames.AllJobs), static (ctx, all) =>
+        context.RegisterSourceOutput(models.Collect().WithTrackingName(TrackingNames.AllJobs),
+            static (ctx, all) => Emit(ctx, all));
+    }
+
+    private static void Emit(SourceProductionContext ctx, ImmutableArray<JobModel> all)
+    {
+        // ZASCH012: a nested or generic job generates nothing and takes part in no other check.
+        var supported = new List<JobModel>(all.Length);
+        foreach (var model in all)
         {
-            var byName = new Dictionary<(string Namespace, string Method), List<JobModel>>();
-            foreach (var model in all)
+            if (model.UnsupportedShape is { } shape)
             {
-                var key = (model.Namespace ?? string.Empty, JobNames.RegistrationMethod(model.TypeName));
-                if (!byName.TryGetValue(key, out var jobs))
-                    byName[key] = jobs = new List<JobModel>();
-                jobs.Add(model);
+                ctx.ReportDiagnostic(Diagnostic.Create(UnsupportedJobShape,
+                    model.Location.ToLocation(), model.DisplayName, shape));
+                continue;
             }
+            supported.Add(model);
+        }
 
-            var colliding = new HashSet<JobModel>();
-            foreach (var entry in byName)
-            {
-                var jobs = entry.Value;
-                if (jobs.Count < 2) continue;
-                jobs.Sort(static (x, y) => string.CompareOrdinal(x.TypeName, y.TypeName));
-                var ns = entry.Key.Namespace.Length == 0 ? "<global>" : entry.Key.Namespace;
-                for (var i = 0; i < jobs.Count; i++)
-                {
-                    var job = jobs[i];
-                    var other = jobs[i == 0 ? 1 : 0];
-                    colliding.Add(job);
-                    ctx.ReportDiagnostic(Diagnostic.Create(RegistrationNameCollision,
-                        job.Location.ToLocation(),
-                        job.TypeName, other.TypeName, ns, entry.Key.Method));
-                }
-            }
+        var skipped = FindRegistrationCollisions(ctx, supported);
+        skipped.UnionWith(FindCaseCollisions(ctx, supported, skipped));
 
-            foreach (var model in all)
+        foreach (var model in supported)
+        {
+            if (model.MaxAttemptsIgnoredLocation is { } maxAttempts)
             {
-                if (model.MaxAttemptsIgnoredLocation is { } maxAttempts)
-                {
-                    ctx.ReportDiagnostic(Diagnostic.Create(MediatorMaxAttemptsIgnored,
-                        maxAttempts.ToLocation(), model.TypeName, model.MaxAttempts));
-                }
-                if (!colliding.Contains(model))
-                    SchedulingCodeWriter.Write(ctx, model);
+                ctx.ReportDiagnostic(Diagnostic.Create(MediatorMaxAttemptsIgnored,
+                    maxAttempts.ToLocation(), model.TypeName, model.MaxAttempts));
             }
+            if (!skipped.Contains(model))
+                SchedulingCodeWriter.Write(ctx, model);
+        }
+    }
+
+    /// <summary>
+    /// ZASCH011: jobs in one namespace that map to the same registration method, which is also
+    /// the same executor class. Every one of them is reported and skipped.
+    /// </summary>
+    private static HashSet<JobModel> FindRegistrationCollisions(SourceProductionContext ctx, List<JobModel> jobs)
+    {
+        var byName = new Dictionary<(string Namespace, string Method), List<JobModel>>();
+        foreach (var model in jobs)
+        {
+            var key = (model.Namespace ?? string.Empty, JobNames.RegistrationMethod(model.TypeName));
+            if (!byName.TryGetValue(key, out var group))
+                byName[key] = group = new List<JobModel>();
+            group.Add(model);
+        }
+
+        var colliding = new HashSet<JobModel>();
+        foreach (var entry in byName)
+        {
+            var group = entry.Value;
+            if (group.Count < 2) continue;
+            group.Sort(static (x, y) => string.CompareOrdinal(x.TypeName, y.TypeName));
+            var ns = entry.Key.Namespace.Length == 0 ? "<global>" : entry.Key.Namespace;
+            for (var i = 0; i < group.Count; i++)
+            {
+                var job = group[i];
+                var other = group[i == 0 ? 1 : 0];
+                colliding.Add(job);
+                ctx.ReportDiagnostic(Diagnostic.Create(RegistrationNameCollision,
+                    job.Location.ToLocation(),
+                    job.TypeName, other.TypeName, ns, entry.Key.Method));
+            }
+        }
+        return colliding;
+    }
+
+    /// <summary>
+    /// ZASCH013: Roslyn compares hint names ignoring case, so two jobs whose files differ only in
+    /// case cannot both be added. Of each such group the job declared first, by file path and then
+    /// position, keeps its file; every later one is reported and skipped. The order does not depend
+    /// on the order of the syntax trees, so the same job is generated on every run.
+    /// </summary>
+    private static HashSet<JobModel> FindCaseCollisions(
+        SourceProductionContext ctx, List<JobModel> jobs, HashSet<JobModel> alreadySkipped)
+    {
+        var generated = new List<JobModel>(jobs.Count);
+        foreach (var job in jobs)
+        {
+            if (!alreadySkipped.Contains(job)) generated.Add(job);
+        }
+        generated.Sort(static (x, y) =>
+        {
+            var byPath = string.CompareOrdinal(x.Location.Tree.FilePath, y.Location.Tree.FilePath);
+            if (byPath != 0) return byPath;
+            var byPosition = x.Location.Span.Start.CompareTo(y.Location.Span.Start);
+            return byPosition != 0 ? byPosition : string.CompareOrdinal(x.HintName, y.HintName);
         });
+
+        var first = new Dictionary<string, JobModel>(System.StringComparer.OrdinalIgnoreCase);
+        var skipped = new HashSet<JobModel>();
+        foreach (var job in generated)
+        {
+            if (!first.TryGetValue(job.HintName, out var earlier))
+            {
+                first.Add(job.HintName, job);
+                continue;
+            }
+
+            skipped.Add(job);
+            ctx.ReportDiagnostic(Diagnostic.Create(FileNameDiffersOnlyInCase,
+                job.Location.ToLocation(), job.DisplayName, job.HintName, earlier.DisplayName));
+        }
+        return skipped;
     }
 
     private static JobModel Parse(GeneratorAttributeSyntaxContext ctx, System.Threading.CancellationToken ct)
@@ -123,8 +206,17 @@ public sealed class SchedulingGenerator : IIncrementalGenerator
             ? MaxAttemptsLocation(jobAttr, identifier, ct)
             : null;
 
-        return new JobModel(ns, symbol.Name, fqn, HintNames.ForJob(symbol), isRecurring, cron, every, maxAttempts,
+        return new JobModel(ns, symbol.Name, fqn, HintNames.ForJob(symbol), symbol.ToDisplayString(),
+            UnsupportedShape(symbol), isRecurring, cron, every, maxAttempts,
             isMediatorBridge, identifier, maxAttemptsIgnored);
+    }
+
+    // ZASCH012: the generated code names the job by its namespace and name only, so a nested
+    // job's type cannot be found and a generic job's type arguments are missing.
+    private static string? UnsupportedShape(INamedTypeSymbol symbol)
+    {
+        if (symbol.ContainingType is { } outer) return $"nested in type '{outer.ToDisplayString()}'";
+        return symbol.Arity > 0 ? "generic" : null;
     }
 
     // ZASCH001 is about the MaxAttempts argument: the fix is to remove it.

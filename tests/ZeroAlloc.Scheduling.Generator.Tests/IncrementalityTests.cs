@@ -14,7 +14,8 @@ public class IncrementalityTests
     private const string JobBody =
         "{ public System.Threading.Tasks.ValueTask ExecuteAsync(JobContext ctx, System.Threading.CancellationToken ct) => default; }";
 
-    // ZASCH001 on SendWelcomeEmailJob, ZASCH011 on Cleanup and CleanupJob, and one clean job.
+    // ZASCH001 on SendWelcomeEmailJob, ZASCH011 on Cleanup and CleanupJob, ZASCH012 on the nested
+    // job, ZASCH013 on hourlyJob, whose file differs from HourlyJob's only in case, and one clean job.
     private const string JobsSource = $$"""
         using ZeroAlloc.Scheduling;
         using ZeroAlloc.Mediator;
@@ -31,6 +32,11 @@ public class IncrementalityTests
 
         [Job(Cron = "0 * * * *")]
         public sealed class HourlyJob : IJob {{JobBody}}
+
+        public static class Outer { [Job] public sealed class Nested : IJob {{JobBody}} }
+
+        [Job]
+        public sealed class hourlyJob : IJob {{JobBody}}
         """;
 
     [Fact]
@@ -69,7 +75,7 @@ public class IncrementalityTests
 
         // A cached output still reports its diagnostics at the same place, bound to the tree.
         Describe(second.Diagnostics).Should().Equal(Describe(first.Diagnostics));
-        second.Diagnostics.Select(d => d.Id).Should().BeEquivalentTo(["ZASCH001", "ZASCH011", "ZASCH011"]);
+        second.Diagnostics.Select(d => d.Id).Should().BeEquivalentTo(["ZASCH001", "ZASCH011", "ZASCH011", "ZASCH012", "ZASCH013"]);
         second.Diagnostics.Should().OnlyContain(d => d.Location.SourceTree == jobs);
     }
 

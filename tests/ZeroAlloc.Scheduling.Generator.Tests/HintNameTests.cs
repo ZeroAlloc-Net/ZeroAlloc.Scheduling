@@ -52,16 +52,25 @@ public sealed class HintNameTests
     }
 
     [Fact]
-    public void NestedAndGenericJobs_CarryTheirContainingTypesAndArity()
+    public void NestedAndGenericTypes_CarryTheirContainingTypesAndArity()
     {
-        // Only the hint name is checked: the code generated for nested and generic jobs is a
-        // separate defect, #316.
-        HintNamesOf($$"""
-            using ZeroAlloc.Scheduling;
-            namespace App;
-            public static class Outer<T> { [Job] public sealed class Cleanup : IJob {{JobBody}} }
-            [Job] public sealed class Box<T> : IJob {{JobBody}}
-            """).Should().BeEquivalentTo("App.Outer`1+Cleanup.Scheduling.g.cs", "App.Box`1.Scheduling.g.cs");
+        // The generator rejects nested and generic jobs as ZASCH012 (#316), so the names are
+        // checked on the symbols: a nested type is never named like a type of its outer namespace.
+        var compilation = GeneratorTestHelper.CreateCompilation([CSharpSyntaxTree.ParseText("""
+            namespace App
+            {
+                public static class Outer<T> { public sealed class Cleanup { } }
+                public sealed class Box<T> { }
+            }
+            namespace App.Outer { public sealed class Cleanup { } }
+            """)]);
+
+        HintNames.ForJob(compilation.GetTypeByMetadataName("App.Outer`1+Cleanup")!)
+            .Should().Be("App.Outer`1+Cleanup.Scheduling.g.cs");
+        HintNames.ForJob(compilation.GetTypeByMetadataName("App.Box`1")!)
+            .Should().Be("App.Box`1.Scheduling.g.cs");
+        HintNames.ForJob(compilation.GetTypeByMetadataName("App.Outer.Cleanup")!)
+            .Should().Be("App.Outer.Cleanup.Scheduling.g.cs");
     }
 
     [Fact]
