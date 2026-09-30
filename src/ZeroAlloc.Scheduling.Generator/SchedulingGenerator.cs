@@ -123,7 +123,7 @@ public sealed class SchedulingGenerator : IIncrementalGenerator
             ? MaxAttemptsLocation(jobAttr, identifier, ct)
             : null;
 
-        return new JobModel(ns, symbol.Name, fqn, isRecurring, cron, every, maxAttempts,
+        return new JobModel(ns, symbol.Name, fqn, HintNames.ForJob(symbol), isRecurring, cron, every, maxAttempts,
             isMediatorBridge, identifier, maxAttemptsIgnored);
     }
 
