@@ -114,7 +114,7 @@ See [Dashboard](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/blob/main/
 | [Backends](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/blob/main/docs/stores.md) | InMemory, EF Core, and Redis store configuration |
 | [Dashboard](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/blob/main/docs/dashboard.md) | Embedded HTML dashboard and Blazor component |
 | [Mediator Bridge](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/blob/main/docs/mediator-bridge.md) | Route job execution through ZeroAlloc.Mediator |
-| [Diagnostics](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/blob/main/docs/diagnostics.md) | ZASCH001 and ZASCH011 compiler diagnostic reference |
+| [Diagnostics](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/blob/main/docs/diagnostics.md) | ZASCH001, ZASCH011, ZASCH012 and ZASCH013 compiler diagnostic reference |
 | [Performance](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/blob/main/docs/performance.md) | Throughput, allocation profile, and tuning guide |
 
 ## License
