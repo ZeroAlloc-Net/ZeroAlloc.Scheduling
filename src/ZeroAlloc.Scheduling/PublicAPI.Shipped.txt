@@ -14,7 +14,8 @@ static ZeroAlloc.Scheduling.JobId.operator <=(ZeroAlloc.Scheduling.JobId left, Z
 static ZeroAlloc.Scheduling.JobId.operator ==(ZeroAlloc.Scheduling.JobId left, ZeroAlloc.Scheduling.JobId right) -> bool
 static ZeroAlloc.Scheduling.JobId.operator >(ZeroAlloc.Scheduling.JobId left, ZeroAlloc.Scheduling.JobId right) -> bool
 static ZeroAlloc.Scheduling.JobId.operator >=(ZeroAlloc.Scheduling.JobId left, ZeroAlloc.Scheduling.JobId right) -> bool
-static ZeroAlloc.Scheduling.JobId.Parse(string! s, System.IFormatProvider? provider = null) -> ZeroAlloc.Scheduling.JobId
+static ZeroAlloc.Scheduling.JobId.Parse(string! s) -> ZeroAlloc.Scheduling.JobId
+static ZeroAlloc.Scheduling.JobId.Parse(string! s, System.IFormatProvider? provider) -> ZeroAlloc.Scheduling.JobId
 static ZeroAlloc.Scheduling.JobId.Parse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider) -> ZeroAlloc.Scheduling.JobId
 static ZeroAlloc.Scheduling.JobId.TryParse(string? s, System.IFormatProvider? provider, out ZeroAlloc.Scheduling.JobId result) -> bool
 static ZeroAlloc.Scheduling.JobId.TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out ZeroAlloc.Scheduling.JobId result) -> bool
