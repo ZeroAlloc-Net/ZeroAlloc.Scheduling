@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.0.3](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v2.0.2...v2.0.3) (2026-09-30)
+
+
+### Bug Fixes
+
+* name generated files after the job's namespace and containing types ([#318](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/318)) ([2cf14bf](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/2cf14bfa649437bc0103530194390daf59a89e77)), closes [#315](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/315)
+* report jobs whose generated file names differ only in case as ZASCH013 instead of failing the generator ([#317](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/317)) ([2b0ccca](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/2b0ccca1964e63e55d7c12a05bc56a93b8167c20))
+* report nested and generic [Job] types as ZASCH012 instead of generating code that does not compile ([#316](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/316)) ([2b0ccca](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/2b0ccca1964e63e55d7c12a05bc56a93b8167c20))
+
+
+### Chores
+
+* **deps:** update zeroalloc.valueobjects to 2.0.11 ([#311](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/311)) ([8d5a4ac](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/8d5a4ac9a1fdcedd55c95e950f7026e0855698c4))
+
 ## [2.0.2](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v2.0.1...v2.0.2) (2026-09-29)
 
 
