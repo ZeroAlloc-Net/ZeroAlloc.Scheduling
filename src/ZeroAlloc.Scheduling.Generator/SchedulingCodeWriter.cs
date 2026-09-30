@@ -26,11 +26,7 @@ internal static class SchedulingCodeWriter
         AppendDiExtension(sb, diMethodName, executorName, typeFqn, startupName,
                           model.IsRecurring, model.IsMediatorBridge);
 
-        var hint = model.Namespace != null
-            ? $"{model.Namespace}_{model.TypeName}.Scheduling.g.cs"
-            : $"{model.TypeName}.Scheduling.g.cs";
-
-        ctx.AddSource(hint, SourceText.From(sb.ToString(), Encoding.UTF8));
+        ctx.AddSource(model.HintName, SourceText.From(sb.ToString(), Encoding.UTF8));
     }
 
     private static void AppendHeader(StringBuilder sb, string? ns)
