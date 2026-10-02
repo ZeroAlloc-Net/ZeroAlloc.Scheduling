@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.0.7](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v2.0.6...v2.0.7) (2026-10-02)
+
+
+### Chores
+
+* **deps:** update dependency zeroalloc.testhelpers to 1.5.* ([#332](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/332)) ([bb52c37](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/bb52c373d463ee80ab2e1811933be01cf3c8adf2))
+
 ## [2.0.6](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v2.0.5...v2.0.6) (2026-10-02)
 
 
