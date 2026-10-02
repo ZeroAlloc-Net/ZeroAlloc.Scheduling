@@ -9,7 +9,7 @@
     <CompilerGeneratedFilesOutputPath>$(BaseIntermediateOutputPath)$(Configuration)\$(TargetFramework)\generated</CompilerGeneratedFilesOutputPath>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="ZeroAlloc.Telemetry" Version="1.7.0" />
+    <PackageReference Include="ZeroAlloc.Telemetry" Version="1.11.0" />
     <!-- Match ZeroAlloc.Scheduling's transitive minimum -->
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.12" />
     <ProjectReference Include="..\ZeroAlloc.Scheduling\ZeroAlloc.Scheduling.csproj" />
