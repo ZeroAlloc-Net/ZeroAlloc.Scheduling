@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.0.8](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v2.0.7...v2.0.8) (2026-10-02)
+
+
+### Chores
+
+* **deps:** update zeroalloc.orm to 2.2.0 ([#322](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/322)) ([9a1823d](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/9a1823d461fda81e7839aaac0c339cd103240a9a))
+
 ## [2.0.7](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v2.0.6...v2.0.7) (2026-10-02)
 
 
