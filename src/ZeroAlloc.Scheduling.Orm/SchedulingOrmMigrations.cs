@@ -25,6 +25,11 @@ namespace ZeroAlloc.Scheduling.Orm;
 /// spelled three ways rather than folded into the SQL Server create — which
 /// keeps a deployment's recorded version comparable across a provider move.
 /// </para>
+/// <para>
+/// Every provider's source is named <c>ZeroAlloc.Scheduling</c>, the name the
+/// ORM records its versions under, so the schema shares a history table with
+/// your own migrations without their version numbers colliding.
+/// </para>
 /// </remarks>
 /// <example>
 /// <code>
@@ -133,6 +138,13 @@ public static class SchedulingOrmMigrations
 
     private sealed class Source(string createSql, string claimTokenSql) : IMigrationSource
     {
+        // The ORM scopes recorded versions by this name, so it is persisted in every
+        // database the schema is applied to. A fixed string rather than the default,
+        // the type name, so renaming or moving this private type cannot make the
+        // runner see the schema as new and apply version 1 again. One name for all
+        // three providers, since a database only ever runs one of them.
+        public string Name => "ZeroAlloc.Scheduling";
+
         private readonly IReadOnlyList<Migration> _migrations =
         [
             new Migration(1, "create_scheduling_jobs", createSql),

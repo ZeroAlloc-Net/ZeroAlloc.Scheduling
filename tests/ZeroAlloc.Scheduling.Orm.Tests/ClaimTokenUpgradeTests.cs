@@ -23,8 +23,16 @@ public sealed class ClaimTokenUpgradeTests
     /// Version 1 exactly as it shipped, so the starting point is the real one
     /// rather than the current schema with a column removed.
     /// </summary>
+    /// <remarks>
+    /// It carries the shipped source's name, because the ORM records applied
+    /// versions per source name. Under any other name the history would belong to
+    /// a different source, and the upgrade would apply version 1 again instead of
+    /// recognising it.
+    /// </remarks>
     private sealed class V1Only : IMigrationSource
     {
+        public string Name => SchedulingOrmMigrations.Sqlite.Name;
+
         public IReadOnlyList<Migration> GetMigrations() =>
         [
             new Migration(1, "create_scheduling_jobs", """
@@ -79,6 +87,56 @@ public sealed class ClaimTokenUpgradeTests
 
         // The job enqueued under the old schema has a NULL ClaimToken. It must
         // still be claimable, and must not come back under a second claim.
+        var store = new OrmJobStore(await fx.ConnectAsync());
+        var claimed = await store.FetchPendingAsync(10, default);
+
+        claimed.Should().ContainSingle();
+        claimed[0].TypeName.Should().Be("Legacy.Job");
+        claimed[0].Payload.Should().Equal(s_payload);
+
+        (await store.FetchPendingAsync(10, default)).Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task A_Database_Migrated_Before_Source_Scoped_History_Upgrades_And_Keeps_Its_Jobs()
+    {
+        // A deployment that applied version 1 on ZeroAlloc.ORM 2.1 or older has a
+        // history table without a source column. The runner adopts its rows for
+        // the source being run, so version 1 must be recognised and only version 2
+        // applied, against the populated table.
+        await using var fx = new SqliteFixture();
+
+        using (var raw = new SqliteConnection(fx.ConnectionString))
+        {
+            raw.Open();
+            using var command = raw.CreateCommand();
+
+            // Version 1's schema, and the history table exactly as the SQLite
+            // dialect created it before versions were scoped by source.
+            command.CommandText = new V1Only().GetMigrations()[0].Sql + """
+
+                CREATE TABLE __zaorm_migrations (
+                    version INTEGER PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    applied_at TEXT NOT NULL);
+                INSERT INTO __zaorm_migrations (version, name, applied_at)
+                    VALUES (1, 'create_scheduling_jobs', '2026-01-01T00:00:00.0000000Z');
+                """;
+            command.ExecuteNonQuery();
+        }
+
+        var legacyStore = new OrmJobStore(await fx.ConnectAsync());
+        await legacyStore.EnqueueAsync("Legacy.Job", s_payload, DateTimeOffset.UtcNow.AddSeconds(-1), 3, null, default);
+
+        var upgrade = await fx.ConnectAsync();
+        await using (upgrade.ConfigureAwait(false))
+        {
+            var applied = await new MigrationRunner(
+                upgrade, SchedulingOrmMigrations.Sqlite, new SqliteMigrationDialect()).RunAsync(default);
+
+            applied.Select(m => m.Version).Should().Equal([2]);
+        }
+
         var store = new OrmJobStore(await fx.ConnectAsync());
         var claimed = await store.FetchPendingAsync(10, default);
 
