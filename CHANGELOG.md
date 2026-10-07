@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.0.14](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v2.0.13...v2.0.14) (2026-10-07)
+
+
+### Chores
+
+* **deps:** update dependency roslynator.analyzers to 5.0.1 ([#345](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/345)) ([c4f15b2](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/c4f15b29a0221a3c4a4eda50c655ec1d7fabe2b6))
+
 ## [2.0.13](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v2.0.12...v2.0.13) (2026-10-07)
 
 
