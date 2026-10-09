@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.0.16](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v2.0.15...v2.0.16) (2026-10-09)
+
+
+### Chores
+
+* **deps:** update dependency zeroalloc.analyzers to 1.8.0 ([#349](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/349)) ([4c843a2](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/4c843a2a7099eaef05f8d707712e16ec0d50f84b))
+* **deps:** update dependency zeroalloc.analyzers to 1.9.0 ([#351](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/351)) ([b060751](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/b060751ad4f57cd729977fe595f00624e412efe5))
+
 ## [2.0.15](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v2.0.14...v2.0.15) (2026-10-09)
 
 
