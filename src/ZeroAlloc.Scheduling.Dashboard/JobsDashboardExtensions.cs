@@ -14,6 +14,8 @@ using Results = Microsoft.AspNetCore.Http.Results;
 
 public static class JobsDashboardExtensions
 {
+    private static readonly IReadOnlyList<JobEntry> NoEntries = Array.Empty<JobEntry>();
+
     public static IEndpointConventionBuilder MapJobsDashboard(
         this IEndpointRouteBuilder endpoints,
         string prefix,
@@ -48,8 +50,8 @@ public static class JobsDashboardExtensions
     {
         group.MapGet("/api/summary", async (IJobStore store, CancellationToken ct) =>
             store is IJobDashboardStore d
-                ? Results.Ok(await d.GetSummaryAsync(ct).ConfigureAwait(false))
-                : Results.Ok(new JobSummary(0, 0, 0, 0, 0)));
+                ? Results.Json(await d.GetSummaryAsync(ct).ConfigureAwait(false), DashboardJsonContext.Default.JobSummary)
+                : Results.Json(new JobSummary(0, 0, 0, 0, 0), DashboardJsonContext.Default.JobSummary));
 
         group.MapGet("/api/pending", (IJobStore s, CancellationToken ct) =>
             QueryStatusAsync(s, ct, JobStatus.Pending));
@@ -65,8 +67,8 @@ public static class JobsDashboardExtensions
 
         group.MapGet("/api/recurring", async (IJobStore s, CancellationToken ct) =>
             s is IJobDashboardStore d
-                ? Results.Ok(await d.GetRecurringAsync(ct).ConfigureAwait(false))
-                : Results.Ok(Array.Empty<object>()));
+                ? Results.Json(await d.GetRecurringAsync(ct).ConfigureAwait(false), DashboardJsonContext.Default.IReadOnlyListJobEntry)
+                : Results.Json(NoEntries, DashboardJsonContext.Default.IReadOnlyListJobEntry));
 
         group.MapPost("/api/{id}/requeue", async (JobId id, IJobStore s, CancellationToken ct) =>
         {
@@ -83,8 +85,8 @@ public static class JobsDashboardExtensions
 
     private static async Task<IResult> QueryStatusAsync(IJobStore store, CancellationToken ct, params JobStatus[] statuses)
         => store is IJobDashboardStore d
-            ? Results.Ok(await d.QueryByStatusAsync(statuses, ct: ct).ConfigureAwait(false))
-            : Results.Ok(Array.Empty<object>());
+            ? Results.Json(await d.QueryByStatusAsync(statuses, ct: ct).ConfigureAwait(false), DashboardJsonContext.Default.IReadOnlyListJobEntry)
+            : Results.Json(NoEntries, DashboardJsonContext.Default.IReadOnlyListJobEntry);
 
     private static IResult ServeUi()
     {
