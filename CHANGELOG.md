@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.0.17](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v2.0.16...v2.0.17) (2026-10-10)
+
+
+### Chores
+
+* **deps:** update dependency zeroalloc.mediator to 6.2.0 ([#352](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/352)) ([2bb9f62](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/2bb9f6255bd40b509ce866ecb53f95cbcd44ea69))
+
 ## [2.0.16](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v2.0.15...v2.0.16) (2026-10-09)
 
 
