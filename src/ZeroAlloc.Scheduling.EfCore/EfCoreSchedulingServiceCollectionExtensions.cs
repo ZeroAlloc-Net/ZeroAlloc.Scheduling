@@ -11,8 +11,8 @@ public static class EfCoreSchedulingServiceCollectionExtensions
     /// <summary>
     /// Registers EF Core-backed scheduling services on the given <see cref="ISchedulingBuilder"/>.
     /// </summary>
-    [RequiresUnreferencedCode("EF Core builds its model with reflection and is not trim-safe; see https://aka.ms/efcore-docs-trimming. Use it only from applications that are not trimmed or published with NativeAOT.")]
-    [RequiresDynamicCode("EF Core generates code at runtime and is not NativeAOT-compatible; see https://aka.ms/efcore-docs-trimming. Use it only from applications that are not published with NativeAOT.")]
+    [RequiresUnreferencedCode("EF Core builds its model with reflection and is not trim-safe; see https://aka.ms/efcore-docs-trimming. Under trimming or NativeAOT use an AOT-compatible job store instead: ZeroAlloc.Scheduling.Orm, ZeroAlloc.Scheduling.Redis or ZeroAlloc.Scheduling.InMemory.")]
+    [RequiresDynamicCode("EF Core generates code at runtime and is not NativeAOT-compatible; see https://aka.ms/efcore-docs-trimming. Under NativeAOT use an AOT-compatible job store instead: ZeroAlloc.Scheduling.Orm, ZeroAlloc.Scheduling.Redis or ZeroAlloc.Scheduling.InMemory.")]
     public static ISchedulingBuilder WithEfCore(
         this ISchedulingBuilder builder,
         Action<DbContextOptionsBuilder> configure)

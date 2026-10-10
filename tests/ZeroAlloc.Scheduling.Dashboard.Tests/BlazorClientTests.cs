@@ -4,7 +4,10 @@ using ZeroAlloc.Scheduling.Dashboard.Blazor;
 
 namespace ZeroAlloc.Scheduling.Dashboard.Tests;
 
-/// <summary>Each client method must still read the JSON the dashboard API writes.</summary>
+/// <summary>
+/// Each client method is fed the exact JSON the dashboard API writes, and every field of the
+/// deserialized result is asserted.
+/// </summary>
 public sealed class BlazorClientTests
 {
     private sealed class StubHandler(string body) : HttpMessageHandler
@@ -21,13 +24,6 @@ public sealed class BlazorClientTests
         }
     }
 
-    private static readonly JobId SampleId = JobId.New();
-
-    private static readonly string EntryArray =
-        "[{\"id\":\"" + SampleId + "\",\"typeName\":\"Sample\",\"payload\":\"AQID\",\"status\":\"Succeeded\",\"attempts\":1,"
-        + "\"maxAttempts\":3,\"scheduledAt\":\"2026-01-02T03:04:05+00:00\",\"startedAt\":null,\"completedAt\":null,"
-        + "\"nextRunAt\":\"2026-01-03T03:04:05+00:00\",\"cronExpression\":\"0 * * * *\",\"error\":\"boom\"}]";
-
     private static (JobsDashboardClient Client, StubHandler Handler) Create(string body)
     {
         var handler = new StubHandler(body);
@@ -35,63 +31,79 @@ public sealed class BlazorClientTests
         return (new JobsDashboardClient(http), handler);
     }
 
-    private static void AssertEntries(IReadOnlyList<JobEntry>? entries)
+    private static void AssertSame(JobEntry actual, JobEntry expected)
     {
-        entries.Should().NotBeNull();
-        var entry = entries!.Should().ContainSingle().Subject;
-        entry.Id.Should().Be(SampleId);
-        entry.TypeName.Should().Be("Sample");
-        entry.Payload.Should().Equal(1, 2, 3);
-        entry.Status.Should().Be(JobStatus.Succeeded);
-        entry.Attempts.Should().Be(1);
-        entry.MaxAttempts.Should().Be(3);
-        entry.ScheduledAt.Should().Be(new DateTimeOffset(2026, 1, 2, 3, 4, 5, TimeSpan.Zero));
-        entry.StartedAt.Should().BeNull();
-        entry.NextRunAt.Should().Be(new DateTimeOffset(2026, 1, 3, 3, 4, 5, TimeSpan.Zero));
-        entry.CronExpression.Should().Be("0 * * * *");
-        entry.Error.Should().Be("boom");
+        actual.Id.Should().Be(expected.Id);
+        actual.TypeName.Should().Be(expected.TypeName);
+        actual.Payload.Should().Equal(expected.Payload);
+        actual.Status.Should().Be(expected.Status);
+        actual.Attempts.Should().Be(expected.Attempts);
+        actual.MaxAttempts.Should().Be(expected.MaxAttempts);
+        actual.ScheduledAt.Should().Be(expected.ScheduledAt);
+        actual.StartedAt.Should().Be(expected.StartedAt);
+        actual.CompletedAt.Should().Be(expected.CompletedAt);
+        actual.NextRunAt.Should().Be(expected.NextRunAt);
+        actual.CronExpression.Should().Be(expected.CronExpression);
+        actual.Error.Should().Be(expected.Error);
+    }
+
+    private static void AssertSame(IReadOnlyList<JobEntry>? actual, params JobEntry[] expected)
+    {
+        actual.Should().NotBeNull();
+        actual!.Should().HaveCount(expected.Length);
+        for (var i = 0; i < expected.Length; i++)
+            AssertSame(actual[i], expected[i]);
     }
 
     [Fact]
-    public async Task GetSummaryAsync_Reads_The_Counts()
+    public async Task GetSummaryAsync_Reads_Every_Count()
     {
-        var (client, handler) = Create("{\"pending\":1,\"running\":2,\"succeeded\":3,\"failed\":4,\"deadLetter\":5}");
+        var (client, handler) = Create(SampleJobs.SummaryJson);
 
         var summary = await client.GetSummaryAsync();
 
-        summary.Should().Be(new JobSummary(1, 2, 3, 4, 5));
+        summary.Should().NotBeNull();
+        summary!.Pending.Should().Be(1);
+        summary.Running.Should().Be(2);
+        summary.Succeeded.Should().Be(3);
+        summary.Failed.Should().Be(4);
+        summary.DeadLetter.Should().Be(5);
         handler.Requests.Should().Equal((HttpMethod.Get, "/jobs/api/summary"));
     }
 
     [Fact]
-    public async Task GetPendingAsync_Reads_Entries()
+    public async Task GetPendingAsync_Reads_Every_Field_Of_An_Entry_With_Nulls()
     {
-        var (client, handler) = Create(EntryArray);
-        AssertEntries(await client.GetPendingAsync());
+        var (client, handler) = Create("[" + SampleJobs.PendingJson + "]");
+
+        AssertSame(await client.GetPendingAsync(), SampleJobs.Pending);
         handler.Requests.Should().Equal((HttpMethod.Get, "/jobs/api/pending"));
     }
 
     [Fact]
-    public async Task GetRunningAsync_Reads_Entries()
+    public async Task GetRunningAsync_Reads_Every_Field_Of_An_Entry()
     {
-        var (client, handler) = Create(EntryArray);
-        AssertEntries(await client.GetRunningAsync());
+        var (client, handler) = Create("[" + SampleJobs.RunningJson + "]");
+
+        AssertSame(await client.GetRunningAsync(), SampleJobs.Running);
         handler.Requests.Should().Equal((HttpMethod.Get, "/jobs/api/running"));
     }
 
     [Fact]
-    public async Task GetFailedAsync_Reads_Entries()
+    public async Task GetFailedAsync_Reads_Every_Field_Of_Two_Entries()
     {
-        var (client, handler) = Create(EntryArray);
-        AssertEntries(await client.GetFailedAsync());
+        var (client, handler) = Create("[" + SampleJobs.DeadLetterJson + "," + SampleJobs.FailedJson + "]");
+
+        AssertSame(await client.GetFailedAsync(), SampleJobs.DeadLetter, SampleJobs.Failed);
         handler.Requests.Should().Equal((HttpMethod.Get, "/jobs/api/failed"));
     }
 
     [Fact]
-    public async Task GetSucceededAsync_Reads_Entries()
+    public async Task GetSucceededAsync_Reads_Every_Field_Of_An_Entry_With_All_Dates()
     {
-        var (client, handler) = Create(EntryArray);
-        AssertEntries(await client.GetSucceededAsync());
+        var (client, handler) = Create("[" + SampleJobs.SucceededJson + "]");
+
+        AssertSame(await client.GetSucceededAsync(), SampleJobs.Succeeded);
         handler.Requests.Should().Equal((HttpMethod.Get, "/jobs/api/succeeded"));
     }
 
@@ -99,6 +111,7 @@ public sealed class BlazorClientTests
     public async Task GetPendingAsync_Reads_An_Empty_Array()
     {
         var (client, _) = Create("[]");
+
         (await client.GetPendingAsync()).Should().BeEmpty();
     }
 
@@ -107,11 +120,11 @@ public sealed class BlazorClientTests
     {
         var (client, handler) = Create("");
 
-        await client.RequeueAsync(SampleId);
-        await client.DeleteAsync(SampleId);
+        await client.RequeueAsync(SampleJobs.Pending.Id);
+        await client.DeleteAsync(SampleJobs.Pending.Id);
 
         handler.Requests.Should().Equal(
-            (HttpMethod.Post, $"/jobs/api/{SampleId}/requeue"),
-            (HttpMethod.Delete, $"/jobs/api/{SampleId}"));
+            (HttpMethod.Post, $"/jobs/api/{SampleJobs.PendingId}/requeue"),
+            (HttpMethod.Delete, $"/jobs/api/{SampleJobs.PendingId}"));
     }
 }
