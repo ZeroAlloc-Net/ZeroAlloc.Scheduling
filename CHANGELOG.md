@@ -1,5 +1,20 @@
 # Changelog
 
+## [2.2.0](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v2.1.0...v2.2.0) (2026-10-10)
+
+
+### Features
+
+* make the Scheduling dashboard, EfCore and Resilience packages AOT-compatible ([#357](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/357)) ([288563c](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/288563c021581054da4c35843fee79fd3c5c7d7a))
+
+
+### Chores
+
+* **deps:** update dependency zeroalloc.mediator to 6.3.0 ([#359](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/359)) ([b1dc6d9](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/b1dc6d9ad429c722cc5b3bed4573e0a1c20652cc))
+* **deps:** update dependency zeroalloc.telemetry to 1.12.0 ([#361](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/361)) ([22fa9a9](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/22fa9a94b696c6d0a0a442419434a45ef2b32717))
+* **deps:** update dependency zeroalloc.testhelpers to 1.6.* ([#362](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/362)) ([fd1f0e7](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/fd1f0e7e1f4226de8ed8ea24a5f5deabef0987e9))
+* **deps:** update zeroalloc.outbox to 4.3.0 ([#363](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/363)) ([4a3cfb3](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/4a3cfb3cbab82dd55a123529fcbc424ef0b43ba7))
+
 ## [2.1.0](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v2.0.17...v2.1.0) (2026-10-10)
 
 
