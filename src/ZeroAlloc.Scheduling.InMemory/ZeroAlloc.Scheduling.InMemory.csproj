@@ -2,6 +2,7 @@
   <PropertyGroup>
     <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
     <PackageId>ZeroAlloc.Scheduling.InMemory</PackageId>
+    <IsAotCompatible>true</IsAotCompatible>
     <Description>In-memory job store for ZeroAlloc.Scheduling — use in tests.</Description>
     <Version>0.0.0-local</Version>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
