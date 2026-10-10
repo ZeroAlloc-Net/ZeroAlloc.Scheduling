@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace ZeroAlloc.Scheduling.Resilience;
@@ -36,7 +37,9 @@ public static class SchedulingResilienceServiceCollectionExtensions
     /// The proxy wraps the inner <typeparamref name="TExecutorInterface"/> implementation and
     /// is resolved as <see cref="IJobTypeExecutor"/> by the scheduling worker.
     /// </remarks>
-    public static ISchedulingBuilder WithResilience<TExecutorInterface, TResilienceProxy>(
+    public static ISchedulingBuilder WithResilience<
+        TExecutorInterface,
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TResilienceProxy>(
         this ISchedulingBuilder builder)
         where TExecutorInterface : class, IJobTypeExecutor
         where TResilienceProxy : class, TExecutorInterface
