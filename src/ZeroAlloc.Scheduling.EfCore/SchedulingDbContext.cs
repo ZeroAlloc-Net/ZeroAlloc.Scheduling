@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using ZeroAlloc.ValueObjects.EfCore;
@@ -6,6 +7,8 @@ namespace ZeroAlloc.Scheduling.EfCore;
 
 public sealed class SchedulingDbContext : DbContext
 {
+    [RequiresUnreferencedCode("EF Core builds its model with reflection and is not trim-safe; see https://aka.ms/efcore-docs-trimming. Under trimming or NativeAOT use an AOT-compatible job store instead: ZeroAlloc.Scheduling.Orm, ZeroAlloc.Scheduling.Redis or ZeroAlloc.Scheduling.InMemory.")]
+    [RequiresDynamicCode("EF Core generates code at runtime and is not NativeAOT-compatible; see https://aka.ms/efcore-docs-trimming. Under NativeAOT use an AOT-compatible job store instead: ZeroAlloc.Scheduling.Orm, ZeroAlloc.Scheduling.Redis or ZeroAlloc.Scheduling.InMemory.")]
     public SchedulingDbContext(DbContextOptions<SchedulingDbContext> options) : base(options) { }
 
     public DbSet<JobEntryEntity> Jobs => Set<JobEntryEntity>();

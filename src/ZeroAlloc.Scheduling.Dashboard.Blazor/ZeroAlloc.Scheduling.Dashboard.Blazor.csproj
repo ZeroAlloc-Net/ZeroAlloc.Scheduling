@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.Razor">
   <PropertyGroup>
     <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
+    <IsAotCompatible>true</IsAotCompatible>
     <PackageId>ZeroAlloc.Scheduling.Dashboard.Blazor</PackageId>
     <Description>Blazor component library for ZeroAlloc.Scheduling dashboard.</Description>
     <Version>0.0.0-local</Version>
