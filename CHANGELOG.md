@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.2.1](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v2.2.0...v2.2.1) (2026-10-10)
+
+
+### Chores
+
+* **deps:** update dependency zeroalloc.valueobjects to 2.1.0 ([#368](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/368)) ([60de307](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/60de30710b3cdfd64a9bf37d212ea3fee6c7007f))
+* **deps:** update dependency zeroalloc.valueobjects.efcore to 2.1.0 ([#365](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/365)) ([7ad3b14](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/7ad3b14b8143ccd91f7d82d89735ed9d36f84731))
+* **deps:** update zeroalloc.outbox to 4.4.0 ([#369](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/369)) ([510a6f6](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/510a6f64c40011b6595f207a99f8c2cf9fdcd2d3))
+
 ## [2.2.0](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v2.1.0...v2.2.0) (2026-10-10)
 
 
