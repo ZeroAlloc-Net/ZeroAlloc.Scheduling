@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.1.0](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v2.0.17...v2.1.0) (2026-10-10)
+
+
+### Features
+
+* mark the clean Scheduling packages as AOT-compatible ([#354](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/354)) ([65b82ef](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/65b82ef1645627c23f68b829c57810d4f8eaecb7))
+
+
+### Chores
+
+* **deps:** update dependency zeroalloc.analyzers to 1.11.0 ([#355](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/355)) ([09c8d1d](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/09c8d1d65b9d32bbda232bec0958c5dd0ca9c95a))
+
 ## [2.0.17](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v2.0.16...v2.0.17) (2026-10-10)
 
 
