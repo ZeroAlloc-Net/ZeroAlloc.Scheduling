@@ -19,6 +19,7 @@ static ZeroAlloc.Scheduling.JobId.Parse(string! s, System.IFormatProvider? provi
 static ZeroAlloc.Scheduling.JobId.Parse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider) -> ZeroAlloc.Scheduling.JobId
 static ZeroAlloc.Scheduling.JobId.TryParse(string? s, System.IFormatProvider? provider, out ZeroAlloc.Scheduling.JobId result) -> bool
 static ZeroAlloc.Scheduling.JobId.TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out ZeroAlloc.Scheduling.JobId result) -> bool
+static ZeroAlloc.Scheduling.JobStatusFsm.TryTransition(ZeroAlloc.Scheduling.JobStatus from, ZeroAlloc.Scheduling.JobTrigger trigger, out ZeroAlloc.Scheduling.JobStatus to) -> bool
 static ZeroAlloc.Scheduling.JobSummary.operator !=(ZeroAlloc.Scheduling.JobSummary? left, ZeroAlloc.Scheduling.JobSummary? right) -> bool
 static ZeroAlloc.Scheduling.JobSummary.operator ==(ZeroAlloc.Scheduling.JobSummary? left, ZeroAlloc.Scheduling.JobSummary? right) -> bool
 static ZeroAlloc.Scheduling.SchedulingServiceCollectionExtensions.AddScheduling(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<ZeroAlloc.Scheduling.SchedulingOptions!>? configure = null) -> ZeroAlloc.Scheduling.ISchedulingBuilder!
