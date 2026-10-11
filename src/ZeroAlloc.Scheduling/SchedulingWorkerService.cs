@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,6 +17,17 @@ public sealed class SchedulingWorkerService : BackgroundService
     private static readonly Counter<long> _jobRetries = _meter.CreateCounter<long>("scheduling.job_retries");
     private static readonly Counter<long> _jobDeadLetters = _meter.CreateCounter<long>("scheduling.job_dead_letters");
     private static readonly Histogram<double> _jobDurationMs = _meter.CreateHistogram<double>("scheduling.job_duration_ms");
+
+    // The "job.attempt" tag value is an object, so an int attempt is boxed every time it is
+    // tagged. Attempts are small, so the common ones are boxed once here and shared.
+    private static readonly object[] _boxedAttempts = CreateBoxedAttempts(16);
+
+    // Parsed cron expressions, keyed by their text. A recurring job used to be re-parsed on
+    // every run. CronExpression is immutable, so one parsed instance is safe to share between
+    // every worker in the process; the key set is bounded by the distinct cron expressions in
+    // the store, which is one per recurring job definition.
+    private static readonly ConcurrentDictionary<string, Cronos.CronExpression> _cronCache =
+        new(StringComparer.Ordinal);
 
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly IOptionsMonitor<SchedulingOptions> _options;
@@ -60,7 +72,7 @@ public sealed class SchedulingWorkerService : BackgroundService
         }
     }
 
-    private async Task ProcessBatchAsync(CancellationToken ct)
+    internal async Task ProcessBatchAsync(CancellationToken ct)
     {
 #pragma warning disable MA0004
         await using var scope = _scopeFactory.CreateAsyncScope();
@@ -72,21 +84,21 @@ public sealed class SchedulingWorkerService : BackgroundService
         foreach (var entry in entries)
         {
             ct.ThrowIfCancellationRequested();
-            await ProcessEntryAsync(store, _executors, entry, scope.ServiceProvider, ct).ConfigureAwait(false);
+            await ProcessEntryAsync(store, entry, scope.ServiceProvider, ct).ConfigureAwait(false);
         }
     }
 
-    private async Task ProcessEntryAsync(
+    internal async Task ProcessEntryAsync(
         IJobStore store,
-        IReadOnlyDictionary<string, IJobTypeExecutor> executors,
         JobEntry entry,
         IServiceProvider scopeServices,
         CancellationToken ct)
     {
-        if (!executors.TryGetValue(entry.TypeName, out var executor))
+        if (!_executors.TryGetValue(entry.TypeName, out var executor))
         {
             _logger.LogWarning("No executor for job type '{TypeName}'. Dead-lettering {Id}.", entry.TypeName, entry.Id);
-            _jobDeadLetters.Add(1, new TagList { { "job.type", entry.TypeName } });
+            if (_jobDeadLetters.Enabled)
+                _jobDeadLetters.Add(1, new TagList { { "job.type", entry.TypeName } });
             await store.DeadLetterAsync(entry.Id, $"No executor for type '{entry.TypeName}'.", ct).ConfigureAwait(false);
             return;
         }
@@ -102,7 +114,7 @@ public sealed class SchedulingWorkerService : BackgroundService
 
         using var activity = _activitySource.StartActivity("scheduling.job");
         activity?.SetTag("job.type", entry.TypeName);
-        activity?.SetTag("job.attempt", attempt);
+        activity?.SetTag("job.attempt", BoxAttempt(attempt));
         var startTimestamp = Stopwatch.GetTimestamp();
 
         try
@@ -116,7 +128,8 @@ public sealed class SchedulingWorkerService : BackgroundService
 
             await store.MarkSucceededAsync(entry.Id, nextRunAt, entry.CronExpression, entry.MaxAttempts, ct).ConfigureAwait(false);
 
-            _jobExecutions.Add(1, new TagList { { "job.type", entry.TypeName }, { "job.attempt", attempt } });
+            if (_jobExecutions.Enabled)
+                _jobExecutions.Add(1, new TagList { { "job.type", entry.TypeName }, { "job.attempt", BoxAttempt(attempt) } });
             activity?.SetStatus(ActivityStatusCode.Ok);
         }
 #pragma warning disable CA1031
@@ -128,8 +141,11 @@ public sealed class SchedulingWorkerService : BackgroundService
         }
         finally
         {
-            _jobDurationMs.Record(Stopwatch.GetElapsedTime(startTimestamp).TotalMilliseconds,
-                new TagList { { "job.type", entry.TypeName }, { "job.attempt", attempt } });
+            if (_jobDurationMs.Enabled)
+            {
+                _jobDurationMs.Record(Stopwatch.GetElapsedTime(startTimestamp).TotalMilliseconds,
+                    new TagList { { "job.type", entry.TypeName }, { "job.attempt", BoxAttempt(attempt) } });
+            }
         }
     }
 
@@ -139,7 +155,8 @@ public sealed class SchedulingWorkerService : BackgroundService
         if (newAttempts >= entry.MaxAttempts)
         {
             _logger.LogError(ex, "Job {Id} ({TypeName}) dead-lettered after {Max} attempts.", entry.Id, entry.TypeName, entry.MaxAttempts);
-            _jobDeadLetters.Add(1, new TagList { { "job.type", entry.TypeName } });
+            if (_jobDeadLetters.Enabled)
+                _jobDeadLetters.Add(1, new TagList { { "job.type", entry.TypeName } });
             await store.DeadLetterAsync(entry.Id, ex.Message, ct).ConfigureAwait(false);
         }
         else
@@ -148,14 +165,28 @@ public sealed class SchedulingWorkerService : BackgroundService
             var nextRetry = DateTimeOffset.UtcNow.Add(delay);
             _logger.LogWarning(ex, "Job {Id} ({TypeName}) failed (attempt {A}/{Max}). Retry at {Next}.",
                 entry.Id, entry.TypeName, newAttempts, entry.MaxAttempts, nextRetry);
-            _jobRetries.Add(1, new TagList { { "job.type", entry.TypeName }, { "job.attempt", newAttempts } });
+            if (_jobRetries.Enabled)
+                _jobRetries.Add(1, new TagList { { "job.type", entry.TypeName }, { "job.attempt", BoxAttempt(newAttempts) } });
             await store.MarkFailedAsync(entry.Id, newAttempts, nextRetry, ct).ConfigureAwait(false);
         }
     }
 
     private static DateTimeOffset? ComputeNextRun(string cronExpression)
     {
-        var cron = Cronos.CronExpression.Parse(cronExpression, Cronos.CronFormat.Standard);
+        var cron = _cronCache.GetOrAdd(
+            cronExpression,
+            static expression => Cronos.CronExpression.Parse(expression, Cronos.CronFormat.Standard));
         return cron.GetNextOccurrence(DateTimeOffset.UtcNow, TimeZoneInfo.Utc);
+    }
+
+    private static object BoxAttempt(int attempt)
+        => (uint)attempt < (uint)_boxedAttempts.Length ? _boxedAttempts[attempt] : attempt;
+
+    private static object[] CreateBoxedAttempts(int count)
+    {
+        var boxed = new object[count];
+        for (int i = 0; i < boxed.Length; i++)
+            boxed[i] = i;
+        return boxed;
     }
 }

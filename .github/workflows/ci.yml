@@ -75,6 +75,18 @@ jobs:
     # Runs a job end to end through AddSerializerDispatcher() + AddScheduling(), the
     # IScheduler, the worker and the generator-emitted executor, with every trim and
     # AOT warning an error. The payload serializer is where reflection could leak.
+    # One scenario per package: core + InMemory, Mediator, Resilience, Telemetry, Orm on an
+    # in-memory SQLite database, and Redis against the service container below.
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v7
         with:
@@ -114,6 +126,8 @@ jobs:
         run: dotnet publish samples/ZeroAlloc.Scheduling.AotSmoke/ZeroAlloc.Scheduling.AotSmoke.csproj -r linux-x64 -c Release -o ./aot-out
 
       - name: Run AOT binary
+        env:
+          ZA_SMOKE_REDIS: localhost:6379
         run: ./aot-out/ZeroAlloc.Scheduling.AotSmoke
 
   api-compat:

@@ -12,17 +12,23 @@ ZeroAlloc.Scheduling is designed for moderate-to-high-throughput background job 
 
 ## Allocation Profile
 
-The hot path — polling the store, claiming jobs, deserialising payloads, executing handlers — performs the following allocations per job:
+The worker polls the store once per `PollingInterval` and runs each claimed job in turn. What that costs, per poll and per job:
 
-| Step | Allocation |
-|------|-----------|
-| `FetchPendingAsync` SQL/Redis query | Network buffer (store-dependent) |
-| Payload deserialisation (`IJobSerializer`) | The job object |
-| `IServiceScope` creation per job | 1 managed object |
-| Executor dispatch | 0 (compile-time static call via generated class) |
-| `ValueTask` returned by `ExecuteAsync` | 0 if synchronous completion |
+| Step | When | Allocation |
+|------|------|-----------|
+| `IServiceScope` | per poll | One async scope for the whole batch; every job in the batch shares it |
+| `FetchPendingAsync` | per poll | Store-dependent: the claimed `JobEntry` objects, the list holding them, and any network buffers |
+| Executor lookup | per job | 0. One dictionary lookup on the job's type name, built once when the worker starts |
+| `JobContext` | per job | 1 object, 64 B on x64. It is handed to the job, which may keep it, so it is not pooled |
+| Payload deserialisation (`IJobSerializer`) | per job | The job object, plus whatever the serializer allocates |
+| Executor and job `ExecuteAsync` | per job | 0 when the job completes synchronously; an async state machine when it awaits |
+| Metrics and the `scheduling.job` activity | per job | 0 with no listener attached. With a meter listener, the `job.attempt` tag reuses a cached boxed value for attempts below 16 |
+| Next run of a recurring job | per job | 0. Each distinct cron expression is parsed once and cached for the life of the process |
+| `MarkSucceededAsync` / `MarkFailedAsync` / `DeadLetterAsync` | per job | Store-dependent |
 
-The executor dispatch itself is zero-allocation — the generator emits a concrete class with a direct `_serializer.Deserialize<T>` call. There is no dictionary lookup, no `Type.GetType`, no virtual dispatch on the executor.
+On top of the store, the worker allocates only the `JobContext`: a test pins that at 64 B per job, for one-off and recurring jobs alike. The in-memory store adds 168 B per one-off job and about 470 B per recurring job, which inserts its next occurrence.
+
+Enqueueing has one copy the worker path does not: `DispatchingJobSerializer.Serialize` copies the payload the ZeroAlloc.Serialisation dispatcher wrote into a fresh `byte[]`, because `IJobStore` persists `byte[]` and the dispatcher returns a `ReadOnlyMemory<byte>` over its own buffer.
 
 The serialiser is the one you chose. `services.AddSerializerDispatcher()` selects `DispatchingJobSerializer`, which calls the serializer the ZeroAlloc.Serialisation generator emitted for each `[ZeroAllocSerializable]` job, through its `JsonSerializerContext`: no reflection, and trim- and AOT-safe. `.WithSystemTextJsonSerializer()` selects the reflection-based `SystemTextJsonJobSerializer`. See [Migrating to v2](migrating-to-v2.md#choose-a-job-serializer).
 
@@ -120,17 +126,28 @@ The takeaway: if you're considering ZA.Scheduling over a hand-rolled `Timer`, th
 
 ## Self-benchmark
 
-The [benchmarks/ZeroAlloc.Scheduling.Benchmarks](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/tree/main/benchmarks/ZeroAlloc.Scheduling.Benchmarks) project also contains `JobExecuteBenchmark` — a measurement of the generator-emitted job dispatch cost in isolation from the store.
+The [benchmarks/ZeroAlloc.Scheduling.Benchmarks](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/tree/main/benchmarks/ZeroAlloc.Scheduling.Benchmarks) project measures the scheduler apart from any store:
 
-The benchmark calls `IJob.ExecuteAsync(ctx, ct)` in a tight loop on a pre-constructed job + context. This isolates the dispatch path from store I/O, polling, and serialisation. It is the lower bound on what scheduler overhead can be — store + network costs add on top in a real scheduler.
+- `JobExecuteBenchmark` calls `IJob.ExecuteAsync(ctx, ct)` on a ready-made job and `JobContext`. It is the floor under a job's cost and touches neither the generated executor, the serializer nor the worker. It must read `0 B/op`.
+- `WorkerDispatchBenchmark` wires the scheduler as an application does, with `AddSerializerDispatcher()`, `AddScheduling()` and the generated `Add{Job}Job()`, and measures three steps, for a one-off and a recurring job:
+  - `GeneratedExecutor`: the generated executor deserializing the payload through `DispatchingJobSerializer`, then running the job.
+  - `WorkerProcessEntry`: the worker's per-job path around it: executor lookup, `JobContext`, metrics and activity, the next cron occurrence, and the store update.
+  - `WorkerProcessBatch`: one poll: the service scope, `FetchPendingAsync`, and one job.
+
+  Its store replays one claimed entry and does nothing else, so the numbers are the scheduler's alone.
 
 ```bash
-dotnet run --project benchmarks/ZeroAlloc.Scheduling.Benchmarks -c Release --filter "*"
+dotnet run --project benchmarks/ZeroAlloc.Scheduling.Benchmarks -c Release -- --filter "*WorkerDispatch*"
 ```
 
-What to watch:
+Allocated per operation, with no telemetry listener attached:
 
-- **Allocated column**: must read `0 B/op`. The dispatch is a direct virtual call on a generator-emitted class — no boxing, no `params object[]`, no closure. `JobContext` is constructed once in `[GlobalSetup]`, not per iteration
-- **Mean column**: a regression from sub-5-ns dispatch suggests the generator has started emitting unnecessary object creation on the dispatch path
+| Step | One-off job | Recurring job |
+|------|------------:|--------------:|
+| `GeneratedExecutor` | 104 B | 104 B |
+| `WorkerProcessEntry` | 168 B | 168 B |
+| `WorkerProcessBatch` | 328 B | 328 B |
 
-This benchmark does **not** cover the store-polling path; store implementations (EF Core, Redis, InMemory) each have their own allocation profile dominated by the underlying provider.
+The 104 B is the deserialized job and the serializer's work; `WorkerProcessEntry` adds the 64 B `JobContext`; `WorkerProcessBatch` adds the service scope. A recurring job costs the same as a one-off one, because its cron expression is parsed once.
+
+What to watch: a rise in `WorkerProcessEntry` over `GeneratedExecutor` beyond the `JobContext` means the worker started allocating per job again. `WorkerAllocationTests` in the test project fails on the same regression.

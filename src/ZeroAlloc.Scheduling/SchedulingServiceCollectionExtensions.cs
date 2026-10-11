@@ -45,6 +45,10 @@ public static partial class SchedulingServiceCollectionExtensions
         this IServiceCollection services,
         Action<SchedulingOptions>? configure = null)
     {
+        // The worker takes IOptionsMonitor<SchedulingOptions>. Configure registers the options
+        // services only when a callback is passed, so without one a container that no host or
+        // AddLogging() had set up could not build the worker.
+        services.AddOptions();
         if (configure != null)
             services.Configure(configure);
 

@@ -32,4 +32,15 @@ public class SchedulingBuilderTests
         sp.GetService<IJobStore>().Should().NotBeNull();
     }
 
+    [Fact]
+    public void AddScheduling_WithoutConfigure_ResolvesTheWorker_InAContainerWithoutOptions()
+    {
+        // A bare ServiceCollection: no host, no AddLogging, nothing that registers IOptions<>.
+        var services = new ServiceCollection();
+        services.AddScheduling().WithInMemoryStore();
+
+        using var sp = services.BuildServiceProvider();
+
+        sp.GetRequiredService<SchedulingWorkerService>().Should().NotBeNull();
+    }
 }

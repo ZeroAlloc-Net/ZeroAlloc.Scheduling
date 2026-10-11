@@ -5,11 +5,10 @@ using ZeroAlloc.Scheduling;
 
 namespace ZeroAlloc.Scheduling.Benchmarks;
 
-// Measures the overhead of calling IJob.ExecuteAsync directly on a
-// [Job]-annotated class. The claim: the generator-emitted executor adds
-// zero allocations on the dispatch path beyond the JobContext (which is
-// constructed once per execution by the scheduler, not once per benchmark
-// iteration).
+// Measures calling IJob.ExecuteAsync directly on a [Job]-annotated class, with a
+// ready-made job and JobContext. It is the floor under a job's cost: it never touches
+// the generated executor, the serializer or the worker. WorkerDispatchBenchmark measures
+// those.
 [MemoryDiagnoser]
 [SimpleJob]
 public class JobExecuteBenchmark
