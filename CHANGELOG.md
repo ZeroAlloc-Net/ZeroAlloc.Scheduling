@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.2.4](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v2.2.3...v2.2.4) (2026-10-11)
+
+
+### Performance
+
+* poll only claimable jobs in InMemoryJobStore ([#378](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/378)) ([fc9739b](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/fc9739be3f3365b7b25ed76b48426d9f211a5252)), closes [#376](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/376)
+
 ## [2.2.3](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v2.2.2...v2.2.3) (2026-10-11)
 
 
