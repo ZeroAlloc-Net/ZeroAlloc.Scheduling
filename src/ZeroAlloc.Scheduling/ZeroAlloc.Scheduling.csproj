@@ -28,6 +28,8 @@
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="ZeroAlloc.Scheduling.Tests" />
+    <!-- WorkerDispatchBenchmark drives the worker's batch and per-job paths directly. -->
+    <InternalsVisibleTo Include="ZeroAlloc.Scheduling.Benchmarks" />
   </ItemGroup>
 
   <ItemGroup>

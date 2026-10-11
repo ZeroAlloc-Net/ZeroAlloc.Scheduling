@@ -15,9 +15,9 @@ The `ZeroAlloc.Scheduling.Resilience` package wraps any `IJobTypeExecutor` imple
 ```bash
 dotnet add package ZeroAlloc.Scheduling
 dotnet add package ZeroAlloc.Scheduling.Resilience
-dotnet add package ZeroAlloc.Resilience
-dotnet add package ZeroAlloc.Resilience.Generator
 ```
+
+`ZeroAlloc.Resilience`, which carries the proxy generator, comes in with `ZeroAlloc.Scheduling`.
 
 ## Define the Resilience Interface
 
@@ -27,31 +27,31 @@ Declare an interface that extends `IJobTypeExecutor` and annotates `ExecuteAsync
 using ZeroAlloc.Scheduling;
 using ZeroAlloc.Resilience;
 
-[Retry(MaxAttempts = 3, DelayMs = 500, BackoffType = BackoffType.Exponential)]
-[CircuitBreaker(FailureThreshold = 5, SamplingDurationMs = 30_000, BreakDurationMs = 10_000)]
+[Retry(MaxAttempts = 3, BackoffMs = 500)]
+[CircuitBreaker(MaxFailures = 5, ResetMs = 10_000)]
 public interface IResilientSendReportExecutor : IJobTypeExecutor
 {
 }
 ```
 
-The `ZeroAlloc.Resilience` generator emits a `ResilientSendReportExecutorProxy` class that implements this interface and wraps your real executor.
+The `ZeroAlloc.Resilience` generator emits an `IResilientSendReportExecutorResilienceProxy` class that implements this interface and wraps your real executor, and an `AddResilientSendReportExecutorResiliencePolicies()` extension that registers the policies the proxy runs.
 
 ## Register
 
 ```csharp
-// Register your real executor (generated or custom)
-services.AddTransient<SendReportJobTypeExecutor>();
+// Your executor, which the proxy wraps, and the policies the generator emitted
+services.AddTransient<IResilientSendReportExecutor, SendReportExecutor>();
+services.AddResilientSendReportExecutorResiliencePolicies();
 
 // WithResilience wires the proxy as IJobTypeExecutor
 services.AddScheduling()
         .WithInMemoryStore()
         .WithResilience<
             IResilientSendReportExecutor,
-            ResilientSendReportExecutorProxy>()
-        .AddSendReportJob();
+            IResilientSendReportExecutorResilienceProxy>();
 ```
 
-`WithResilience<TExecutorInterface, TResilienceProxy>()` registers `TResilienceProxy` as `Transient` and binds it as `IJobTypeExecutor`.
+`WithResilience<TExecutorInterface, TResilienceProxy>()` registers `TResilienceProxy` as `Transient` and binds it as `IJobTypeExecutor`. The proxy takes the `TExecutorInterface` registration as the executor it wraps. Do not also call the job's generated `Add{Job}Job()`: that registers a second executor for the same job type. `samples/ZeroAlloc.Scheduling.AotSmoke` runs this wiring under NativeAOT.
 
 ## Type Parameters
 
@@ -62,16 +62,16 @@ services.AddScheduling()
 
 ## How It Works
 
-The resilience proxy is generated at compile time by `ZeroAlloc.Resilience.Generator`. On every `ExecuteAsync` call, the proxy applies the declared policies before forwarding to the inner executor. The scheduling worker never knows a proxy is involved — it resolves `IJobTypeExecutor` from DI and calls `ExecuteAsync` as normal.
+The resilience proxy is generated at compile time by the generator that ships in `ZeroAlloc.Resilience`. On every `ExecuteAsync` call, the proxy applies the declared policies before forwarding to the inner executor. The scheduling worker never knows a proxy is involved — it resolves `IJobTypeExecutor` from DI and calls `ExecuteAsync` as normal.
 
 ## Combining Policies
 
 Multiple attributes are combined in declaration order — the first listed policy is outermost:
 
 ```csharp
-[Timeout(TimeoutMs = 10_000)]
-[Retry(MaxAttempts = 3, DelayMs = 200)]
-[CircuitBreaker(FailureThreshold = 5, SamplingDurationMs = 60_000, BreakDurationMs = 15_000)]
+[Timeout(Ms = 10_000)]
+[Retry(MaxAttempts = 3, BackoffMs = 200)]
+[CircuitBreaker(MaxFailures = 5, ResetMs = 15_000)]
 public interface IResilientSendReportExecutor : IJobTypeExecutor { }
 ```
 
