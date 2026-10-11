@@ -28,7 +28,14 @@ The worker polls the store once per `PollingInterval` and runs each claimed job 
 
 On top of the store, the worker allocates only the `JobContext`: a test pins that at 64 B per job, for one-off and recurring jobs alike. The in-memory store adds 168 B per one-off job and about 470 B per recurring job, which inserts its next occurrence.
 
-Enqueueing has one copy the worker path does not: `DispatchingJobSerializer.Serialize` copies the payload the ZeroAlloc.Serialisation dispatcher wrote into a fresh `byte[]`, because `IJobStore` persists `byte[]` and the dispatcher returns a `ReadOnlyMemory<byte>` over its own buffer.
+Enqueueing allocates the payload and nothing else on top of the store. `DispatchingJobSerializer.Serialize` has the ZeroAlloc.Serialisation dispatcher write the job into a buffer writer the calling thread reuses, through `ISerializerDispatcher.Serialize<T>(IBufferWriter<byte>, T)`, which does not box a struct job. It then copies the bytes once into the exact-size `byte[]` that `IJobStore` persists. `DispatchingJobSerializerTests` pins `IScheduler.EnqueueAsync` at exactly that array, for a class and a struct job:
+
+| Job | Payload | Per enqueue, up to 2.2.5 | Per enqueue now |
+|-----|---------|------------------------:|----------------:|
+| class `record Ping(string Message)` | 18 bytes | 360 B | 48 B, the `byte[18]` |
+| struct `record struct PingValue(int, long)` | 25 bytes | 400 B | 56 B, the `byte[25]` |
+
+Before, the dispatcher boxed a struct job, allocated an `ArrayBufferWriter<byte>` and its buffer per call, and the serializer copied the result again. A writer that grows past 64 KiB for one large payload is dropped after that call instead of being kept for the thread.
 
 The serialiser is the one you chose. `services.AddSerializerDispatcher()` selects `DispatchingJobSerializer`, which calls the serializer the ZeroAlloc.Serialisation generator emitted for each `[ZeroAllocSerializable]` job, through its `JsonSerializerContext`: no reflection, and trim- and AOT-safe. `.WithSystemTextJsonSerializer()` selects the reflection-based `SystemTextJsonJobSerializer`. See [Migrating to v2](migrating-to-v2.md#choose-a-job-serializer).
 

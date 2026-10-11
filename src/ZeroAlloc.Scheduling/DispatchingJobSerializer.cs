@@ -1,3 +1,4 @@
+using System.Buffers;
 using ZeroAlloc.Serialisation;
 
 namespace ZeroAlloc.Scheduling;
@@ -24,14 +25,42 @@ public sealed class DispatchingJobSerializer : IJobSerializer
         _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
     }
 
+    /// <summary>
+    /// A writer that grew past this many bytes is dropped after the call instead of being kept for the
+    /// thread, so one unusually large payload does not pin its buffer for the life of the thread.
+    /// </summary>
+    private const int MaxRetainedCapacity = 64 * 1024;
+
+    // One buffer writer per thread, reused across calls. Serialize empties the slot while it writes,
+    // so a reentrant call on the same thread, for example from a custom converter, uses a writer of
+    // its own instead of appending to the outer call's bytes.
+    [ThreadStatic]
+    private static ArrayBufferWriter<byte>? t_writer;
+
     /// <inheritdoc/>
+    /// <remarks>
+    /// The dispatcher writes the payload into a buffer writer reused by the calling thread, through
+    /// <see cref="ISerializerDispatcher.Serialize{T}(IBufferWriter{byte}, T)"/>, which does not box a
+    /// struct job. The bytes are then copied once into the exact-size array the store persists, so that
+    /// array is the only allocation on top of what the format's serializer itself allocates.
+    /// </remarks>
     public byte[] Serialize<T>(T job) where T : notnull
     {
-        var memory = _dispatcher.Serialize(job, typeof(T));
-        // ReadOnlyMemory<byte> → byte[]: the dispatcher already allocated a buffer via
-        // ArrayBufferWriter<byte>; we copy to a plain array so IJobStore implementations
-        // that persist raw byte[] (EfCore, Redis) receive an ordinary heap array.
-        return memory.ToArray();
+        var writer = t_writer ?? new ArrayBufferWriter<byte>();
+        t_writer = null;
+        try
+        {
+            _dispatcher.Serialize(writer, job);
+            return writer.WrittenSpan.ToArray();
+        }
+        finally
+        {
+            if (writer.Capacity <= MaxRetainedCapacity)
+            {
+                writer.ResetWrittenCount();
+                t_writer = writer;
+            }
+        }
     }
 
     /// <inheritdoc/>
