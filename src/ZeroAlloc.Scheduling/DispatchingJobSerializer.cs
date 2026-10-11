@@ -79,7 +79,7 @@ public sealed class DispatchingJobSerializer : IJobSerializer
         catch (InvalidCastException ex)
         {
             // The interface's default implementation, used by a dispatcher written by hand, unboxes the
-            // object-returning read and throws this when that returned another type.
+            // object-returning read and throws this when that returned another type, or null for a struct.
             throw WrongResult<T>(ex);
         }
 
