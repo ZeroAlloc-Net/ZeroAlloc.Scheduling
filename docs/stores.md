@@ -24,7 +24,9 @@ services.AddScheduling()
         .AddMyJob();
 ```
 
-Jobs are stored in a `ConcurrentDictionary` inside the process. All state is lost on restart.
+Jobs are stored in memory inside the process. All state is lost on restart.
+
+Finished jobs (Succeeded and DeadLetter) stay in the store, as they do in the other backends, so the dashboard can count, list and requeue them. Delete one through the dashboard or `IJobDashboardStore.DeleteAsync` to free it. A poll only looks at Pending and Failed jobs, so its cost does not grow with the number of finished jobs, but memory does.
 
 ## EF Core
 
