@@ -1,5 +1,24 @@
 # Changelog
 
+## [2.2.7](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v2.2.6...v2.2.7) (2026-10-11)
+
+
+### Performance
+
+* read job payloads through the generic dispatcher overload ([#400](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/400)) ([a9a628f](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/a9a628f0c5c4eb061446303a12fe1f56481d84ad)), closes [#394](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/394)
+* require ZeroAlloc.Serialisation 2.8.1 so a null struct job still throws ([#403](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/403)) ([13285f1](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/13285f19e2fbaf1f0b4c2331375ec42171c3c211))
+
+
+### Chores
+
+* **deps:** update dependency testcontainers.mssql to 4.16.0 ([#404](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/404)) ([fa584b6](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/fa584b6ad63a6c6187fc4b2f4cf342b919ae0f50))
+* **deps:** update dependency zeroalloc.mediator to 6.5.0 ([#398](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/398)) ([b1785fa](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/b1785fad9519ab8ddbe90e73f14fea07530b5001))
+* **deps:** update dependency zeroalloc.resilience to 3.3.2 ([#381](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/381)) ([e96b7b3](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/e96b7b320f1973ad05015eee212e118142e6159b))
+* **deps:** update dependency zeroalloc.statemachine to 1.6.3 ([#388](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/388)) ([bf5f519](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/bf5f5198fd22697e6858fc140e8a3562cd535ffc))
+* **deps:** update redis docker tag to v8 ([#402](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/402)) ([5d9f268](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/5d9f26817a384b5ebc665ee08c9a2711b94708e2))
+* **deps:** update zeroalloc.outbox to 4.4.2 ([#392](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/392)) ([7bb818c](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/7bb818cce8ab2e7b70c8702ed8bb38726dc00d44))
+* **deps:** update zeroalloc.valueobjects to 2.1.1 ([#396](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/396)) ([d5155da](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/d5155da9238998e6ebd01786dbc2c5fce36b3b54))
+
 ## [2.2.6](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v2.2.5...v2.2.6) (2026-10-11)
 
 
