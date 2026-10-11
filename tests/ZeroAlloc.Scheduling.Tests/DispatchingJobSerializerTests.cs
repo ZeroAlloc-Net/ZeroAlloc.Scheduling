@@ -1,8 +1,13 @@
 using System.Buffers;
 using System.Text;
+using System.Text.Json;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Xunit.Abstractions;
+using ZeroAlloc.Mediator;
+using ZeroAlloc.Scheduling.Mediator;
 using ZeroAlloc.Serialisation;
+using ZeroAlloc.TestHelpers;
 
 namespace ZeroAlloc.Scheduling.Tests;
 
@@ -10,12 +15,16 @@ namespace ZeroAlloc.Scheduling.Tests;
 /// Scheduling#386: <see cref="DispatchingJobSerializer"/> writes the payload into a reused buffer
 /// writer and copies it once into the exact-size <c>byte[]</c> the store persists. Enqueueing a job
 /// therefore allocates that array and nothing else on top of the store, for a class and a struct job.
+/// Scheduling#394: reading a payload back goes through
+/// <see cref="ISerializerDispatcher.Deserialize{T}(ReadOnlyMemory{byte})"/>, so a struct job is not boxed.
 /// </summary>
 public sealed class DispatchingJobSerializerTests
 {
     private const int Calls = 1_000;
 
     private static byte[]? _arraySink;
+    private static PingValue _valueSink;
+    private static PingValueRequest _requestSink;
 
     private readonly ITestOutputHelper _output;
 
@@ -160,6 +169,119 @@ public sealed class DispatchingJobSerializerTests
             "enqueueing allocates the exact-size payload array the store persists, and nothing else");
     }
 
+    [Fact]
+    public void Deserialize_StructJob_AllocatesOnlyWhatSystemTextJsonDoes()
+    {
+        var serializer = new DispatchingJobSerializer(new SerializerDispatcher());
+        var payload = serializer.Serialize(new PingValue(7, 42));
+
+        long perCall = AllocationGate.MeasureBytesPerCall(
+            Calls, () => _valueSink = serializer.Deserialize<PingValue>(payload));
+        long formatBytes = MeasureSystemTextJsonRead(payload);
+
+        _output.WriteLine($"Deserialize<PingValue>: {perCall} B per call; System.Text.Json alone: {formatBytes} B");
+        _valueSink.Should().Be(new PingValue(7, 42));
+        // Exactly the format's own cost: System.Text.Json reads a record struct through its constructor,
+        // and that path allocates the argument state it collects the constructor arguments in. The
+        // dispatcher and DispatchingJobSerializer add nothing on top; before #394 the dispatcher boxed
+        // the struct, 32 B more.
+        perCall.Should().Be(formatBytes);
+    }
+
+    [Fact]
+    public void MediatorExecutor_StructJob_AllocatesOnlyWhatSystemTextJsonDoes()
+    {
+        var serializer = new DispatchingJobSerializer(new SerializerDispatcher());
+        var handler = new CountingHandler();
+        var executor = new MediatorJobTypeExecutor<PingValueRequest>(serializer, handler);
+        var payload = serializer.Serialize(new PingValueRequest(7, 42));
+        var ctx = new JobContext
+        {
+            JobId = JobId.New(),
+            Attempt = 1,
+            ScheduledAt = DateTimeOffset.UnixEpoch,
+            Services = new ServiceCollection().BuildServiceProvider(),
+        };
+
+        bool allSynchronous = true;
+        long perCall = AllocationGate.MeasureBytesPerCall(
+            Calls,
+            () => allSynchronous &= executor.ExecuteAsync(payload, ctx, CancellationToken.None).IsCompletedSuccessfully);
+        long formatBytes = AllocationGate.MeasureBytesPerCall(
+            Calls,
+            () => _requestSink = JsonSerializer.Deserialize(payload, PingJsonContext.Default.PingValueRequest));
+
+        _output.WriteLine($"MediatorJobTypeExecutor<PingValueRequest>: {perCall} B per job; System.Text.Json alone: {formatBytes} B");
+        allSynchronous.Should().BeTrue("the measurement is only valid when every call stays on this thread");
+        handler.Last.Should().Be(new PingValueRequest(7, 42));
+        // The worker's whole per-job read path for a struct job: deserialize the payload and hand it to the
+        // handler. Only System.Text.Json allocates, as above: the job is not boxed, and the synchronous
+        // handler leaves no state machine behind.
+        perCall.Should().Be(formatBytes);
+    }
+
+    private static long MeasureSystemTextJsonRead(byte[] payload)
+        => AllocationGate.MeasureBytesPerCall(
+            Calls, () => _valueSink = JsonSerializer.Deserialize(payload, PingJsonContext.Default.PingValue));
+
+    [Fact]
+    public void Deserialize_ClassJob_DispatcherReturnsNull_Throws()
+    {
+        var serializer = new DispatchingJobSerializer(new FixedResultDispatcher(null));
+
+        var act = () => serializer.Deserialize<Ping>([1]);
+
+        act.Should().Throw<InvalidOperationException>()
+            .WithMessage("Deserializing Ping returned null or wrong type.");
+    }
+
+    [Fact]
+    public void Deserialize_ClassJob_DispatcherReturnsWrongType_Throws()
+    {
+        var serializer = new DispatchingJobSerializer(new FixedResultDispatcher("not a ping"));
+
+        var act = () => serializer.Deserialize<Ping>([1]);
+
+        act.Should().Throw<InvalidOperationException>()
+            .WithMessage("Deserializing Ping returned null or wrong type.")
+            .WithInnerException<InvalidCastException>();
+    }
+
+    [Fact]
+    public void Deserialize_StructJob_DispatcherReturnsNull_Throws()
+    {
+        var serializer = new DispatchingJobSerializer(new FixedResultDispatcher(null));
+
+        var act = () => serializer.Deserialize<PingValue>([1]);
+
+        act.Should().Throw<InvalidOperationException>()
+            .WithMessage("Deserializing PingValue returned null or wrong type.")
+            .WithInnerException<InvalidCastException>();
+    }
+
+    [Fact]
+    public void Deserialize_StructJob_DispatcherReturnsWrongType_Throws()
+    {
+        var serializer = new DispatchingJobSerializer(new FixedResultDispatcher(new Ping("x")));
+
+        var act = () => serializer.Deserialize<PingValue>([1]);
+
+        act.Should().Throw<InvalidOperationException>()
+            .WithMessage("Deserializing PingValue returned null or wrong type.")
+            .WithInnerException<InvalidCastException>();
+    }
+
+    [Fact]
+    public void Deserialize_GenericOverloadReturnsNull_Throws()
+    {
+        var serializer = new DispatchingJobSerializer(new NullGenericDispatcher());
+
+        var act = () => serializer.Deserialize<Ping>([1]);
+
+        act.Should().Throw<InvalidOperationException>()
+            .WithMessage("Deserializing Ping returned null or wrong type.");
+    }
+
     private static long MeasureArray(int length)
     {
         _arraySink = new byte[length];
@@ -192,6 +314,38 @@ public sealed class DispatchingJobSerializerTests
         public void Serialize<T>(IBufferWriter<byte> writer, T value) => Next(writer);
 
         public object? Deserialize(ReadOnlyMemory<byte> data, Type type) => throw new NotSupportedException();
+    }
+
+    /// <summary>
+    /// A hand-written dispatcher that implements only the object-returning read, so the generic read uses
+    /// the interface's default implementation, which unboxes this result.
+    /// </summary>
+    private sealed class FixedResultDispatcher(object? result) : ISerializerDispatcher
+    {
+        public ReadOnlyMemory<byte> Serialize(object value, Type type) => throw new NotSupportedException();
+
+        public object? Deserialize(ReadOnlyMemory<byte> data, Type type) => result;
+    }
+
+    /// <summary>A dispatcher whose generic read returns null, as a generated one does when the serializer does.</summary>
+    private sealed class NullGenericDispatcher : ISerializerDispatcher
+    {
+        public ReadOnlyMemory<byte> Serialize(object value, Type type) => throw new NotSupportedException();
+
+        public object? Deserialize(ReadOnlyMemory<byte> data, Type type) => throw new NotSupportedException();
+
+        public T? Deserialize<T>(ReadOnlyMemory<byte> data) => default;
+    }
+
+    private sealed class CountingHandler : IRequestHandler<PingValueRequest, Unit>
+    {
+        public PingValueRequest Last { get; private set; }
+
+        public ValueTask<Unit> Handle(PingValueRequest request, CancellationToken ct)
+        {
+            Last = request;
+            return ValueTask.FromResult(Unit.Value);
+        }
     }
 
     /// <summary>A store that keeps nothing, so the measurement is the scheduler's and the serializer's.</summary>
