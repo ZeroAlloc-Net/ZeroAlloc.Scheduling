@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.2.6](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v2.2.5...v2.2.6) (2026-10-11)
+
+
+### Performance
+
+* serialize job payloads into a reused buffer writer ([#393](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/393)) ([bb6c32b](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/bb6c32be4ac7f3b804b4758c0273bc3c6e46dfa7))
+
+
+### Chores
+
+* **deps:** update dependency meziantou.analyzer to 3.0.295 ([#389](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/389)) ([032f5ae](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/032f5aeeedd4811c7a437adedeecbd7b4db2614c))
+* **deps:** update dependency zeroalloc.serialisation to 2.7.0 ([#387](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/387)) ([255f491](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/255f4916889f316493b32a85f56bceea2adb4fb5))
+
 ## [2.2.5](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v2.2.4...v2.2.5) (2026-10-11)
 
 
