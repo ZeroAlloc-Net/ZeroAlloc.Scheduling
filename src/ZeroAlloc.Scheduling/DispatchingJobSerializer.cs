@@ -64,12 +64,28 @@ public sealed class DispatchingJobSerializer : IJobSerializer
     }
 
     /// <inheritdoc/>
+    /// <remarks>
+    /// Reads through <see cref="ISerializerDispatcher.Deserialize{T}(ReadOnlyMemory{byte})"/>, which returns a
+    /// struct job as itself instead of boxing it. A null result, or a result that is not a
+    /// <typeparamref name="T"/>, throws <see cref="InvalidOperationException"/>.
+    /// </remarks>
     public T Deserialize<T>(byte[] payload) where T : notnull
     {
-        var result = _dispatcher.Deserialize(new ReadOnlyMemory<byte>(payload), typeof(T));
-        return result is T typed
-            ? typed
-            : throw new InvalidOperationException(
-                $"Deserializing {typeof(T).Name} returned null or wrong type.");
+        T? result;
+        try
+        {
+            result = _dispatcher.Deserialize<T>(new ReadOnlyMemory<byte>(payload));
+        }
+        catch (InvalidCastException ex)
+        {
+            // The interface's default implementation, used by a dispatcher written by hand, unboxes the
+            // object-returning read and throws this when that returned another type.
+            throw WrongResult<T>(ex);
+        }
+
+        return result is T typed ? typed : throw WrongResult<T>(inner: null);
     }
+
+    private static InvalidOperationException WrongResult<T>(Exception? inner)
+        => new($"Deserializing {typeof(T).Name} returned null or wrong type.", inner);
 }

@@ -20,7 +20,7 @@ The worker polls the store once per `PollingInterval` and runs each claimed job 
 | `FetchPendingAsync` | per poll | Store-dependent: the claimed `JobEntry` objects, the list holding them, and any network buffers |
 | Executor lookup | per job | 0. One dictionary lookup on the job's type name, built once when the worker starts |
 | `JobContext` | per job | 1 object, 64 B on x64. It is handed to the job, which may keep it, so it is not pooled |
-| Payload deserialisation (`IJobSerializer`) | per job | The job object, plus whatever the serializer allocates |
+| Payload deserialisation (`IJobSerializer`) | per job | What the format's serializer allocates for the job, and nothing on top. A struct job is not boxed |
 | Executor and job `ExecuteAsync` | per job | 0 when the job completes synchronously; an async state machine when it awaits |
 | Metrics and the `scheduling.job` activity | per job | 0 with no listener attached. With a meter listener, the `job.attempt` tag reuses a cached boxed value for attempts below 16 |
 | Next run of a recurring job | per job | 0. Each distinct cron expression is parsed once and cached for the life of the process |
@@ -36,6 +36,14 @@ Enqueueing allocates the payload and nothing else on top of the store. `Dispatch
 | struct `record struct PingValue(int, long)` | 25 bytes | 400 B | 56 B, the `byte[25]` |
 
 Before, the dispatcher boxed a struct job, allocated an `ArrayBufferWriter<byte>` and its buffer per call, and the serializer copied the result again. A writer that grows past 64 KiB for one large payload is dropped after that call instead of being kept for the thread.
+
+Reading a payload back allocates only what the format's serializer allocates. `DispatchingJobSerializer.Deserialize` calls `ISerializerDispatcher.Deserialize<T>(ReadOnlyMemory<byte>)`, from ZeroAlloc.Serialisation 2.8.0, which returns a struct job as itself. `DispatchingJobSerializerTests` pins `Deserialize` and the Mediator bridge's whole per-job read path, `MediatorJobTypeExecutor<T>.ExecuteAsync`, at exactly what System.Text.Json allocates for the same payload, measured in the same run:
+
+| Job | Per read, up to 2.2.6 | Per read now | System.Text.Json alone |
+|-----|------------------------:|-------------:|-----------------------:|
+| struct `record struct PingValue(int, long)` | 200 B | 168 B | 168 B |
+
+The 32 B saved is the box the object-returning `Deserialize(ReadOnlyMemory<byte>, Type)` put around the struct. The 168 B left is System.Text.Json's: it reads a record struct through its constructor, and that path allocates the state it collects the constructor arguments in. A class job reads the same as before; it was never boxed.
 
 The serialiser is the one you chose. `services.AddSerializerDispatcher()` selects `DispatchingJobSerializer`, which calls the serializer the ZeroAlloc.Serialisation generator emitted for each `[ZeroAllocSerializable]` job, through its `JsonSerializerContext`: no reflection, and trim- and AOT-safe. `.WithSystemTextJsonSerializer()` selects the reflection-based `SystemTextJsonJobSerializer`. See [Migrating to v2](migrating-to-v2.md#choose-a-job-serializer).
 
