@@ -1,1 +1,2 @@
 #nullable enable
+static ZeroAlloc.Scheduling.JobStatusFsm.TryTransition(ZeroAlloc.Scheduling.JobStatus from, ZeroAlloc.Scheduling.JobTrigger trigger, out ZeroAlloc.Scheduling.JobStatus to) -> bool

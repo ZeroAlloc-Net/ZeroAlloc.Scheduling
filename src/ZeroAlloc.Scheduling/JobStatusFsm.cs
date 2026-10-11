@@ -21,6 +21,10 @@ namespace ZeroAlloc.Scheduling;
 /// </code>
 /// The class is <c>partial</c>; the ZeroAlloc.StateMachine generator emits
 /// <c>TryFire(JobTrigger)</c> and the <c>Current</c> property.
+/// <para>
+/// On a hot path, such as a store's poll loop, use <see cref="TryTransition"/> instead: it runs
+/// the same generated transition table without allocating a machine per call.
+/// </para>
 /// </remarks>
 [StateMachine(InitialState = nameof(JobStatus.Pending))]
 // Pending  → Running    (worker claims the job)
@@ -50,5 +54,34 @@ public sealed partial class JobStatusFsm
     public JobStatusFsm(JobStatus current)
     {
         _state = current;
+    }
+
+    // One machine per thread, re-seeded on every call. The generated hooks are not implemented,
+    // so re-seeding with ResetTo and firing has no side effects beyond the state change.
+    [ThreadStatic]
+    private static JobStatusFsm? t_scratch;
+
+    /// <summary>
+    /// Computes the status that <paramref name="trigger"/> moves a job in status
+    /// <paramref name="from"/> to, using the generated transition table, without allocating.
+    /// </summary>
+    /// <param name="from">The job's current status.</param>
+    /// <param name="trigger">The trigger to fire.</param>
+    /// <param name="to">
+    /// The resulting status when the transition is legal; otherwise <paramref name="from"/>.
+    /// </param>
+    /// <returns><c>true</c> when <paramref name="trigger"/> is legal from <paramref name="from"/>.</returns>
+    public static bool TryTransition(JobStatus from, JobTrigger trigger, out JobStatus to)
+    {
+        var fsm = t_scratch ??= new JobStatusFsm(from);
+        fsm.ResetTo(from);
+        if (fsm.TryFire(trigger))
+        {
+            to = fsm.Current;
+            return true;
+        }
+
+        to = from;
+        return false;
     }
 }

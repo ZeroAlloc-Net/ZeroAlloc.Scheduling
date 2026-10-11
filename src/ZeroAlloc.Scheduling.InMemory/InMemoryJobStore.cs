@@ -3,9 +3,26 @@ using ZeroAlloc.Collections;
 namespace ZeroAlloc.Scheduling.InMemory;
 
 /// <summary>Thread-safe in-memory job store. Use in tests — not for production.</summary>
+/// <remarks>
+/// Finished jobs, <see cref="JobStatus.Succeeded"/> and <see cref="JobStatus.DeadLetter"/>, stay in
+/// the store so the dashboard can count, list and requeue them, as they do in the EF Core, ORM and
+/// Redis stores; <see cref="DeleteAsync"/> removes one. Only Pending and Failed jobs are in the
+/// claimable index that <see cref="FetchPendingAsync"/> scans, so the cost of a poll depends on the
+/// number of waiting jobs, not on how many jobs have ever run.
+/// </remarks>
 public sealed class InMemoryJobStore : IJobStore, IJobDashboardStore, IDisposable
 {
     private readonly ConcurrentHeapSpanDictionary<JobId, JobEntry> _entries = new();
+
+    // Ids of the Pending and Failed entries: the only ones a poll can claim. Every write that
+    // changes an entry's status happens under _gate together with the matching change here,
+    // so the two collections never disagree.
+    private readonly HashSet<JobId> _claimable = [];
+#if NET9_0_OR_GREATER
+    private readonly Lock _gate = new();
+#else
+    private readonly object _gate = new();
+#endif
 
     /// <summary>All entries — for test assertions.</summary>
     public IReadOnlyCollection<JobEntry> AllEntries => _entries.ToValuesArray();
@@ -14,54 +31,56 @@ public sealed class InMemoryJobStore : IJobStore, IJobDashboardStore, IDisposabl
         string typeName, byte[] payload, DateTimeOffset scheduledAt,
         int maxAttempts, string? cronExpression, CancellationToken ct)
     {
-        var entry = new JobEntry
+        var entry = NewPending(typeName, payload, scheduledAt, maxAttempts, cronExpression);
+        lock (_gate)
         {
-            Id = JobId.New(),
-            TypeName = typeName,
-            Payload = payload,
-            Status = JobStatus.Pending,
-            Attempts = 0,
-            MaxAttempts = maxAttempts,
-            ScheduledAt = scheduledAt,
-            CronExpression = cronExpression,
-        };
-        _entries[entry.Id] = entry;
+            _entries[entry.Id] = entry;
+            _claimable.Add(entry.Id);
+        }
         return ValueTask.CompletedTask;
     }
 
     public ValueTask<IReadOnlyList<JobEntry>> FetchPendingAsync(int batchSize, CancellationToken ct)
     {
         var now = DateTimeOffset.UtcNow;
-        var claimed = new List<JobEntry>();
+        List<JobEntry>? claimed = null;
 
-        foreach (var kvp in _entries)
+        lock (_gate)
         {
-            if (claimed.Count >= batchSize) break;
-            var e = kvp.Value;
-
-            // Scheduling#16: use JobStatusFsm to validate that Claim is a legal trigger
-            // from this entry's current status. Only Pending and Failed allow Claim.
-            var fsm = new JobStatusFsm(e.Status);
-            if (!fsm.TryFire(JobTrigger.Claim)) continue;
-            if (e.ScheduledAt > now) continue;
-
-            var running = new JobEntry
+            foreach (var id in _claimable)
             {
-                Id = e.Id,
-                TypeName = e.TypeName,
-                Payload = e.Payload,
-                Status = fsm.Current, // JobStatus.Running — from the FSM
-                Attempts = e.Attempts,
-                MaxAttempts = e.MaxAttempts,
-                ScheduledAt = e.ScheduledAt,
-                StartedAt = now,
-                CompletedAt = e.CompletedAt,
-                NextRunAt = e.NextRunAt,
-                CronExpression = e.CronExpression,
-                Error = e.Error,
-            };
-            if (_entries.TryUpdate(kvp.Key, running, e))
-                claimed.Add(running);
+                if (claimed?.Count >= batchSize) break;
+                if (!_entries.TryGetValue(id, out var e)) continue;
+                if (e.ScheduledAt > now) continue;
+
+                // Scheduling#16: the FSM decides whether Claim is legal from this status.
+                // Only Pending and Failed allow it.
+                if (!JobStatusFsm.TryTransition(e.Status, JobTrigger.Claim, out var status)) continue;
+
+                var running = new JobEntry
+                {
+                    Id = e.Id,
+                    TypeName = e.TypeName,
+                    Payload = e.Payload,
+                    Status = status, // JobStatus.Running
+                    Attempts = e.Attempts,
+                    MaxAttempts = e.MaxAttempts,
+                    ScheduledAt = e.ScheduledAt,
+                    StartedAt = now,
+                    CompletedAt = e.CompletedAt,
+                    NextRunAt = e.NextRunAt,
+                    CronExpression = e.CronExpression,
+                    Error = e.Error,
+                };
+                _entries[id] = running;
+                (claimed ??= new List<JobEntry>(Math.Min(batchSize, _claimable.Count))).Add(running);
+            }
+
+            if (claimed is null)
+                return new ValueTask<IReadOnlyList<JobEntry>>(Array.Empty<JobEntry>());
+
+            foreach (var e in claimed)
+                _claimable.Remove(e.Id);
         }
 
         return new ValueTask<IReadOnlyList<JobEntry>>(claimed);
@@ -71,43 +90,37 @@ public sealed class InMemoryJobStore : IJobStore, IJobDashboardStore, IDisposabl
         JobId id, DateTimeOffset? nextRunAt, string? cronExpression,
         int maxAttempts, CancellationToken ct)
     {
-        if (!_entries.TryGetValue(id, out var e)) return ValueTask.CompletedTask;
-
-        // Scheduling#16: validate Running → Succeeded via FSM
-        var fsm = new JobStatusFsm(e.Status);
-        if (!fsm.TryFire(JobTrigger.Succeed)) return ValueTask.CompletedTask;
-
-        _entries[id] = new JobEntry
+        lock (_gate)
         {
-            Id = e.Id,
-            TypeName = e.TypeName,
-            Payload = e.Payload,
-            Status = fsm.Current, // JobStatus.Succeeded
-            Attempts = e.Attempts,
-            MaxAttempts = e.MaxAttempts,
-            ScheduledAt = e.ScheduledAt,
-            StartedAt = e.StartedAt,
-            CompletedAt = DateTimeOffset.UtcNow,
-            NextRunAt = e.NextRunAt,
-            CronExpression = e.CronExpression,
-            Error = e.Error,
-        };
+            if (!_entries.TryGetValue(id, out var e)) return ValueTask.CompletedTask;
 
-        if (nextRunAt.HasValue)
-        {
-            // Recurring: insert next pending entry
-            var next = new JobEntry
+            // Scheduling#16: validate Running → Succeeded via FSM
+            if (!JobStatusFsm.TryTransition(e.Status, JobTrigger.Succeed, out var status))
+                return ValueTask.CompletedTask;
+
+            _entries[id] = new JobEntry
             {
-                Id = JobId.New(),
+                Id = e.Id,
                 TypeName = e.TypeName,
                 Payload = e.Payload,
-                Status = JobStatus.Pending,
-                Attempts = 0,
-                MaxAttempts = maxAttempts,
-                ScheduledAt = nextRunAt.Value,
-                CronExpression = cronExpression,
+                Status = status, // JobStatus.Succeeded
+                Attempts = e.Attempts,
+                MaxAttempts = e.MaxAttempts,
+                ScheduledAt = e.ScheduledAt,
+                StartedAt = e.StartedAt,
+                CompletedAt = DateTimeOffset.UtcNow,
+                NextRunAt = e.NextRunAt,
+                CronExpression = e.CronExpression,
+                Error = e.Error,
             };
-            _entries[next.Id] = next;
+
+            if (nextRunAt.HasValue)
+            {
+                // Recurring: insert next pending entry
+                var next = NewPending(e.TypeName, e.Payload, nextRunAt.Value, maxAttempts, cronExpression);
+                _entries[next.Id] = next;
+                _claimable.Add(next.Id);
+            }
         }
 
         return ValueTask.CompletedTask;
@@ -115,53 +128,60 @@ public sealed class InMemoryJobStore : IJobStore, IJobDashboardStore, IDisposabl
 
     public ValueTask MarkFailedAsync(JobId id, int attempts, DateTimeOffset nextRetryAt, CancellationToken ct)
     {
-        if (!_entries.TryGetValue(id, out var e)) return ValueTask.CompletedTask;
-
-        // Scheduling#16: validate Running → Failed via FSM
-        var fsm = new JobStatusFsm(e.Status);
-        if (!fsm.TryFire(JobTrigger.Fail)) return ValueTask.CompletedTask;
-
-        _entries[id] = new JobEntry
+        lock (_gate)
         {
-            Id = e.Id,
-            TypeName = e.TypeName,
-            Payload = e.Payload,
-            Status = fsm.Current, // JobStatus.Failed
-            Attempts = attempts,
-            MaxAttempts = e.MaxAttempts,
-            ScheduledAt = nextRetryAt,
-            StartedAt = e.StartedAt,
-            CompletedAt = e.CompletedAt,
-            NextRunAt = e.NextRunAt,
-            CronExpression = e.CronExpression,
-            Error = e.Error,
-        };
+            if (!_entries.TryGetValue(id, out var e)) return ValueTask.CompletedTask;
+
+            // Scheduling#16: validate Running → Failed via FSM
+            if (!JobStatusFsm.TryTransition(e.Status, JobTrigger.Fail, out var status))
+                return ValueTask.CompletedTask;
+
+            _entries[id] = new JobEntry
+            {
+                Id = e.Id,
+                TypeName = e.TypeName,
+                Payload = e.Payload,
+                Status = status, // JobStatus.Failed
+                Attempts = attempts,
+                MaxAttempts = e.MaxAttempts,
+                ScheduledAt = nextRetryAt,
+                StartedAt = e.StartedAt,
+                CompletedAt = e.CompletedAt,
+                NextRunAt = e.NextRunAt,
+                CronExpression = e.CronExpression,
+                Error = e.Error,
+            };
+            _claimable.Add(id); // claimed again once nextRetryAt has passed
+        }
         return ValueTask.CompletedTask;
     }
 
     public ValueTask DeadLetterAsync(JobId id, string error, CancellationToken ct)
     {
-        if (!_entries.TryGetValue(id, out var e)) return ValueTask.CompletedTask;
-
-        // Scheduling#16: validate Running → DeadLetter via FSM
-        var fsm = new JobStatusFsm(e.Status);
-        if (!fsm.TryFire(JobTrigger.DeadLetter)) return ValueTask.CompletedTask;
-
-        _entries[id] = new JobEntry
+        lock (_gate)
         {
-            Id = e.Id,
-            TypeName = e.TypeName,
-            Payload = e.Payload,
-            Status = fsm.Current, // JobStatus.DeadLetter
-            Attempts = e.Attempts,
-            MaxAttempts = e.MaxAttempts,
-            ScheduledAt = e.ScheduledAt,
-            StartedAt = e.StartedAt,
-            CompletedAt = DateTimeOffset.UtcNow,
-            NextRunAt = e.NextRunAt,
-            CronExpression = e.CronExpression,
-            Error = error,
-        };
+            if (!_entries.TryGetValue(id, out var e)) return ValueTask.CompletedTask;
+
+            // Scheduling#16: validate Running → DeadLetter via FSM
+            if (!JobStatusFsm.TryTransition(e.Status, JobTrigger.DeadLetter, out var status))
+                return ValueTask.CompletedTask;
+
+            _entries[id] = new JobEntry
+            {
+                Id = e.Id,
+                TypeName = e.TypeName,
+                Payload = e.Payload,
+                Status = status, // JobStatus.DeadLetter
+                Attempts = e.Attempts,
+                MaxAttempts = e.MaxAttempts,
+                ScheduledAt = e.ScheduledAt,
+                StartedAt = e.StartedAt,
+                CompletedAt = DateTimeOffset.UtcNow,
+                NextRunAt = e.NextRunAt,
+                CronExpression = e.CronExpression,
+                Error = error,
+            };
+        }
         return ValueTask.CompletedTask;
     }
 
@@ -169,24 +189,18 @@ public sealed class InMemoryJobStore : IJobStore, IJobDashboardStore, IDisposabl
         string typeName, byte[] payload, DateTimeOffset scheduledAt,
         string? cronExpression, int maxAttempts, CancellationToken ct)
     {
-        bool exists = _entries.ToValuesArray().Any(e =>
-            string.Equals(e.TypeName, typeName, StringComparison.Ordinal) &&
-            (e.Status == JobStatus.Pending || e.Status == JobStatus.Running));
-
-        if (!exists)
+        lock (_gate)
         {
-            var entry = new JobEntry
+            bool exists = _entries.ToValuesArray().Any(e =>
+                string.Equals(e.TypeName, typeName, StringComparison.Ordinal) &&
+                (e.Status == JobStatus.Pending || e.Status == JobStatus.Running));
+
+            if (!exists)
             {
-                Id = JobId.New(),
-                TypeName = typeName,
-                Payload = payload,
-                Status = JobStatus.Pending,
-                Attempts = 0,
-                MaxAttempts = maxAttempts,
-                ScheduledAt = scheduledAt,
-                CronExpression = cronExpression,
-            };
-            _entries[entry.Id] = entry;
+                var entry = NewPending(typeName, payload, scheduledAt, maxAttempts, cronExpression);
+                _entries[entry.Id] = entry;
+                _claimable.Add(entry.Id);
+            }
         }
 
         return ValueTask.CompletedTask;
@@ -223,23 +237,24 @@ public sealed class InMemoryJobStore : IJobStore, IJobDashboardStore, IDisposabl
 
     public Task RequeueAsync(JobId id, CancellationToken ct = default)
     {
-        if (_entries.TryGetValue(id, out var e))
+        lock (_gate)
         {
             // Scheduling#16: validate DeadLetter/Succeeded → Pending via FSM
-            var fsm = new JobStatusFsm(e.Status);
-            if (fsm.TryFire(JobTrigger.Requeue))
+            if (_entries.TryGetValue(id, out var e)
+                && JobStatusFsm.TryTransition(e.Status, JobTrigger.Requeue, out var status))
             {
                 _entries[id] = new JobEntry
                 {
                     Id = e.Id,
                     TypeName = e.TypeName,
                     Payload = e.Payload,
-                    Status = fsm.Current, // JobStatus.Pending
+                    Status = status, // JobStatus.Pending
                     Attempts = 0,
                     MaxAttempts = e.MaxAttempts,
                     ScheduledAt = DateTimeOffset.UtcNow,
                     CronExpression = e.CronExpression,
                 };
+                _claimable.Add(id);
             }
         }
         return Task.CompletedTask;
@@ -247,10 +262,28 @@ public sealed class InMemoryJobStore : IJobStore, IJobDashboardStore, IDisposabl
 
     public Task DeleteAsync(JobId id, CancellationToken ct = default)
     {
-        _entries.TryRemove(id, out _);
+        lock (_gate)
+        {
+            _entries.TryRemove(id, out _);
+            _claimable.Remove(id);
+        }
         return Task.CompletedTask;
     }
 
     /// <summary>Returns the pooled bucket array. Tests typically rely on GC; production callers should dispose explicitly.</summary>
     public void Dispose() => _entries.Dispose();
+
+    private static JobEntry NewPending(
+        string typeName, byte[] payload, DateTimeOffset scheduledAt, int maxAttempts, string? cronExpression)
+        => new()
+        {
+            Id = JobId.New(),
+            TypeName = typeName,
+            Payload = payload,
+            Status = JobStatus.Pending,
+            Attempts = 0,
+            MaxAttempts = maxAttempts,
+            ScheduledAt = scheduledAt,
+            CronExpression = cronExpression,
+        };
 }
