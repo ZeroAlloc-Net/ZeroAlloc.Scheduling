@@ -248,6 +248,18 @@ public sealed class DispatchingJobSerializerTests
     }
 
     [Fact]
+    public void Deserialize_StructJob_DispatcherReturnsNull_Throws()
+    {
+        var serializer = new DispatchingJobSerializer(new FixedResultDispatcher(null));
+
+        var act = () => serializer.Deserialize<PingValue>([1]);
+
+        act.Should().Throw<InvalidOperationException>()
+            .WithMessage("Deserializing PingValue returned null or wrong type.")
+            .WithInnerException<InvalidCastException>();
+    }
+
+    [Fact]
     public void Deserialize_StructJob_DispatcherReturnsWrongType_Throws()
     {
         var serializer = new DispatchingJobSerializer(new FixedResultDispatcher(new Ping("x")));
