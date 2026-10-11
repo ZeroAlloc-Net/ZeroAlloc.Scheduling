@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.2.5](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v2.2.4...v2.2.5) (2026-10-11)
+
+
+### Performance
+
+* stop the worker allocating per job beyond the JobContext ([#380](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/380)) ([5b29764](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/5b29764ce15994b0daf27404f9bf4da9699d7fc0)), closes [#377](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/377)
+
+
+### Chores
+
+* **deps:** update dependency adonet.async.adapters to 1.5.2 ([#383](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/383)) ([2001bf6](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/2001bf63222b959fa3e65e7b1fbafb48015b5711))
+* **deps:** update dependency zeroalloc.mediator to 6.4.3 ([#385](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/385)) ([e1ed7ee](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/e1ed7eee97b4d76a7d1a8c2da2b30e8c8b46d7b7))
+
 ## [2.2.4](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v2.2.3...v2.2.4) (2026-10-11)
 
 
