@@ -147,9 +147,13 @@ public sealed class DispatchingJobSerializerTests
         long before = GC.GetAllocatedBytesForCurrentThread();
         for (int i = 0; i < Calls; i++)
             allSynchronous &= scheduler.EnqueueAsync(job).IsCompletedSuccessfully;
-        double perCall = (double)(GC.GetAllocatedBytesForCurrentThread() - before) / Calls;
+        long total = GC.GetAllocatedBytesForCurrentThread() - before;
+        // Whole bytes per call. A one-off allocation during the loop, such as the runtime promoting a
+        // method to tier 1 part way through, adds well under a byte per call and rounds away, while
+        // any allocation made on every call adds at least one object header to each of them.
+        long perCall = total / Calls;
 
-        _output.WriteLine($"{typeof(TJob).Name}: {perCall:F1} B per enqueue, payload byte[{payloadLength}] is {arrayBytes} B");
+        _output.WriteLine($"{typeof(TJob).Name}: {total} B over {Calls} enqueues, {perCall} B each; payload byte[{payloadLength}] is {arrayBytes} B");
 
         allSynchronous.Should().BeTrue("the measurement is only valid when every call stays on this thread");
         perCall.Should().Be(arrayBytes,
