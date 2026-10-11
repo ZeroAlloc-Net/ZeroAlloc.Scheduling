@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.2.3](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v2.2.2...v2.2.3) (2026-10-11)
+
+
+### Chores
+
+* **deps:** update dependency adonet.async.adapters to 1.5.1 ([#375](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/375)) ([f00558f](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/f00558f7153c50a9c9077a8f60ed879ab7bc8498))
+* **deps:** update dependency zeroalloc.mediator to 6.4.1 ([#372](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/372)) ([cda0013](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/cda0013d152eaa8bdfd69a692a9096163da45ef9))
+* **deps:** update dependency zeroalloc.mediator to 6.4.2 ([#374](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/374)) ([c715f52](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/c715f527ed13d45bdd424556d4396cd949ceb3d1))
+
 ## [2.2.2](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v2.2.1...v2.2.2) (2026-10-10)
 
 
