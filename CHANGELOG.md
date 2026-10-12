@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.2.9](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v2.2.8...v2.2.9) (2026-10-12)
+
+
+### Chores
+
+* **deps:** update dependency zeroalloc.collections to 1.2.1 ([#384](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/384)) ([6c4ffb5](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/6c4ffb518e72395ff146c2ade9e31942038a18c6))
+* **deps:** update dependency zeroalloc.telemetry to 1.12.2 ([#410](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/410)) ([3fc81f0](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/3fc81f01efcef5f2f06786d5c1040373321c84b5))
+
 ## [2.2.8](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v2.2.7...v2.2.8) (2026-10-12)
 
 
