@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.2.8](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v2.2.7...v2.2.8) (2026-10-12)
+
+
+### Chores
+
+* **deps:** drop leftover NetFabric.Hyperlinq.Analyzer config ([#407](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/407)) ([f5b125a](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/f5b125af8b43dc0d7b9a668c321444b2f2db097c))
+* **deps:** update dependency meziantou.analyzer to 3.0.296 ([#395](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/395)) ([0dcd77f](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/0dcd77f2bfb3916499ebf08147cc715df5bc25c6))
+* **deps:** update dependency zeroalloc.telemetry to 1.12.1 ([#390](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/390)) ([3eb703c](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/3eb703cacdb407431ab225c16044d38e0d8949ee))
+* **deps:** update zeroalloc.orm to 2.3.0 ([#401](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/401)) ([4ea0f64](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/4ea0f641f297f00ee866280ea0bcfe0624e7990d))
+* **deps:** update zeroalloc.outbox to 4.4.3 ([#406](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/406)) ([d5c6c4c](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/d5c6c4c9964dfac537082e0df30646643396e259))
+
 ## [2.2.7](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v2.2.6...v2.2.7) (2026-10-11)
 
 
