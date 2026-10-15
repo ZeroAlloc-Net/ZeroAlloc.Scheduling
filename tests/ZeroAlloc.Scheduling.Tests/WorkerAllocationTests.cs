@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Xunit.Abstractions;
 using ZeroAlloc.Scheduling.InMemory;
+using ZeroAlloc.TestHelpers;
 
 namespace ZeroAlloc.Scheduling.Tests;
 
@@ -16,6 +17,9 @@ public sealed class WorkerAllocationTests
 {
     private const int Jobs = 1_000;
     private const string Cron = "*/5 * * * *";
+
+    // AllocationGate.MeasureBytesPerCall calls the action twice to warm up before it measures.
+    private const int WarmupCalls = 2;
 
     private static JobContext? _contextSink;
 
@@ -36,43 +40,41 @@ public sealed class WorkerAllocationTests
             NullLogger<SchedulingWorkerService>.Instance,
             [new NoOpExecutor()]);
 
-        // Warm up every path once: tiered JIT, the cron cache, static instrument initialisation.
-        using (var warmStore = new InMemoryJobStore())
-        {
-            foreach (var entry in await ClaimAsync(warmStore, 2, cron))
-                await worker.ProcessEntryAsync(warmStore, entry, services, CancellationToken.None);
-            foreach (var entry in await ClaimAsync(warmStore, 2, cron))
-                await warmStore.MarkSucceededAsync(entry.Id, NextRun(cron), cron, 3, CancellationToken.None);
-        }
-        long contextBytes = MeasureJobContext(services);
+        long contextBytes = AllocationGate.MeasureBytesPerCall(Jobs, () => _contextSink = NewContext(services));
 
         // The store's own cost for the same work: marking N claimed jobs succeeded, and for a
-        // recurring job inserting the next occurrence.
+        // recurring job inserting the next occurrence. Each call takes the next claimed entry;
+        // the gate makes WarmupCalls calls before the Jobs it measures.
         using var storeOnly = new InMemoryJobStore();
-        var storeEntries = await ClaimAsync(storeOnly, Jobs, cron);
+        var storeEntries = await ClaimAsync(storeOnly, WarmupCalls + Jobs, cron);
         var nextRun = NextRun(cron);
-        long before = GC.GetAllocatedBytesForCurrentThread();
-        foreach (var entry in storeEntries)
-            _ = storeOnly.MarkSucceededAsync(entry.Id, nextRun, cron, 3, CancellationToken.None);
-        long storeBytes = GC.GetAllocatedBytesForCurrentThread() - before;
+        int storeNext = 0;
+        long storeBytes = AllocationGate.MeasureBytesPerCall(
+            Jobs,
+            () => _ = storeOnly.MarkSucceededAsync(
+                storeEntries[storeNext++].Id, nextRun, cron, 3, CancellationToken.None));
 
         using var store = new InMemoryJobStore();
-        var entries = await ClaimAsync(store, Jobs, cron);
+        var entries = await ClaimAsync(store, WarmupCalls + Jobs, cron);
         bool allSynchronous = true;
-        before = GC.GetAllocatedBytesForCurrentThread();
-        foreach (var entry in entries)
-            allSynchronous &= worker.ProcessEntryAsync(store, entry, services, CancellationToken.None).IsCompletedSuccessfully;
-        long workerBytes = GC.GetAllocatedBytesForCurrentThread() - before;
+        int next = 0;
+        long workerBytes = AllocationGate.MeasureBytesPerCall(
+            Jobs,
+            () => allSynchronous &= worker.ProcessEntryAsync(store, entries[next++], services, CancellationToken.None)
+                .IsCompletedSuccessfully);
 
         allSynchronous.Should().BeTrue("the measurement is only valid when every call stays on this thread");
-        store.AllEntries.Count(e => e.Status == JobStatus.Succeeded).Should().Be(Jobs);
+        next.Should().Be(WarmupCalls + Jobs);
+        store.AllEntries.Count(e => e.Status == JobStatus.Succeeded).Should().Be(WarmupCalls + Jobs);
 
-        double perJob = (double)(workerBytes - storeBytes) / Jobs;
+        // Both figures are rounded up per call. For a recurring job the store's next-occurrence
+        // inserts add the same amortized growth to both, about 467.1 B/job, so the rounding cancels.
+        long perJob = workerBytes - storeBytes;
         _output.WriteLine(
-            $"recurring={recurring}: worker {workerBytes / (double)Jobs:F1} B/job, store {storeBytes / (double)Jobs:F1} B/job, " +
-            $"worker overhead {perJob:F1} B/job, JobContext {contextBytes} B");
+            $"recurring={recurring}: worker {workerBytes} B/job, store {storeBytes} B/job, " +
+            $"worker overhead {perJob} B/job, JobContext {contextBytes} B");
 
-        perJob.Should().BeLessThanOrEqualTo(contextBytes,
+        perJob.Should().Be(contextBytes,
             "the worker's only per-job allocation is the JobContext handed to the job");
     }
 
@@ -120,14 +122,6 @@ public sealed class WorkerAllocationTests
             lock (measurements)
                 measurements.Add((instrument, attempt));
         }
-    }
-
-    private static long MeasureJobContext(IServiceProvider services)
-    {
-        _contextSink = NewContext(services);
-        long before = GC.GetAllocatedBytesForCurrentThread();
-        _contextSink = NewContext(services);
-        return GC.GetAllocatedBytesForCurrentThread() - before;
     }
 
     private static JobContext NewContext(IServiceProvider services) => new()

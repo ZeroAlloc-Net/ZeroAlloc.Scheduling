@@ -146,23 +146,15 @@ public sealed class DispatchingJobSerializerTests
             new StaticOptionsMonitor(new SchedulingOptions()),
             []);
 
-        // Warm up: tiered JIT, and the thread's cached Utf8JsonWriter and buffer writer.
-        for (int i = 0; i < 10; i++)
-            await scheduler.EnqueueAsync(job).ConfigureAwait(false);
+        await scheduler.EnqueueAsync(job).ConfigureAwait(false); // learn the payload length
         int payloadLength = store.LastPayloadLength;
-        long arrayBytes = MeasureArray(payloadLength);
+        long arrayBytes = AllocationGate.MeasureBytesPerCall(Calls, () => _arraySink = new byte[payloadLength]);
 
         bool allSynchronous = true;
-        long before = GC.GetAllocatedBytesForCurrentThread();
-        for (int i = 0; i < Calls; i++)
-            allSynchronous &= scheduler.EnqueueAsync(job).IsCompletedSuccessfully;
-        long total = GC.GetAllocatedBytesForCurrentThread() - before;
-        // Whole bytes per call. A one-off allocation during the loop, such as the runtime promoting a
-        // method to tier 1 part way through, adds well under a byte per call and rounds away, while
-        // any allocation made on every call adds at least one object header to each of them.
-        long perCall = total / Calls;
+        long perCall = AllocationGate.MeasureBytesPerCall(
+            Calls, () => allSynchronous &= scheduler.EnqueueAsync(job).IsCompletedSuccessfully);
 
-        _output.WriteLine($"{typeof(TJob).Name}: {total} B over {Calls} enqueues, {perCall} B each; payload byte[{payloadLength}] is {arrayBytes} B");
+        _output.WriteLine($"{typeof(TJob).Name}: {perCall} B per enqueue; payload byte[{payloadLength}] is {arrayBytes} B");
 
         allSynchronous.Should().BeTrue("the measurement is only valid when every call stays on this thread");
         perCall.Should().Be(arrayBytes,
@@ -280,14 +272,6 @@ public sealed class DispatchingJobSerializerTests
 
         act.Should().Throw<InvalidOperationException>()
             .WithMessage("Deserializing Ping returned null or wrong type.");
-    }
-
-    private static long MeasureArray(int length)
-    {
-        _arraySink = new byte[length];
-        long before = GC.GetAllocatedBytesForCurrentThread();
-        _arraySink = new byte[length];
-        return GC.GetAllocatedBytesForCurrentThread() - before;
     }
 
     private static void Write(IBufferWriter<byte> writer, string text)
