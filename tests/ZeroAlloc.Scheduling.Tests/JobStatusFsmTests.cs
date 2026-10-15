@@ -1,3 +1,5 @@
+using ZeroAlloc.TestHelpers;
+
 namespace ZeroAlloc.Scheduling.Tests;
 
 public sealed class JobStatusFsmTests
@@ -26,17 +28,9 @@ public sealed class JobStatusFsmTests
 
     [Fact]
     public void TryTransition_DoesNotAllocate()
-    {
-        JobStatusFsm.TryTransition(JobStatus.Pending, JobTrigger.Claim, out _); // warm up
-
-        var before = GC.GetAllocatedBytesForCurrentThread();
-        for (var i = 0; i < 1000; i++)
+        => AllocationGate.AssertBudget(0, 1000, static () =>
         {
             JobStatusFsm.TryTransition(JobStatus.Pending, JobTrigger.Claim, out _);
             JobStatusFsm.TryTransition(JobStatus.Succeeded, JobTrigger.Claim, out _);
-        }
-        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
-
-        allocated.Should().Be(0);
-    }
+        }, "JobStatusFsm.TryTransition");
 }

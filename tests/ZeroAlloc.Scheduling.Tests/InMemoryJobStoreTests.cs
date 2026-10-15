@@ -1,3 +1,4 @@
+using ZeroAlloc.TestHelpers;
 using ZeroAlloc.Scheduling.InMemory;
 
 namespace ZeroAlloc.Scheduling.Tests;
@@ -114,13 +115,9 @@ public sealed class InMemoryJobStoreTests
         // One pending job that is not yet due, so the poll has something to look at.
         await _store.EnqueueAsync("FutureJob", [], DateTimeOffset.UtcNow.AddHours(1), 3, null, _ct);
 
-        await _store.FetchPendingAsync(10, _ct); // warm up
-        var before = GC.GetAllocatedBytesForCurrentThread();
-        for (var i = 0; i < 100; i++)
-            await _store.FetchPendingAsync(10, _ct);
-        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
-
-        allocated.Should().Be(0, "a poll that claims nothing must not allocate, however many jobs finished");
+        // A poll that claims nothing must not allocate, however many jobs finished.
+        AllocationGate.AssertBudgetValueTask(
+            0, 100, () => _store.FetchPendingAsync(10, _ct), "InMemoryJobStore.FetchPendingAsync");
     }
 
     [Fact]
