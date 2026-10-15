@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.2.10](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v2.2.9...v2.2.10) (2026-10-15)
+
+
+### Documentation
+
+* fix scheduling readme sample and package list ([#423](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/423)) ([59391f2](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/59391f21611089b65cb31e50647ebefae1b679c1))
+* re-run the coravel comparison on coravel 6.0.2 ([#428](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/428)) ([ca7b711](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/ca7b711c60e9533283ade7a9bd5c66e992560c90)), closes [#421](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/421)
+
+
+### Tests
+
+* move hand-rolled GC allocation checks onto AllocationGate ([#427](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/427)) ([20f3627](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/20f36279833c7059e6b6781d5aecac93adff1b17)), closes [#422](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/422)
+* pin patched system.security.cryptography.pkcs for cve-2026-84008 ([#425](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/425)) ([7dea2e0](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/7dea2e04db17a16be55837b4f7d5e809add7a0d5))
+
 ## [2.2.9](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v2.2.8...v2.2.9) (2026-10-12)
 
 
