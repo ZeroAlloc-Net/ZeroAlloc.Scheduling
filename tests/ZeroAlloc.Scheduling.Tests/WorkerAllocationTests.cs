@@ -18,9 +18,6 @@ public sealed class WorkerAllocationTests
     private const int Jobs = 1_000;
     private const string Cron = "*/5 * * * *";
 
-    // AllocationGate.MeasureBytesPerCall calls the action twice to warm up before it measures.
-    private const int WarmupCalls = 2;
-
     private static JobContext? _contextSink;
 
     private readonly ITestOutputHelper _output;
@@ -43,10 +40,11 @@ public sealed class WorkerAllocationTests
         long contextBytes = AllocationGate.MeasureBytesPerCall(Jobs, () => _contextSink = NewContext(services));
 
         // The store's own cost for the same work: marking N claimed jobs succeeded, and for a
-        // recurring job inserting the next occurrence. Each call takes the next claimed entry;
-        // the gate makes WarmupCalls calls before the Jobs it measures.
+        // recurring job inserting the next occurrence. Each call takes the next claimed entry, so
+        // there must be one for every call the gate makes, warmup included.
+        int gateCalls = CountGateCalls(Jobs);
         using var storeOnly = new InMemoryJobStore();
-        var storeEntries = await ClaimAsync(storeOnly, WarmupCalls + Jobs, cron);
+        var storeEntries = await ClaimAsync(storeOnly, gateCalls, cron);
         var nextRun = NextRun(cron);
         int storeNext = 0;
         long storeBytes = AllocationGate.MeasureBytesPerCall(
@@ -55,7 +53,7 @@ public sealed class WorkerAllocationTests
                 storeEntries[storeNext++].Id, nextRun, cron, 3, CancellationToken.None));
 
         using var store = new InMemoryJobStore();
-        var entries = await ClaimAsync(store, WarmupCalls + Jobs, cron);
+        var entries = await ClaimAsync(store, gateCalls, cron);
         bool allSynchronous = true;
         int next = 0;
         long workerBytes = AllocationGate.MeasureBytesPerCall(
@@ -64,11 +62,12 @@ public sealed class WorkerAllocationTests
                 .IsCompletedSuccessfully);
 
         allSynchronous.Should().BeTrue("the measurement is only valid when every call stays on this thread");
-        next.Should().Be(WarmupCalls + Jobs);
-        store.AllEntries.Count(e => e.Status == JobStatus.Succeeded).Should().Be(WarmupCalls + Jobs);
+        next.Should().Be(gateCalls);
+        store.AllEntries.Count(e => e.Status == JobStatus.Succeeded).Should().Be(gateCalls);
 
         // Both figures are rounded up per call. For a recurring job the store's next-occurrence
-        // inserts add the same amortized growth to both, about 467.1 B/job, so the rounding cancels.
+        // inserts add the same amortized growth to both, not a whole number of bytes per job, so
+        // the rounding cancels. Which part of that growth the gate counts depends on its windows.
         long perJob = workerBytes - storeBytes;
         _output.WriteLine(
             $"recurring={recurring}: worker {workerBytes} B/job, store {storeBytes} B/job, " +
@@ -122,6 +121,16 @@ public sealed class WorkerAllocationTests
             lock (measurements)
                 measurements.Add((instrument, attempt));
         }
+    }
+
+    // How many times AllocationGate.MeasureBytesPerCall calls its action for this many iterations:
+    // its warmup calls plus every call it measures. Counted rather than assumed, because the gate's
+    // warmup and number of measured windows are its own business and may change.
+    private static int CountGateCalls(int iterations)
+    {
+        int calls = 0;
+        _ = AllocationGate.MeasureBytesPerCall(iterations, () => calls++);
+        return calls;
     }
 
     private static JobContext NewContext(IServiceProvider services) => new()
