@@ -9,7 +9,9 @@ namespace ZeroAlloc.Scheduling.Orm;
 /// <remarks>
 /// <para>
 /// Writes the same columns as the EF Core adapter, with the same status values,
-/// so the two can be swapped without a data migration.
+/// but not the same table: this store uses <c>SchedulingJobs</c> with native
+/// date types, the EF Core adapter <c>ScheduledJobs</c> with dates as ticks.
+/// Moving between the two means draining the queue, not repointing the store.
 /// </para>
 /// <para>
 /// This implements <see cref="IJobStore"/> only. The dashboard's
