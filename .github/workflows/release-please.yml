@@ -8,7 +8,6 @@ on:
 permissions:
   contents: write
   pull-requests: write
-  packages: write
 
 # One run at a time. Two quick pushes to main would otherwise run release-please and
 # ship-release-tracking concurrently against the same release PR branch. Queued, not
