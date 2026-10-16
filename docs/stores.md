@@ -2,13 +2,13 @@
 id: stores
 title: Backends
 slug: /docs/stores
-description: Configure the InMemory, EF Core, or Redis job store backends.
+description: Configure the InMemory, EF Core, ZeroAlloc.ORM, or Redis job store backends.
 sidebar_position: 3
 ---
 
 # Backends
 
-ZeroAlloc.Scheduling separates the job execution engine from the persistence layer. The engine (`SchedulingWorkerService`) talks to `IJobStore`. Three store implementations are provided; pick one per application.
+ZeroAlloc.Scheduling separates the job execution engine from the persistence layer. The engine (`SchedulingWorkerService`) talks to `IJobStore`. Four store implementations are provided; pick one per application.
 
 ## InMemory
 
@@ -90,6 +90,74 @@ services.AddOutbox()
 
 With neither, resolving `IOutboxWriter<TJob>` throws an `InvalidOperationException` that names both options. See the Outbox guide [Migrating to v4](https://outbox.zeroalloc.net/migrating-to-v4) for the other 4.0 changes, such as one outbox store per container.
 
+## ORM
+
+Persist jobs through [ZeroAlloc.ORM](https://github.com/ZeroAlloc-Net/ZeroAlloc.ORM): raw SQL with compile-time parameter binding, no change tracker and no runtime reflection. Supports SQLite, PostgreSQL and SQL Server, and is NativeAOT compatible.
+
+The package targets **net10.0 only**, because ZeroAlloc.ORM ships for net10.0 only. On net8.0 or net9.0, use the EF Core store.
+
+```bash
+dotnet add package ZeroAlloc.Scheduling.Orm
+dotnet add package Microsoft.Data.Sqlite   # or Npgsql, or Microsoft.Data.SqlClient
+```
+
+### Registration
+
+`WithOrm()` does not register a connection. Register a scoped `IAsyncDbConnection` yourself, since the connection's lifetime, provider and connection string belong to the application. `AsAsync()` from `System.Data.Async.Adapters`, which comes with the package, wraps any ADO.NET connection. The store opens it on first use.
+
+```csharp
+using System.Data.Async;
+using System.Data.Async.Adapters;
+using Microsoft.Data.Sqlite;
+using ZeroAlloc.Scheduling.Orm;
+
+services.AddScoped<IAsyncDbConnection>(_ =>
+    new SqliteConnection("Data Source=jobs.db").AsAsync());
+
+services.AddScheduling()
+        .WithOrm()
+        .AddMyJob();
+```
+
+`WithOrm()` uses the SQLite query spelling. For another database, pass its `OrmSchedulingDialect`:
+
+| Database | Registration | Schema source | Migration dialect |
+|----------|--------------|---------------|-------------------|
+| SQLite | `WithOrm()` or `WithOrm(OrmSchedulingDialect.Sqlite)` | `SchedulingOrmMigrations.Sqlite` | `SqliteMigrationDialect` |
+| PostgreSQL | `WithOrm(OrmSchedulingDialect.Postgres)` | `SchedulingOrmMigrations.Postgres` | `PostgresMigrationDialect` |
+| SQL Server 2012+ | `WithOrm(OrmSchedulingDialect.SqlServer)` | `SchedulingOrmMigrations.SqlServer` | `SqlServerMigrationDialect` |
+
+Only the claim query and the recurring-job lookup differ between dialects: SQLite and PostgreSQL use `LIMIT`, SQL Server uses `OFFSET … FETCH NEXT`. Everything else is plain ANSI SQL.
+
+### Schema
+
+The store does not create tables on the fly. Apply the schema with ZeroAlloc.ORM's `MigrationRunner` before the host starts:
+
+```csharp
+using ZeroAlloc.ORM.Migrations;
+
+var connection = new SqliteConnection("Data Source=jobs.db").AsAsync();
+await using (connection)
+{
+    await connection.OpenAsync(ct);
+    await new MigrationRunner(connection, SchedulingOrmMigrations.Sqlite, new SqliteMigrationDialect())
+        .RunAsync(ct);
+}
+```
+
+Use the schema source and migration dialect from the table above for PostgreSQL or SQL Server. The runner records applied versions under the name `ZeroAlloc.Scheduling`, so the job schema can share a history table with your own migrations without version numbers colliding. Running it again applies only what is missing, so it is safe to call on every startup.
+
+It creates a `SchedulingJobs` table with an index on `(Status, ScheduledAt)` for the poll and one on `ClaimToken` for the claim read-back. Finished jobs are kept, not deleted, so without the first index every poll would scan the whole table.
+
+`FetchPendingAsync` claims jobs with a single `UPDATE` that stamps a fresh claim token, then reads back by that token, so concurrent workers never dispatch the same job twice.
+
+### Compared with EF Core
+
+- **No dashboard.** The ORM store implements `IJobStore` only and registers no `IJobDashboardStore`, so the dashboard cannot be pointed at it. Use the EF Core or Redis store if you need the dashboard.
+- **No outbox writer.** `WithOutboxWriter<TJob>()` is part of the EF Core package.
+- **Not interchangeable on disk.** The ORM store writes to `SchedulingJobs` with native date types; EF Core writes to `ScheduledJobs` with dates stored as ticks. Moving between them means draining the queue, not repointing the store at the old table.
+- **Lighter.** No `DbContext`, no change tracker and no EF Core dependency, which keeps a NativeAOT app smaller.
+
 ## Redis
 
 For distributed deployments with multiple worker instances.
@@ -110,7 +178,7 @@ Jobs are stored as Redis hashes. The store maintains three tracking Sets (`jobs:
 
 ## Dashboard Integration
 
-All three stores also implement `IJobDashboardStore`, which powers the dashboard API. EF Core and Redis register `IJobDashboardStore` automatically. InMemory implements it directly on `InMemoryJobStore`.
+The InMemory, EF Core and Redis stores also implement `IJobDashboardStore`, which powers the dashboard API. EF Core and Redis register `IJobDashboardStore` automatically. InMemory implements it directly on `InMemoryJobStore`. The ORM store does not implement it, so a dashboard cannot run on it.
 
 If you implement a custom store, register `IJobDashboardStore` explicitly:
 
@@ -125,5 +193,6 @@ services.TryAddScoped<IJobDashboardStore>(sp =>
 |-------------|---------------------|
 | Local development / unit tests | InMemory |
 | Single-server with persistence | EF Core (SQLite or SQL Server) |
+| Persistence under NativeAOT, no dashboard needed | ORM (net10.0) |
 | Multi-server / distributed | Redis |
 | Custom / existing database | Implement `IJobStore` + `IJobDashboardStore` |
