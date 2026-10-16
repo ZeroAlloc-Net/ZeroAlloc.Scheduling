@@ -77,7 +77,7 @@ Stores and integrations:
 
 - [`ZeroAlloc.Scheduling.InMemory`](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/blob/main/docs/stores.md#inmemory): in-process store for development and tests.
 - [`ZeroAlloc.Scheduling.EfCore`](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/blob/main/docs/stores.md#ef-core): EF Core store on SQL Server, PostgreSQL or SQLite.
-- [`ZeroAlloc.Scheduling.Orm`](https://www.nuget.org/packages/ZeroAlloc.Scheduling.Orm): ZeroAlloc.ORM store on SQLite, PostgreSQL or SQL Server, `WithOrm()`, net10.0 only.
+- [`ZeroAlloc.Scheduling.Orm`](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/blob/main/docs/stores.md#orm): ZeroAlloc.ORM store on SQLite, PostgreSQL or SQL Server, `WithOrm()`, net10.0 only.
 - [`ZeroAlloc.Scheduling.Redis`](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/blob/main/docs/stores.md#redis): Redis store for distributed deployments.
 - [`ZeroAlloc.Scheduling.Mediator`](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/blob/main/docs/mediator-bridge.md): run a job through ZeroAlloc.Mediator and its pipeline behaviors.
 - [`ZeroAlloc.Scheduling.Resilience`](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/blob/main/docs/resilience-bridge.md): retry, timeout and circuit-breaker around job execution.
