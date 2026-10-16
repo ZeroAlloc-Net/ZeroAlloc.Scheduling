@@ -8,7 +8,7 @@ sidebar_position: 1
 
 # Getting Started
 
-ZeroAlloc.Scheduling is a background job scheduler for .NET 8 and .NET 10. You decorate a class with `[Job]`, and the Roslyn source generator emits the executor, DI registration, and optional recurring startup for you at build time — no reflection, no convention scanning, no `IServiceCollection.Scan`.
+ZeroAlloc.Scheduling is a background job scheduler for .NET 8, 9 and 10. You decorate a class with `[Job]`, and the Roslyn source generator emits the executor, DI registration, and optional recurring startup for you at build time — no reflection, no convention scanning, no `IServiceCollection.Scan`.
 
 Upgrading from 1.x? See [Migrating to v2](migrating-to-v2.md): 2.0 makes you choose a job serializer and removes the 1.x aliases.
 
@@ -19,12 +19,11 @@ dotnet add package ZeroAlloc.Scheduling
 dotnet add package ZeroAlloc.Scheduling.InMemory
 ```
 
-The generator runs as an analyzer:
+The source generator is bundled into the main package, so there is nothing else to reference. Pick
+a store package: `ZeroAlloc.Scheduling.InMemory` for development and tests, or
+`ZeroAlloc.Scheduling.EfCore`, `ZeroAlloc.Scheduling.Orm` or `ZeroAlloc.Scheduling.Redis` in production.
 
-```xml
-<PackageReference Include="ZeroAlloc.Scheduling.Generator" Version="*"
-                  OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
-```
+> The standalone `ZeroAlloc.Scheduling.Generator` package is still published for backwards compatibility with existing direct PackageReferences, but new consumers should reference only `ZeroAlloc.Scheduling`.
 
 ## Your First Job
 
