@@ -8,7 +8,34 @@ sidebar_position: 0
 
 # ZeroAlloc.Scheduling Documentation
 
-Source-generated background job scheduler for .NET 8 and .NET 10.
+Source-generated background job scheduler for .NET 8, 9 and 10.
+
+## Features
+
+- **Source generator** — `[Job]` on a class emits a typed executor, DI extension method, and optional recurring startup (`IHostedService`)
+- **Recurring jobs** — `[Job(Cron = "0 * * * *")]` or `[Job(Every = Every.Hour)]` — scheduled via Cronos at startup
+- **Retry with backoff** — exponential retry up to `MaxAttempts` (per-job or global); dead-letters after exhaustion
+- **Multiple backends** — InMemory (dev/test), EF Core (SQL Server / PostgreSQL / SQLite), ZeroAlloc.ORM, Redis
+- **Dashboard** — embedded HTML/JS dashboard via `app.MapJobsDashboard("/jobs")`
+- **Blazor component** — `<JobsDashboard>` Razor component for integration into Blazor apps
+- **Mediator bridge** — `[Job]` + `IRequest<Unit>` auto-registers `MediatorJobTypeExecutor<T>`, routing execution through ZeroAlloc.Mediator pipeline behaviors
+- **Native AOT compatible** — no reflection at runtime; all dispatch resolved at compile time
+
+## Packages
+
+| Package | Description |
+|---------|-------------|
+| `ZeroAlloc.Scheduling` | Core interfaces, worker service, scheduler, bundled source generator |
+| `ZeroAlloc.Scheduling.Generator` | Source generator — **legacy**, already bundled inside `ZeroAlloc.Scheduling` |
+| `ZeroAlloc.Scheduling.InMemory` | In-process store for development and testing |
+| `ZeroAlloc.Scheduling.EfCore` | EF Core store (SQL Server, PostgreSQL, SQLite) |
+| `ZeroAlloc.Scheduling.Orm` | ZeroAlloc.ORM store (SQLite, PostgreSQL, SQL Server), `WithOrm()`; net10.0 only |
+| `ZeroAlloc.Scheduling.Redis` | Redis store for distributed deployments |
+| `ZeroAlloc.Scheduling.Dashboard` | Embedded HTML dashboard (`MapJobsDashboard`) |
+| `ZeroAlloc.Scheduling.Dashboard.Blazor` | Blazor component library |
+| `ZeroAlloc.Scheduling.Mediator` | ZeroAlloc.Mediator bridge |
+| `ZeroAlloc.Scheduling.Resilience` | ZeroAlloc.Resilience bridge: retry, timeout and circuit-breaker around job execution |
+| `ZeroAlloc.Scheduling.Telemetry` | ZeroAlloc.Telemetry bridge: OpenTelemetry spans and metrics for job execution (`WithTelemetry()`) |
 
 ## Reference
 
