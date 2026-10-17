@@ -9,3 +9,6 @@ obj/
 
 BenchmarkDotNet.Artifacts/
 .worktrees/
+
+# Test results and coverage reports
+TestResults/
