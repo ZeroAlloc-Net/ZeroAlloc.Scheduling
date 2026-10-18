@@ -18,9 +18,6 @@ public sealed class WorkerAllocationTests
     private const int Jobs = 1_000;
     private const string Cron = "*/5 * * * *";
 
-    // AllocationGate.MeasureBytesPerCall calls the action twice to warm up before it measures.
-    private const int WarmupCalls = 2;
-
     private static JobContext? _contextSink;
 
     private readonly ITestOutputHelper _output;
@@ -43,32 +40,30 @@ public sealed class WorkerAllocationTests
         long contextBytes = AllocationGate.MeasureBytesPerCall(Jobs, () => _contextSink = NewContext(services));
 
         // The store's own cost for the same work: marking N claimed jobs succeeded, and for a
-        // recurring job inserting the next occurrence. Each call takes the next claimed entry;
-        // the gate makes WarmupCalls calls before the Jobs it measures.
+        // recurring job inserting the next occurrence. Each call takes the next claimed entry.
+        // The gate decides how many calls it makes, so the entries are claimed as they run out.
         using var storeOnly = new InMemoryJobStore();
-        var storeEntries = await ClaimAsync(storeOnly, WarmupCalls + Jobs, cron);
+        var storeEntries = new ClaimedEntries(storeOnly, cron);
         var nextRun = NextRun(cron);
-        int storeNext = 0;
         long storeBytes = AllocationGate.MeasureBytesPerCall(
             Jobs,
             () => _ = storeOnly.MarkSucceededAsync(
-                storeEntries[storeNext++].Id, nextRun, cron, 3, CancellationToken.None));
+                storeEntries.Next().Id, nextRun, cron, 3, CancellationToken.None));
 
         using var store = new InMemoryJobStore();
-        var entries = await ClaimAsync(store, WarmupCalls + Jobs, cron);
+        var entries = new ClaimedEntries(store, cron);
         bool allSynchronous = true;
-        int next = 0;
         long workerBytes = AllocationGate.MeasureBytesPerCall(
             Jobs,
-            () => allSynchronous &= worker.ProcessEntryAsync(store, entries[next++], services, CancellationToken.None)
+            () => allSynchronous &= worker.ProcessEntryAsync(store, entries.Next(), services, CancellationToken.None)
                 .IsCompletedSuccessfully);
 
         allSynchronous.Should().BeTrue("the measurement is only valid when every call stays on this thread");
-        next.Should().Be(WarmupCalls + Jobs);
-        store.AllEntries.Count(e => e.Status == JobStatus.Succeeded).Should().Be(WarmupCalls + Jobs);
+        store.AllEntries.Count(e => e.Status == JobStatus.Succeeded).Should().Be(entries.Taken);
 
         // Both figures are rounded up per call. For a recurring job the store's next-occurrence
-        // inserts add the same amortized growth to both, about 467.1 B/job, so the rounding cancels.
+        // inserts add the same amortized growth to both, not a whole number of bytes per job, so
+        // the rounding cancels. Which part of that growth the gate counts depends on its windows.
         long perJob = workerBytes - storeBytes;
         _output.WriteLine(
             $"recurring={recurring}: worker {workerBytes} B/job, store {storeBytes} B/job, " +
@@ -144,6 +139,33 @@ public sealed class WorkerAllocationTests
         var claimed = await store.FetchPendingAsync(count, CancellationToken.None).ConfigureAwait(false);
         claimed.Should().HaveCount(count);
         return claimed;
+    }
+
+    /// <summary>
+    /// Hands out one claimed entry per call, and claims the next batch when they run out. Claiming
+    /// allocates, but only in the gate window it lands in, and the gate keeps the least window: a
+    /// batch four windows long leaves enough windows without a claim for the figure to exclude it.
+    /// </summary>
+    private sealed class ClaimedEntries(InMemoryJobStore store, string? cron)
+    {
+        private const int Batch = 4 * Jobs;
+
+        private IReadOnlyList<JobEntry> _entries = [];
+        private int _next;
+
+        public int Taken { get; private set; }
+
+        public JobEntry Next()
+        {
+            if (_next == _entries.Count)
+            {
+                _entries = ClaimAsync(store, Batch, cron).GetAwaiter().GetResult();
+                _next = 0;
+            }
+
+            Taken++;
+            return _entries[_next++];
+        }
     }
 
     private sealed class NoOpExecutor : IJobTypeExecutor

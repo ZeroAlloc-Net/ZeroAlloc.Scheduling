@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.2.11](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v2.2.10...v2.2.11) (2026-10-16)
+
+
+### Documentation
+
+* document the zeroalloc.orm job store ([#448](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/448)) ([e2d9eb4](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/e2d9eb42082d5a40ea41f8e0efc0c480c8a67454)), closes [#441](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/441)
+* rewrite the readme as a product page ([#440](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/440)) ([0dbdf37](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/0dbdf37efc9babc37bbbe2562910c59f334bf81e))
+
 ## [2.2.10](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v2.2.9...v2.2.10) (2026-10-15)
 
 
