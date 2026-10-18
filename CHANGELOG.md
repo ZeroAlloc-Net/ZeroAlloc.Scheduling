@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.2.12](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v2.2.11...v2.2.12) (2026-10-18)
+
+
+### Tests
+
+* claim worker allocation test entries as the gate needs them ([#467](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/467)) ([2cc97ff](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/2cc97ff8436e788b67bbc5297ce0cd054fdf8462))
+* count the allocation gate's calls instead of assuming two warmups ([#461](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/461)) ([9a319d4](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/9a319d4c5d4883f0d9708ad882f2b82259f7b974)), closes [#460](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/460)
+
 ## [2.2.11](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v2.2.10...v2.2.11) (2026-10-16)
 
 
