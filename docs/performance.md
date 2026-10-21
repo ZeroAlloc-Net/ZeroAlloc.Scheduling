@@ -115,20 +115,20 @@ For very high throughput, consider batching work into fewer, larger jobs rather 
 ## Head-to-head vs Coravel + naive Timer baseline
 
 <!-- BENCH:START -->
-_Last refreshed: 2026-10-15. Allocations are exact. Speed is shown as same-run ratios, because the benchmark host is a shared VM; absolute timings are not published._
+_Last refreshed: 2026-10-21. Allocations are exact. Speed is shown as same-run ratios; absolute timings are not published._
 
-Coravel 6.0.2 (the de-facto in-process scheduler in .NET) and a hand-rolled `BackgroundService + Timer` baseline (the pattern most apps reach for before adopting a library). BenchmarkDotNet 0.15.8, .NET 10.0.13, Debian 13 in a KVM virtual machine on a shared host, three launches per benchmark, pinned to four vCPUs with `taskset -c 2-5`.
+Coravel 6.0.2 (the de-facto in-process scheduler in .NET) and a hand-rolled `BackgroundService + Timer` baseline (the pattern most apps reach for before adopting a library). BenchmarkDotNet 0.15.8, .NET 10.0.13, Windows 11 on an otherwise idle i9-12900HK, three launches per benchmark, out of process, pinned to two performance cores with `--affinity 20`.
 
 ### vs Coravel: registration cost
 
 | Operation | Coravel allocation | ZA.Scheduling | Coravel time, same run |
 |---|---:|---:|---:|
 | Single `Schedule()` / `[Job]` registration | 696 B per call | **compile-time, 0 B at runtime** | baseline |
-| 100 schedule calls (queue accumulation) | 76,320 B, 109.66× one call | **compile-time, 0 B at runtime** | 15.36× one call |
+| 100 schedule calls (queue accumulation) | 77,040 B, 110.69× one call | **compile-time, 0 B at runtime** | 11.39× one call |
 
 **Honest reading**: Coravel's `Schedule()` is a runtime call that allocates an entry the scheduler walks every tick. ZA.Scheduling's `[Job]` registration happens at compile time — the source generator emits one direct dispatcher per attributed type. There is no equivalent runtime registration call in ZA, so the comparison is between Coravel's per-call registration cost and ZA's no-cost-at-all (the cost moved to build time). The 696 B per `Schedule()` is the realistic cost in a Coravel app that schedules jobs dynamically at startup.
 
-The 100-call ratio is the least stable figure here. BenchmarkDotNet reports it as 15.36 with a RatioSD of 6.04; the three launches gave 14.8, 14.2 and 11.4. Both Coravel rows rebuild the scheduler before every iteration, so they run one invocation per iteration and BenchmarkDotNet warns that the iterations are short.
+The 100-call ratio is the least stable figure here: the three launches gave 9.4 to 12.9, and an earlier capture on a shared VM reported 15.36. Both Coravel rows rebuild the scheduler before every iteration, so they run one invocation per iteration and BenchmarkDotNet warns that the iterations are short.
 
 ### vs naive `BackgroundService + Timer` baseline: dispatch overhead
 
@@ -144,7 +144,7 @@ The takeaway: if you're considering ZA.Scheduling over a hand-rolled `Timer`, th
 Reproduce from `benchmarks/ZeroAlloc.Scheduling.Benchmarks`:
 
 ```bash
-taskset -c 2-5 dotnet run -c Release -- --filter '*CoravelComparisonBenchmark*' '*NaiveTimerOverheadBenchmark*' --job Default --launchCount 3
+dotnet run -c Release -- --filter '*CoravelComparisonBenchmark*' '*NaiveTimerOverheadBenchmark*' --launchCount 3 --affinity 20
 ```
 <!-- BENCH:END -->
 

@@ -90,12 +90,12 @@ Stores and integrations:
 
 ## Performance
 
-Against Coravel 6.0.2 and a hand-rolled `BackgroundService + Timer`. BenchmarkDotNet 0.15.8, .NET 10.0.13, measured 2026-10-15. Allocations are exact; speed is a same-run ratio, because the benchmark host is a shared VM.
+Against Coravel 6.0.2 and a hand-rolled `BackgroundService + Timer`. BenchmarkDotNet 0.15.8, .NET 10.0.13, measured 2026-10-21. Allocations are exact; speed is a same-run ratio.
 
 | Operation | Coravel | Hand-rolled Timer | ZA.Scheduling |
 |---|---:|---:|---:|
 | Register one job | 696 B per `Schedule()` call | — | **none at runtime, generated at compile time** |
-| Register 100 jobs | 76,320 B, 15.36× the time of one call | — | **none at runtime** |
+| Register 100 jobs | 77,040 B, 11.39× the time of one call | — | **none at runtime** |
 | Single dispatch | — | indistinguishable from an empty method | **indistinguishable from an empty method** |
 
 What you pay for is `[Job]` itself: declarative retries, cron and store-backed persistence, not dispatch speed. Full methodology: [docs/performance.md](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/blob/main/docs/performance.md).
