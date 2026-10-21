@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.2.13](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v2.2.12...v2.2.13) (2026-10-21)
+
+
+### Documentation
+
+* re-run the benchmarks pinned, with three launches ([#478](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/478)) ([d44ba25](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/d44ba25fd0a45eb00d0695e0a7be90811462e32a))
+
 ## [2.2.12](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v2.2.11...v2.2.12) (2026-10-18)
 
 
