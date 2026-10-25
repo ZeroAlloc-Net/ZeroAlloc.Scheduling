@@ -24,7 +24,7 @@
     <PackageReference Include="ZeroAlloc.ValueObjects" Version="2.2.5" />
     <PackageReference Include="ZeroAlloc.Serialisation" Version="2.8.5" />
     <PackageReference Include="ZeroAlloc.StateMachine" Version="1.6.6" />
-    <PackageReference Include="ZeroAlloc.Resilience" Version="3.3.6" />
+    <PackageReference Include="ZeroAlloc.Resilience" Version="3.4.0" />
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="ZeroAlloc.Scheduling.Tests" />
