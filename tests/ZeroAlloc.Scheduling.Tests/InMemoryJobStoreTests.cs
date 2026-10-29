@@ -196,4 +196,42 @@ public sealed class InMemoryJobStoreTests
                 await _store.DeadLetterAsync(claimed[i].Id, "boom", _ct).ConfigureAwait(false);
         }
     }
+
+    // The store keeps its entries in ZeroAlloc.Collections ConcurrentHeapSpanDictionary. Before
+    // Collections 1.2.5 its probe index overflowed for a key hash near int.MaxValue and threw
+    // IndexOutOfRangeException from EnqueueAsync, in about one test run in ten. Job ids are generated
+    // inside the store, so a hash cannot be chosen through its public surface: this bounded run covers
+    // the store with many random ids, and the test below pins the dictionary itself deterministically.
+    [Fact]
+    public async Task Enqueue_ManyJobs_AllAreStoredAndClaimed()
+    {
+        using var store = new InMemoryJobStore();
+        const int jobs = 20_000;
+
+        for (var i = 0; i < jobs; i++)
+            await store.EnqueueAsync("Many", [], DateTimeOffset.UtcNow.AddSeconds(-1), 3, null, _ct);
+
+        store.AllEntries.Should().HaveCount(jobs);
+        (await store.FetchPendingAsync(jobs, _ct)).Should().HaveCount(jobs);
+    }
+
+    [Fact]
+    public void ConcurrentHeapSpanDictionary_KeysHashingNearIntMaxValue_AreStoredAndFound()
+    {
+        using var dictionary = new ZeroAlloc.Collections.ConcurrentHeapSpanDictionary<int, int>(
+            4, new MaxHashComparer());
+
+        for (var i = 0; i < 100; i++)
+            dictionary[i] = i;
+
+        dictionary.Count.Should().Be(100);
+        for (var i = 0; i < 100; i++)
+            dictionary[i].Should().Be(i);
+    }
+
+    private sealed class MaxHashComparer : IEqualityComparer<int>
+    {
+        public bool Equals(int x, int y) => x == y;
+        public int GetHashCode(int obj) => int.MaxValue;
+    }
 }

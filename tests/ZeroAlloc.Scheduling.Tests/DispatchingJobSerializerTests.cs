@@ -22,6 +22,9 @@ public sealed class DispatchingJobSerializerTests
 {
     private const int Calls = 1_000;
 
+    // Alternating measurement rounds of the subject and the System.Text.Json baseline; see MeasureAlternating.
+    private const int Rounds = 4;
+
     private static byte[]? _arraySink;
     private static PingValue _valueSink;
     private static PingValueRequest _requestSink;
@@ -167,9 +170,9 @@ public sealed class DispatchingJobSerializerTests
         var serializer = new DispatchingJobSerializer(new SerializerDispatcher());
         var payload = serializer.Serialize(new PingValue(7, 42));
 
-        long perCall = AllocationGate.MeasureBytesPerCall(
-            Calls, () => _valueSink = serializer.Deserialize<PingValue>(payload));
-        long formatBytes = MeasureSystemTextJsonRead(payload);
+        var (perCall, formatBytes) = MeasureAlternating(
+            () => _valueSink = serializer.Deserialize<PingValue>(payload),
+            () => _valueSink = JsonSerializer.Deserialize(payload, PingJsonContext.Default.PingValue));
 
         _output.WriteLine($"Deserialize<PingValue>: {perCall} B per call; System.Text.Json alone: {formatBytes} B");
         _valueSink.Should().Be(new PingValue(7, 42));
@@ -196,11 +199,8 @@ public sealed class DispatchingJobSerializerTests
         };
 
         bool allSynchronous = true;
-        long perCall = AllocationGate.MeasureBytesPerCall(
-            Calls,
-            () => allSynchronous &= executor.ExecuteAsync(payload, ctx, CancellationToken.None).IsCompletedSuccessfully);
-        long formatBytes = AllocationGate.MeasureBytesPerCall(
-            Calls,
+        var (perCall, formatBytes) = MeasureAlternating(
+            () => allSynchronous &= executor.ExecuteAsync(payload, ctx, CancellationToken.None).IsCompletedSuccessfully,
             () => _requestSink = JsonSerializer.Deserialize(payload, PingJsonContext.Default.PingValueRequest));
 
         _output.WriteLine($"MediatorJobTypeExecutor<PingValueRequest>: {perCall} B per job; System.Text.Json alone: {formatBytes} B");
@@ -212,9 +212,28 @@ public sealed class DispatchingJobSerializerTests
         perCall.Should().Be(formatBytes);
     }
 
-    private static long MeasureSystemTextJsonRead(byte[] payload)
-        => AllocationGate.MeasureBytesPerCall(
-            Calls, () => _valueSink = JsonSerializer.Deserialize(payload, PingJsonContext.Default.PingValue));
+    /// <summary>
+    /// Measures the subject and the System.Text.Json baseline in alternating rounds and returns each one's
+    /// least reading. Both run the same System.Text.Json code, and that code reads 32 B more while it is still
+    /// Tier0 than once it is optimised (168 B against 136 B). AllocationGate can return a reading taken before
+    /// the tier-up of a multi-method call path has finished (ZeroAlloc.TestHelpers#94). Measuring the subject
+    /// first then hands it the unoptimised code and the baseline the optimised code, which is how these tests
+    /// failed on CI with "expected 136, found 168". Alternating gives both the same chance at the optimised
+    /// code, and unoptimised code only ever allocates more, so the least reading is the optimised one. A real
+    /// extra allocation or a box is in every round and still fails the comparison.
+    /// </summary>
+    private static (long Subject, long Baseline) MeasureAlternating(Action subject, Action baseline)
+    {
+        long subjectBytes = long.MaxValue;
+        long baselineBytes = long.MaxValue;
+        for (var round = 0; round < Rounds; round++)
+        {
+            subjectBytes = Math.Min(subjectBytes, AllocationGate.MeasureBytesPerCall(Calls, subject));
+            baselineBytes = Math.Min(baselineBytes, AllocationGate.MeasureBytesPerCall(Calls, baseline));
+        }
+
+        return (subjectBytes, baselineBytes);
+    }
 
     [Fact]
     public void Deserialize_ClassJob_DispatcherReturnsNull_Throws()
