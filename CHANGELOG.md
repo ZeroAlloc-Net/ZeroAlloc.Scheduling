@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.2.14](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v2.2.13...v2.2.14) (2026-10-29)
+
+
+### Bug Fixes
+
+* require ZeroAlloc.Collections 1.2.5 so InMemoryJobStore cannot overflow its probe index ([#511](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/511)) ([1ed0e8b](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/1ed0e8ba706711b8c8c8834cf2e15c472adeacbb))
+
 ## [2.2.13](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v2.2.12...v2.2.13) (2026-10-21)
 
 
