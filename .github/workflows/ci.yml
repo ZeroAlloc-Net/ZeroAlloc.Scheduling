@@ -54,6 +54,8 @@ jobs:
         uses: MarcelRoozekrans/ci-baseline/actions/coverage-gate@v1
         with:
           reports: TestResults/**/coverage.cobertura.xml
+          floor: 73
+          floor-override-reason: "Coverage is 73.3 percent today. Raise it: https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/526"
 
       - name: Upload coverage to Codecov
         if: '!cancelled()'
