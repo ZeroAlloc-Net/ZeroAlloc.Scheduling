@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.3.0](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v2.2.14...v2.3.0) (2026-11-11)
+
+
+### Features
+
+* add .NET 11 support ([#543](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/543)) ([fba6b77](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/fba6b77f1766aff82b2ca13e02f0eb8be63ea87c))
+
 ## [2.2.14](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v2.2.13...v2.2.14) (2026-10-29)
 
 
