@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework>net11.0</TargetFramework>
     <RootNamespace>ZeroAlloc.Scheduling.AotSmoke</RootNamespace>
     <IsPackable>false</IsPackable>
     <PublishAot>true</PublishAot>
@@ -18,19 +18,19 @@
     <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3" Version="3.50.3" />
 
     <ProjectReference Include="..\..\src\ZeroAlloc.Scheduling\ZeroAlloc.Scheduling.csproj"
-                      SetTargetFramework="TargetFramework=net10.0" />
+                      SetTargetFramework="TargetFramework=net11.0" />
     <ProjectReference Include="..\..\src\ZeroAlloc.Scheduling.InMemory\ZeroAlloc.Scheduling.InMemory.csproj"
-                      SetTargetFramework="TargetFramework=net10.0" />
+                      SetTargetFramework="TargetFramework=net11.0" />
     <ProjectReference Include="..\..\src\ZeroAlloc.Scheduling.Mediator\ZeroAlloc.Scheduling.Mediator.csproj"
-                      SetTargetFramework="TargetFramework=net10.0" />
+                      SetTargetFramework="TargetFramework=net11.0" />
     <ProjectReference Include="..\..\src\ZeroAlloc.Scheduling.Orm\ZeroAlloc.Scheduling.Orm.csproj"
-                      SetTargetFramework="TargetFramework=net10.0" />
+                      SetTargetFramework="TargetFramework=net11.0" />
     <ProjectReference Include="..\..\src\ZeroAlloc.Scheduling.Redis\ZeroAlloc.Scheduling.Redis.csproj"
-                      SetTargetFramework="TargetFramework=net10.0" />
+                      SetTargetFramework="TargetFramework=net11.0" />
     <ProjectReference Include="..\..\src\ZeroAlloc.Scheduling.Resilience\ZeroAlloc.Scheduling.Resilience.csproj"
-                      SetTargetFramework="TargetFramework=net10.0" />
+                      SetTargetFramework="TargetFramework=net11.0" />
     <ProjectReference Include="..\..\src\ZeroAlloc.Scheduling.Telemetry\ZeroAlloc.Scheduling.Telemetry.csproj"
-                      SetTargetFramework="TargetFramework=net10.0" />
+                      SetTargetFramework="TargetFramework=net11.0" />
     <!-- The main lib's generator ProjectReference has PrivateAssets="all" which
          hides the generator from downstream consumers. Re-attach it here as an
          Analyzer so the generator actually runs against this sample. -->
