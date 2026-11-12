@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.3.1](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v2.3.0...v2.3.1) (2026-11-12)
+
+
+### Documentation
+
+* add context7.json to claim the library on Context7 ([#541](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/541)) ([5fec8e5](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/5fec8e5488ebaa2a8c2e16715e1a3f1bcc53196f))
+
 ## [2.3.0](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v2.2.14...v2.3.0) (2026-11-11)
 
 
