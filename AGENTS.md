@@ -67,7 +67,7 @@ Inner loop, each verified here. Pass a `-p:Version` value to every build:
 dotnet build tests/ZeroAlloc.Scheduling.Tests -c Release -p:Version=9.9.9-local.abc1234
 dotnet test tests/ZeroAlloc.Scheduling.Tests --no-build -c Release -f net10.0
 dotnet test tests/ZeroAlloc.Scheduling.Tests --no-build -c Release -f net10.0 --filter "FullyQualifiedName~WorkerAllocationTests"
-dotnet test tests/ZeroAlloc.Scheduling.Generator.Tests -c Release -f net11.0
+dotnet test tests/ZeroAlloc.Scheduling.Generator.Tests -c Release -f net11.0 -p:Version=9.9.9-local.abc1234
 ```
 
 ## Conventions and gotchas
