@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.3.2](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v2.3.1...v2.3.2) (2026-11-16)
+
+
+### Bug Fixes
+
+* embed PDBs so Go to Definition shows the package source ([#575](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/575)) ([22c00ad](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/22c00ad30f8e0658777c3907ac2c47c798d1e1ed))
+
 ## [2.3.1](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v2.3.0...v2.3.1) (2026-11-12)
 
 
