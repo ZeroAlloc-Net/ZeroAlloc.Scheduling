@@ -1,1 +1,2 @@
 #nullable enable
+static ZeroAlloc.Scheduling.Orm.OrmSchedulingServiceCollectionExtensions.WithOrm(this ZeroAlloc.Scheduling.ISchedulingBuilder! builder, ZeroAlloc.Scheduling.Orm.OrmSchedulingDialect dialect, object! connectionKey) -> ZeroAlloc.Scheduling.ISchedulingBuilder!
