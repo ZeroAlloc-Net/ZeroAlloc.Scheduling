@@ -129,6 +129,21 @@ services.AddScheduling()
 
 Only the claim query and the recurring-job lookup differ between dialects: SQLite and PostgreSQL use `LIMIT`, SQL Server uses `OFFSET … FETCH NEXT`. Everything else is plain ANSI SQL.
 
+#### A connection of its own
+
+If the application already registers an unkeyed `IAsyncDbConnection` for its own data, keep the jobs on a separate database by registering a keyed connection and passing its key:
+
+```csharp
+services.AddScoped<IAsyncDbConnection>(_ => OpenAppDb());                     // the application's data
+services.AddKeyedScoped<IAsyncDbConnection>("jobs-db", (_, _) => OpenJobsDb()); // the job store
+
+services.AddScheduling()
+        .WithOrm(OrmSchedulingDialect.Postgres, connectionKey: "jobs-db")
+        .AddMyJob();
+```
+
+The store then resolves only the connection registered under that key and never falls back to the unkeyed one; without a keyed registration, resolving the store throws. Apply the schema to the keyed database. As with the other overloads, an `IJobStore` you registered earlier wins.
+
 ### Schema
 
 The store does not create tables on the fly. Apply the schema with ZeroAlloc.ORM's `MigrationRunner` before the host starts:

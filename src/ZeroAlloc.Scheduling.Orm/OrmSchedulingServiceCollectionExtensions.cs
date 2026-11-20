@@ -60,4 +60,57 @@ public static class OrmSchedulingServiceCollectionExtensions
 
         return builder;
     }
+
+    /// <summary>
+    /// Persists jobs through ZeroAlloc.ORM, against the
+    /// <see cref="IAsyncDbConnection"/> registered in the container under
+    /// <paramref name="connectionKey"/>.
+    /// </summary>
+    /// <param name="builder">The scheduling builder.</param>
+    /// <param name="dialect">Which database the keyed connection talks to.</param>
+    /// <param name="connectionKey">
+    /// The service key of the <see cref="IAsyncDbConnection"/> to use, such as
+    /// <c>services.AddKeyedScoped&lt;IAsyncDbConnection&gt;("jobs-db", ...)</c>.
+    /// </param>
+    /// <returns>The same builder, for chaining.</returns>
+    /// <remarks>
+    /// <para>
+    /// Lets the job store live on a database of its own, next to an application
+    /// that registers an unkeyed <see cref="IAsyncDbConnection"/> for its own
+    /// data. The store resolves only the keyed connection, never the unkeyed one.
+    /// Register the keyed connection yourself, as a scoped service; its lifetime,
+    /// provider and connection string belong to the application.
+    /// </para>
+    /// <para>
+    /// Like the other overloads, this registers the store with
+    /// <c>TryAddScoped</c>: an <see cref="IJobStore"/> registered earlier wins.
+    /// </para>
+    /// <para>
+    /// Create the schema with <see cref="SchedulingOrmMigrations"/> and the
+    /// ORM's <c>MigrationRunner</c> on that same database.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="builder"/> or <paramref name="connectionKey"/> is <see langword="null"/>.
+    /// </exception>
+    /// <example>
+    /// <code>
+    /// services.AddKeyedScoped&lt;IAsyncDbConnection&gt;("jobs-db", (sp, _) => OpenJobsDb());
+    /// services.AddScheduling()
+    ///         .WithOrm(OrmSchedulingDialect.Postgres, connectionKey: "jobs-db");
+    /// </code>
+    /// </example>
+    public static ISchedulingBuilder WithOrm(
+        this ISchedulingBuilder builder,
+        OrmSchedulingDialect dialect,
+        object connectionKey)
+    {
+        ArgumentNullException.ThrowIfNull(builder);
+        ArgumentNullException.ThrowIfNull(connectionKey);
+
+        builder.Services.TryAddScoped<IJobStore>(sp =>
+            new OrmJobStore(sp.GetRequiredKeyedService<IAsyncDbConnection>(connectionKey), dialect));
+
+        return builder;
+    }
 }
