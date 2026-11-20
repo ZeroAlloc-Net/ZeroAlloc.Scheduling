@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.4.0](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v2.3.2...v2.4.0) (2026-11-20)
+
+
+### Features
+
+* **orm:** add a WithOrm overload that takes a DI connection key ([1c85847](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/1c858477f31584e2169244131e03e2ceb12e1c66))
+
 ## [2.3.2](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v2.3.1...v2.3.2) (2026-11-16)
 
 
