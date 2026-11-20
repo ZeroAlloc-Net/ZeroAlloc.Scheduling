@@ -1,6 +1,7 @@
 #nullable enable
 static ZeroAlloc.Scheduling.Orm.OrmSchedulingServiceCollectionExtensions.WithOrm(this ZeroAlloc.Scheduling.ISchedulingBuilder! builder) -> ZeroAlloc.Scheduling.ISchedulingBuilder!
 static ZeroAlloc.Scheduling.Orm.OrmSchedulingServiceCollectionExtensions.WithOrm(this ZeroAlloc.Scheduling.ISchedulingBuilder! builder, ZeroAlloc.Scheduling.Orm.OrmSchedulingDialect dialect) -> ZeroAlloc.Scheduling.ISchedulingBuilder!
+static ZeroAlloc.Scheduling.Orm.OrmSchedulingServiceCollectionExtensions.WithOrm(this ZeroAlloc.Scheduling.ISchedulingBuilder! builder, ZeroAlloc.Scheduling.Orm.OrmSchedulingDialect dialect, object! connectionKey) -> ZeroAlloc.Scheduling.ISchedulingBuilder!
 static ZeroAlloc.Scheduling.Orm.SchedulingOrmMigrations.Postgres.get -> ZeroAlloc.ORM.Migrations.IMigrationSource!
 static ZeroAlloc.Scheduling.Orm.SchedulingOrmMigrations.Sqlite.get -> ZeroAlloc.ORM.Migrations.IMigrationSource!
 static ZeroAlloc.Scheduling.Orm.SchedulingOrmMigrations.SqlServer.get -> ZeroAlloc.ORM.Migrations.IMigrationSource!
