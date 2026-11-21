@@ -13,6 +13,7 @@ ZeroAlloc.Scheduling.Orm.OrmJobStore.MarkFailedAsync(ZeroAlloc.Scheduling.JobId 
 ZeroAlloc.Scheduling.Orm.OrmJobStore.MarkSucceededAsync(ZeroAlloc.Scheduling.JobId id, System.DateTimeOffset? nextRunAt, string? cronExpression, int maxAttempts, System.Threading.CancellationToken ct) -> System.Threading.Tasks.ValueTask
 ZeroAlloc.Scheduling.Orm.OrmJobStore.OrmJobStore(System.Data.Async.IAsyncDbConnection! connection) -> void
 ZeroAlloc.Scheduling.Orm.OrmJobStore.OrmJobStore(System.Data.Async.IAsyncDbConnection! connection, ZeroAlloc.Scheduling.Orm.OrmSchedulingDialect dialect) -> void
+ZeroAlloc.Scheduling.Orm.OrmJobStore.OrmJobStore(System.Data.Async.IAsyncDbConnection! connection, ZeroAlloc.Scheduling.Orm.OrmSchedulingDialect dialect, Microsoft.Extensions.Options.IOptionsMonitor<ZeroAlloc.Scheduling.SchedulingOptions!>! options) -> void
 ZeroAlloc.Scheduling.Orm.OrmJobStore.UpsertRecurringAsync(string! typeName, byte[]! payload, System.DateTimeOffset scheduledAt, string? cronExpression, int maxAttempts, System.Threading.CancellationToken ct) -> System.Threading.Tasks.ValueTask
 ZeroAlloc.Scheduling.Orm.OrmSchedulingDialect
 ZeroAlloc.Scheduling.Orm.OrmSchedulingDialect.Postgres = 1 -> ZeroAlloc.Scheduling.Orm.OrmSchedulingDialect
