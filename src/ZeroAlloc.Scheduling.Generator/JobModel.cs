@@ -15,6 +15,11 @@ namespace ZeroAlloc.Scheduling.Generator;
 /// generator supports.
 /// </param>
 /// <param name="Location">The identifier of the class declaration that carries [Job].</param>
+/// <param name="IsStateless">
+/// Whether the job has no instance fields, its base types included, and a parameterless
+/// constructor the generated code can call, and is not a mediator bridge job. Such a job carries no state, so the generated code
+/// creates it without the job serializer and seeds a recurring run with an empty payload.
+/// </param>
 /// <param name="MaxAttemptsIgnoredLocation">
 /// Where ZASCH001 is reported, the MaxAttempts argument, or null when the rule does not apply.
 /// </param>
@@ -30,5 +35,6 @@ internal sealed record JobModel(
     string? EveryValue,
     int MaxAttempts,
     bool IsMediatorBridge,
+    bool IsStateless,
     LocationInfo Location,
     LocationInfo? MaxAttemptsIgnoredLocation);
