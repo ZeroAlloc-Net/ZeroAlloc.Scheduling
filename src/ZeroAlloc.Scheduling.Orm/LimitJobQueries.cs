@@ -19,7 +19,7 @@ internal sealed partial class LimitJobQueries(IAsyncDbConnection connection) : I
             ORDER BY ScheduledAt
             LIMIT @batchSize
         )
-          AND ((Status = @pendingStatus OR Status = @failedStatus)
+          AND (((Status = @pendingStatus OR Status = @failedStatus) AND ScheduledAt <= @now)
                OR (Status = @runningStatus AND StartedAt <= @staleBefore))
         """)]
     public partial Task<int> ClaimPendingAsync(

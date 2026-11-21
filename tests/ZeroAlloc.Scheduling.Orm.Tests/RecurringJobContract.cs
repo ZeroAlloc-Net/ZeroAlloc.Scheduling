@@ -184,6 +184,17 @@ public abstract class RecurringJobContract
         retaken.Attempts.Should().Be(run.Attempts + 1, "the abandoned run counts as an attempt");
     }
 
+    [Fact]
+    public async Task The_Longest_Claim_Timeout_Never_Expires_A_Claim()
+    {
+        await using var db = await NewDatabaseAsync();
+        var store = await db.StoreAsync(TimeSpan.MaxValue);
+        await store.EnqueueAsync("Job", s_payload, DateTimeOffset.UtcNow.AddSeconds(-1), 3, null, default);
+
+        (await store.FetchPendingAsync(10, default)).Should().ContainSingle();
+        (await store.FetchPendingAsync(10, default)).Should().BeEmpty();
+    }
+
     [Theory]
     [InlineData(Outcome.Succeeded)]
     [InlineData(Outcome.Failed)]

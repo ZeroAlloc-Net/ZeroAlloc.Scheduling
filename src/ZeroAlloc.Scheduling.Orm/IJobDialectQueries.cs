@@ -37,8 +37,9 @@ internal interface IJobDialectQueries
     /// run, should it still finish, no longer holds the claim.
     /// </para>
     /// <para>
-    /// Only rows still Pending or Failed, or Running under an expired claim, are
-    /// taken, so a poller that loses the race updates nothing. The status is checked again on the row being
+    /// Only rows still due and Pending or Failed, or Running under an expired claim,
+    /// are taken, so a poller that loses the race updates nothing, and a row another
+    /// poller moved to Failed with a later retry time waits for that time. The status is checked again on the row being
     /// updated, not only in the subquery that picks the rows: under PostgreSQL's
     /// and SQL Server's default isolation, a poller that waited for another's lock
     /// would otherwise update the row it already claimed and run it a second time. The caller then reads back by token, which returns

@@ -33,7 +33,35 @@ public sealed class ClaimTimeoutTests
         retaken.Id.Should().Be(run.Id);
         retaken.Status.Should().Be(JobStatus.Running);
         retaken.Attempts.Should().Be(run.Attempts + 1, "the abandoned run counts as an attempt");
+
+        options.ClaimTimeout = TimeSpan.FromHours(1);
         (await store.FetchPendingAsync(10, default)).Should().BeEmpty("the new claim is fresh");
+    }
+
+    [Fact]
+    public async Task An_Expired_Claim_Is_Taken_Before_Due_Jobs()
+    {
+        var options = new SchedulingOptions { ClaimTimeout = TimeSpan.FromHours(1) };
+        using var store = new InMemoryJobStore(new FixedOptions(options));
+        await store.EnqueueAsync("Abandoned", [1], DateTimeOffset.UtcNow.AddSeconds(-1), 3, null, default);
+        (await store.FetchPendingAsync(1, default)).Should().ContainSingle();
+        await store.EnqueueAsync("Due", [1], DateTimeOffset.UtcNow.AddSeconds(-1), 3, null, default);
+
+        options.ClaimTimeout = ShortClaimTimeout;
+        await Task.Delay(ExpiredClaimDelay);
+
+        (await store.FetchPendingAsync(1, default)).Should().ContainSingle()
+            .Which.TypeName.Should().Be("Abandoned", "a queue that always has due jobs must not starve an expired claim");
+    }
+
+    [Fact]
+    public async Task The_Longest_Claim_Timeout_Never_Expires_A_Claim()
+    {
+        using var store = new InMemoryJobStore(new FixedOptions(new SchedulingOptions { ClaimTimeout = TimeSpan.MaxValue }));
+        await store.EnqueueAsync("Job", [1], DateTimeOffset.UtcNow.AddSeconds(-1), 3, null, default);
+
+        (await store.FetchPendingAsync(10, default)).Should().ContainSingle();
+        (await store.FetchPendingAsync(10, default)).Should().BeEmpty();
     }
 
     [Fact]

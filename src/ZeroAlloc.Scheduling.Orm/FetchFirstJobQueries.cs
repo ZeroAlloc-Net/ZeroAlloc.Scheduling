@@ -24,7 +24,7 @@ internal sealed partial class FetchFirstJobQueries(IAsyncDbConnection connection
             ORDER BY ScheduledAt
             OFFSET 0 ROWS FETCH NEXT @batchSize ROWS ONLY
         )
-          AND ((Status = @pendingStatus OR Status = @failedStatus)
+          AND (((Status = @pendingStatus OR Status = @failedStatus) AND ScheduledAt <= @now)
                OR (Status = @runningStatus AND StartedAt <= @staleBefore))
         """)]
     public partial Task<int> ClaimPendingAsync(

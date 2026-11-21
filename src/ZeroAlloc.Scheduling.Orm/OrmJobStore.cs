@@ -39,9 +39,10 @@ public sealed class OrmJobStore : IJobStore
     private readonly IJobDialectQueries _dialectQueries;
     private readonly IOptionsMonitor<SchedulingOptions>? _options;
 
-    // The claim token each job this instance claimed was claimed under, removed again when its
-    // outcome is recorded. The store is scoped, as is the worker's batch, so this holds one batch.
-    private readonly Dictionary<Guid, Guid> _claims = [];
+    // The claim token each job this instance claimed was claimed under, removed once its outcome
+    // write has returned. The store is scoped, as is the worker's batch, so this holds one batch.
+    // Created on the first claim, so an idle poll allocates nothing for it.
+    private Dictionary<Guid, Guid>? _claims;
 
     /// <summary>
     /// Creates a store over the application's connection, against SQLite.
@@ -130,7 +131,7 @@ public sealed class OrmJobStore : IJobStore
             (int)JobStatus.Pending,
             (int)JobStatus.Failed,
             now,
-            now - (_options?.CurrentValue.ClaimTimeout ?? DefaultClaimTimeout),
+            StaleBefore(now, _options?.CurrentValue.ClaimTimeout ?? DefaultClaimTimeout),
             batchSize,
             claimToken,
             ct).ConfigureAwait(false);
@@ -145,7 +146,7 @@ public sealed class OrmJobStore : IJobStore
         foreach (var row in rows)
         {
             result.Add(ToEntry(row));
-            _claims[row.Id] = claimToken;
+            (_claims ??= new Dictionary<Guid, Guid>(rows.Count))[row.Id] = claimToken;
         }
 
         return result;
@@ -168,14 +169,21 @@ public sealed class OrmJobStore : IJobStore
         if (existing is null) return;
 
         var completedAt = DateTimeOffset.UtcNow;
-        var updated = _claims.Remove(id.Value, out var claimToken)
+        // The token is released only once the method has done its writes: should one throw,
+        // the worker's failure write still carries the claim, and finds the row no longer
+        // Running when the success had committed.
+        var updated = TryGetClaim(id, out var claimToken)
             ? await _repo.MarkCompletedClaimedAsync(
-                id.Value, claimToken, (int)JobStatus.Succeeded, completedAt, ct).ConfigureAwait(false)
+                id.Value, claimToken, (int)JobStatus.Running, (int)JobStatus.Succeeded, completedAt, ct).ConfigureAwait(false)
             : await _repo.MarkCompletedAsync(
                 id.Value, (int)JobStatus.Succeeded, completedAt, ct).ConfigureAwait(false);
 
         // A run that lost its claim leaves the next occurrence to the run that took it back.
-        if (updated == 0) return;
+        if (updated == 0)
+        {
+            _claims?.Remove(id.Value);
+            return;
+        }
 
         if (nextRunAt.HasValue && cronExpression is not null)
         {
@@ -191,6 +199,8 @@ public sealed class OrmJobStore : IJobStore
                 JobId.New().Value, existing.TypeName, existing.Payload, (int)JobStatus.Pending,
                 maxAttempts, nextRunAt.Value, cronExpression, ct).ConfigureAwait(false);
         }
+
+        _claims?.Remove(id.Value);
     }
 
     /// <inheritdoc />
@@ -202,10 +212,11 @@ public sealed class OrmJobStore : IJobStore
     public async ValueTask MarkFailedAsync(
         JobId id, int attempts, DateTimeOffset nextRetryAt, CancellationToken ct)
     {
-        if (_claims.Remove(id.Value, out var claimToken))
+        if (TryGetClaim(id, out var claimToken))
         {
             await _repo.MarkForRetryClaimedAsync(
-                id.Value, claimToken, (int)JobStatus.Failed, attempts, nextRetryAt, ct).ConfigureAwait(false);
+                id.Value, claimToken, (int)JobStatus.Running, (int)JobStatus.Failed, attempts, nextRetryAt, ct).ConfigureAwait(false);
+            _claims!.Remove(id.Value);
             return;
         }
 
@@ -218,10 +229,11 @@ public sealed class OrmJobStore : IJobStore
     {
         ArgumentNullException.ThrowIfNull(error);
 
-        if (_claims.Remove(id.Value, out var claimToken))
+        if (TryGetClaim(id, out var claimToken))
         {
             await _repo.DeadLetterClaimedAsync(
-                id.Value, claimToken, (int)JobStatus.DeadLetter, error, DateTimeOffset.UtcNow, ct).ConfigureAwait(false);
+                id.Value, claimToken, (int)JobStatus.Running, (int)JobStatus.DeadLetter, error, DateTimeOffset.UtcNow, ct).ConfigureAwait(false);
+            _claims!.Remove(id.Value);
             return;
         }
 
@@ -272,6 +284,20 @@ public sealed class OrmJobStore : IJobStore
                 (int)JobStatus.Pending, ct).ConfigureAwait(false);
         }
     }
+
+    private bool TryGetClaim(JobId id, out Guid claimToken)
+    {
+        if (_claims is not null && _claims.TryGetValue(id.Value, out claimToken))
+            return true;
+
+        claimToken = default;
+        return false;
+    }
+
+    // The start a claim must be at or before to count as expired. A timeout longer than the
+    // time since DateTimeOffset.MinValue yields MinValue instead of overflowing.
+    private static DateTimeOffset StaleBefore(DateTimeOffset now, TimeSpan claimTimeout)
+        => claimTimeout >= now - DateTimeOffset.MinValue ? DateTimeOffset.MinValue : now - claimTimeout;
 
     private static JobEntry ToEntry(JobRow row) => new()
     {

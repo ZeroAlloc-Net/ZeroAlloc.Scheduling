@@ -197,7 +197,9 @@ Jobs are stored as Redis hashes. The store maintains three tracking Sets (`jobs:
 
 A host that stops or crashes while a job runs records no outcome, so the job stays Running. Every store claims such a job again once its start is older than `SchedulingOptions.ClaimTimeout`, 15 minutes by default, and counts that claim as a new attempt. When the abandoned run was the job's last attempt, the worker dead-letters the job instead of running it, and schedules the next occurrence if the job is recurring.
 
-The timeout cannot tell a stopped run from a slow one. **A run that takes longer than `ClaimTimeout` is claimed again while it still runs, so the job runs twice.** Set the timeout above the longest run you expect, and keep jobs idempotent.
+The timeout cannot tell a stopped run from a slow one. It counts from the poll that claimed the job, and the worker runs a poll's jobs in turn, so a job's wait for the jobs claimed before it counts too. **A job that is not done within `ClaimTimeout` is claimed again while it still runs, so it runs twice.** Set the timeout above the longest batch you expect, up to `BatchSize` runs in a row, and keep jobs idempotent.
+
+A poll takes expired claims before due jobs, so a busy queue cannot keep an abandoned job waiting. Redis keeps the Running jobs in a `jobs:claims` sorted set by claim start, in milliseconds; the first poll of a store adds jobs that were already Running before the upgrade.
 
 When the slow run finishes after all, its outcome must not overwrite the run that took the job over. Stores that stamp each claim with a token record an outcome only while the job still holds the claim the run started with:
 

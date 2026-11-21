@@ -100,7 +100,7 @@ How long a claimed job may stay Running before a poll claims it again. Default: 
 services.AddScheduling(opt => opt.ClaimTimeout = TimeSpan.FromHours(1));
 ```
 
-A host that stops or crashes while a job runs leaves the job Running. Once its start is older than the timeout, the next poll claims it again as a new attempt. A run that takes longer than the timeout is claimed again while it still runs, so set it above your longest run. See [Abandoned runs](stores.md#abandoned-runs-and-claimtimeout).
+A host that stops or crashes while a job runs leaves the job Running. Once its start is older than the timeout, the next poll claims it again as a new attempt. The timeout counts from the poll that claimed the job, and the worker runs a poll's jobs in turn, so a job's wait for the jobs claimed before it counts too. A job not done in time is claimed again while it still runs, so set the timeout above the longest batch, up to `BatchSize` runs in a row. See [Abandoned runs](stores.md#abandoned-runs-and-claimtimeout).
 
 ## Multiple Workers
 

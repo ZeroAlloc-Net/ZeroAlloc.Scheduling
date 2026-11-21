@@ -51,6 +51,33 @@ public sealed class ClaimTimeoutTests : IDisposable
         retaken.Attempts.Should().Be(run.Attempts + 1, "the abandoned run counts as an attempt");
     }
 
+    [Fact]
+    public async Task The_Longest_Claim_Timeout_Never_Expires_A_Claim()
+    {
+        var store = Store(TimeSpan.MaxValue);
+        await store.EnqueueAsync("Job", [1], DateTimeOffset.UtcNow.AddSeconds(-1), 3, null, default);
+
+        (await store.FetchPendingAsync(10, default)).Should().ContainSingle();
+        (await store.FetchPendingAsync(10, default)).Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task A_Requeued_Dead_Letter_Starts_Its_Attempts_Again()
+    {
+        var store = Store(ShortClaimTimeout);
+        await store.EnqueueAsync("Job", [1], DateTimeOffset.UtcNow.AddSeconds(-1), 1, null, default);
+        (await store.FetchPendingAsync(10, default)).Should().ContainSingle();
+        await Task.Delay(ExpiredClaimDelay);
+        var retaken = (await store.FetchPendingAsync(10, default)).Should().ContainSingle().Subject;
+        await store.DeadLetterAsync(retaken.Id, "abandoned", default);
+
+        await store.RequeueAsync(retaken.Id);
+
+        var requeued = (await ReadAllAsync()).Should().ContainSingle().Subject;
+        requeued.Status.Should().Be(JobStatus.Pending);
+        requeued.Attempts.Should().Be(0, "a requeued job gets its attempts back, or the worker dead-letters it again unrun");
+    }
+
     [Theory]
     [InlineData(JobStatus.Succeeded)]
     [InlineData(JobStatus.Failed)]

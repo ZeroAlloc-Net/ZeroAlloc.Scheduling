@@ -21,19 +21,36 @@ public sealed class RedisJobStore : IJobStore, IJobDashboardStore
 {
     private static readonly TimeSpan DefaultClaimTimeout = new SchedulingOptions().ClaimTimeout;
 
+    // jobs:claims indexes the Running jobs by the start of their claim, in Unix milliseconds, so a
+    // poll finds the expired claims with one bounded range query.
+    private const string ClaimsKey = "jobs:claims";
+
     private const string ClaimScript =
-        "local r=redis.call('ZREM',KEYS[1],ARGV[1]) if r==0 then return nil end redis.call('SADD',KEYS[2],ARGV[1]) redis.call('HSET',KEYS[3],'status','Running','startedAt',ARGV[2],'claim',ARGV[3]) return 1";
+        "local r=redis.call('ZREM',KEYS[1],ARGV[1]) if r==0 then return nil end redis.call('SADD',KEYS[2],ARGV[1]) redis.call('HSET',KEYS[3],'status','Running','startedAt',ARGV[2],'claim',ARGV[3]) redis.call('ZADD',KEYS[4],ARGV[4],ARGV[1]) return 1";
 
     // Takes back a Running job whose claim started at or before ARGV[1], counting it as an attempt.
     // The status and start are checked inside the script, so of two pollers only one takes it.
     private const string ReclaimScript =
-        "if redis.call('HGET',KEYS[1],'status')~='Running' then return nil end local t=tonumber(redis.call('HGET',KEYS[1],'startedAt')) if t==nil or t>tonumber(ARGV[1]) then return nil end redis.call('HSET',KEYS[1],'startedAt',ARGV[2],'claim',ARGV[3]) redis.call('HINCRBY',KEYS[1],'attempts',1) return 1";
+        "if redis.call('HGET',KEYS[1],'status')~='Running' then return nil end local t=tonumber(redis.call('ZSCORE',KEYS[2],ARGV[4])) if t==nil or t>tonumber(ARGV[1]) then return nil end redis.call('HSET',KEYS[1],'startedAt',ARGV[2],'claim',ARGV[3]) redis.call('HINCRBY',KEYS[1],'attempts',1) redis.call('ZADD',KEYS[2],ARGV[5],ARGV[4]) return 1";
+
+    // Adds Running jobs claimed by a release without jobs:claims to that index, once per instance.
+    // Their start is stored in whole seconds, so the next second is used: a claim is never taken
+    // back early.
+    private const string BackfillScript =
+        "for _,id in ipairs(redis.call('SMEMBERS',KEYS[1])) do if not redis.call('ZSCORE',KEYS[2],id) then local t=tonumber(redis.call('HGET','job:'..id,'startedAt')) if t then redis.call('ZADD',KEYS[2],(t+1)*1000,id) else redis.call('ZADD',KEYS[2],ARGV[1],id) end end end return 1";
+
+    // Inserts a recurring job's run unless its type name is in jobs:recurring, in one step, so of
+    // concurrent callers only one inserts and a change to another type cannot abort the insert.
+    private const string UpsertRecurringScript =
+        "if redis.call('SISMEMBER',KEYS[1],ARGV[1])==1 then return 0 end redis.call('HSET',KEYS[2],unpack(ARGV,4)) redis.call('ZADD',KEYS[3],ARGV[2],ARGV[3]) redis.call('SADD',KEYS[1],ARGV[1]) return 1";
+
+    private int _backfilled;
 
     private readonly IDatabase _db;
     private readonly IOptionsMonitor<SchedulingOptions>? _options;
 
-    // The claim token each job this instance claimed was claimed under, removed again when its
-    // outcome is recorded.
+    // The claim token each job this instance claimed was claimed under, removed once its outcome
+    // write has returned.
     private readonly ConcurrentDictionary<JobId, string> _claims = new();
 
     /// <summary>
@@ -71,18 +88,29 @@ public sealed class RedisJobStore : IJobStore, IJobDashboardStore
     {
         var nowOffset = DateTimeOffset.UtcNow;
         var now = nowOffset.ToUnixTimeSeconds();
-        var staleBefore = (nowOffset - (_options?.CurrentValue.ClaimTimeout ?? DefaultClaimTimeout)).ToUnixTimeSeconds();
+        var nowMs = nowOffset.ToUnixTimeMilliseconds();
+        // In doubles, so a timeout as long as TimeSpan.MaxValue cannot overflow.
+        var staleBeforeMs = nowMs - (_options?.CurrentValue.ClaimTimeout ?? DefaultClaimTimeout).TotalMilliseconds;
         var claimToken = Guid.NewGuid().ToString("N");
-        var ids = await _db.SortedSetRangeByScoreAsync("jobs:pending", stop: now, take: batchSize).ConfigureAwait(false);
-
         var claimed = new List<JobEntry>();
-        foreach (var id in ids)
+
+        if (Interlocked.Exchange(ref _backfilled, 1) == 0)
         {
-            // Atomically claim: remove from pending sorted set, add to running set, update status
+            await _db.ScriptEvaluateAsync(
+                BackfillScript, [(RedisKey)"jobs:running", (RedisKey)ClaimsKey], [(RedisValue)nowMs])
+                .ConfigureAwait(false);
+        }
+
+        // A Running job whose claim has expired was abandoned by a run that recorded no outcome.
+        // Expired claims go first: they are overdue, and a queue that always has due jobs would
+        // otherwise never reach them.
+        var expired = await _db.SortedSetRangeByScoreAsync(ClaimsKey, stop: staleBeforeMs, take: batchSize).ConfigureAwait(false);
+        foreach (var id in expired)
+        {
             var result = await _db.ScriptEvaluateAsync(
-                ClaimScript,
-                [(RedisKey)"jobs:pending", (RedisKey)"jobs:running", (RedisKey)$"job:{id}"],
-                [(RedisValue)id.ToString(), (RedisValue)now, (RedisValue)claimToken])
+                ReclaimScript,
+                [(RedisKey)$"job:{id}", (RedisKey)ClaimsKey],
+                [(RedisValue)staleBeforeMs, (RedisValue)now, (RedisValue)claimToken, id, (RedisValue)nowMs])
                 .ConfigureAwait(false);
 
             if (result.IsNull) continue;
@@ -90,24 +118,22 @@ public sealed class RedisJobStore : IJobStore, IJobDashboardStore
             await AddClaimedAsync(claimed, id.ToString(), claimToken).ConfigureAwait(false);
         }
 
-        // A Running job whose claim has expired was abandoned by a run that recorded no outcome.
-        if (claimed.Count < batchSize)
+        if (claimed.Count >= batchSize)
+            return claimed;
+
+        var ids = await _db.SortedSetRangeByScoreAsync("jobs:pending", stop: now, take: batchSize - claimed.Count).ConfigureAwait(false);
+        foreach (var id in ids)
         {
-            var running = await _db.SetMembersAsync("jobs:running").ConfigureAwait(false);
-            foreach (var id in running)
-            {
-                if (claimed.Count >= batchSize) break;
+            // Atomically claim: remove from pending sorted set, add to running set, update status
+            var result = await _db.ScriptEvaluateAsync(
+                ClaimScript,
+                [(RedisKey)"jobs:pending", (RedisKey)"jobs:running", (RedisKey)$"job:{id}", (RedisKey)ClaimsKey],
+                [(RedisValue)id.ToString(), (RedisValue)now, (RedisValue)claimToken, (RedisValue)nowMs])
+                .ConfigureAwait(false);
 
-                var result = await _db.ScriptEvaluateAsync(
-                    ReclaimScript,
-                    [(RedisKey)$"job:{id}"],
-                    [(RedisValue)staleBefore, (RedisValue)now, (RedisValue)claimToken])
-                    .ConfigureAwait(false);
+            if (result.IsNull) continue;
 
-                if (result.IsNull) continue;
-
-                await AddClaimedAsync(claimed, id.ToString(), claimToken).ConfigureAwait(false);
-            }
+            await AddClaimedAsync(claimed, id.ToString(), claimToken).ConfigureAwait(false);
         }
 
         return claimed;
@@ -123,13 +149,27 @@ public sealed class RedisJobStore : IJobStore, IJobDashboardStore
     }
 
     // A transaction for an outcome write: when this instance claimed the job, it executes only while
-    // the job's hash still holds that claim, so a run that outlived its claim writes nothing.
+    // the job is Running under that claim, so a run that outlived its claim writes nothing, and a
+    // second outcome for the same claim changes nothing.
     private ITransaction CreateOutcomeTransaction(JobId id)
     {
         var tran = _db.CreateTransaction();
-        if (_claims.TryRemove(id, out var claimToken))
+        if (_claims.TryGetValue(id, out var claimToken))
+        {
             tran.AddCondition(Condition.HashEqual($"job:{id}", "claim", claimToken));
+            tran.AddCondition(Condition.HashEqual($"job:{id}", "status", "Running"));
+        }
+
+        _ = tran.SortedSetRemoveAsync(ClaimsKey, id.ToString());
         return tran;
+    }
+
+    // Executes an outcome transaction, then releases the claim. Should the write throw, the claim is
+    // kept, so the worker's failure write still carries it.
+    private async Task ExecuteOutcomeAsync(ITransaction tran, JobId id)
+    {
+        await tran.ExecuteAsync().ConfigureAwait(false);
+        _claims.TryRemove(id, out _);
     }
 
     public async ValueTask MarkSucceededAsync(JobId id, DateTimeOffset? nextRunAt,
@@ -151,7 +191,7 @@ public sealed class RedisJobStore : IJobStore, IJobDashboardStore
                 _ = tran.SortedSetAddAsync("jobs:pending", nextId.ToString(), (double)nextRunAt.Value.ToUnixTimeSeconds());
             }
         }
-        await tran.ExecuteAsync().ConfigureAwait(false);
+        await ExecuteOutcomeAsync(tran, id).ConfigureAwait(false);
     }
 
     public async ValueTask MarkFailedAsync(JobId id, int attempts, DateTimeOffset nextRetryAt, CancellationToken ct)
@@ -162,7 +202,7 @@ public sealed class RedisJobStore : IJobStore, IJobDashboardStore
         _ = tran.SetRemoveAsync("jobs:running", id.ToString());
         _ = tran.SortedSetAddAsync("jobs:pending", id.ToString(), score); // re-add to pending sorted set for retry
         _ = tran.SetAddAsync("jobs:failed", id.ToString());
-        await tran.ExecuteAsync().ConfigureAwait(false);
+        await ExecuteOutcomeAsync(tran, id).ConfigureAwait(false);
     }
 
     public async ValueTask DeadLetterAsync(JobId id, string error, CancellationToken ct)
@@ -179,28 +219,30 @@ public sealed class RedisJobStore : IJobStore, IJobDashboardStore
         if (!fields[0].IsNull && !fields[1].IsNull)
             _ = tran.SetRemoveAsync("jobs:recurring", fields[0]);
 
-        await tran.ExecuteAsync().ConfigureAwait(false);
+        await ExecuteOutcomeAsync(tran, id).ConfigureAwait(false);
     }
 
     public async ValueTask UpsertRecurringAsync(string typeName, byte[] payload, DateTimeOffset scheduledAt,
         string? cronExpression, int maxAttempts, CancellationToken ct)
     {
-        // Guard: the type name is in the recurring set while the job has a live run. The
-        // transaction's condition makes the check and the insert one step, so concurrent
-        // callers add a single run.
-        bool exists = await _db.SetContainsAsync("jobs:recurring", typeName).ConfigureAwait(false);
-
-        if (!exists)
+        // Guard: the type name is in the recurring set while the job has a live run. The script
+        // checks and inserts in one step, so concurrent callers add a single run.
+        var id = JobId.New();
+        var hash = BuildHash(id, typeName, payload, JobStatus.Pending, 0, maxAttempts, scheduledAt, cronExpression);
+        var args = new RedisValue[3 + (hash.Length * 2)];
+        args[0] = typeName;
+        args[1] = (double)scheduledAt.ToUnixTimeSeconds();
+        args[2] = id.ToString();
+        for (var i = 0; i < hash.Length; i++)
         {
-            var id = JobId.New();
-            var score = (double)scheduledAt.ToUnixTimeSeconds();
-            var tran = _db.CreateTransaction();
-            tran.AddCondition(Condition.SetNotContains("jobs:recurring", typeName));
-            _ = tran.HashSetAsync($"job:{id}", BuildHash(id, typeName, payload, JobStatus.Pending, 0, maxAttempts, scheduledAt, cronExpression));
-            _ = tran.SortedSetAddAsync("jobs:pending", id.ToString(), score);
-            _ = tran.SetAddAsync("jobs:recurring", typeName);
-            await tran.ExecuteAsync().ConfigureAwait(false);
+            args[3 + (i * 2)] = hash[i].Name;
+            args[4 + (i * 2)] = hash[i].Value;
         }
+
+        await _db.ScriptEvaluateAsync(
+            UpsertRecurringScript,
+            [(RedisKey)"jobs:recurring", (RedisKey)$"job:{id}", (RedisKey)"jobs:pending"],
+            args).ConfigureAwait(false);
     }
 
     public async Task<JobSummary> GetSummaryAsync(CancellationToken ct = default)
@@ -272,7 +314,7 @@ public sealed class RedisJobStore : IJobStore, IJobDashboardStore
     {
         var score = (double)DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         var tran = _db.CreateTransaction();
-        _ = tran.HashSetAsync($"job:{id}", [new HashEntry("status", "Pending"), new HashEntry("error", RedisValue.EmptyString), new HashEntry("scheduledAt", score)]);
+        _ = tran.HashSetAsync($"job:{id}", [new HashEntry("status", "Pending"), new HashEntry("attempts", 0), new HashEntry("error", RedisValue.EmptyString), new HashEntry("scheduledAt", score)]);
         _ = tran.SetRemoveAsync("jobs:deadletter", id.ToString());
         _ = tran.SortedSetAddAsync("jobs:pending", id.ToString(), score);
         await tran.ExecuteAsync().ConfigureAwait(false);
@@ -284,6 +326,7 @@ public sealed class RedisJobStore : IJobStore, IJobDashboardStore
         _ = tran.KeyDeleteAsync($"job:{id}");
         _ = tran.SortedSetRemoveAsync("jobs:pending", id.ToString());
         _ = tran.SetRemoveAsync("jobs:running", id.ToString());
+        _ = tran.SortedSetRemoveAsync(ClaimsKey, id.ToString());
         _ = tran.SetRemoveAsync("jobs:succeeded", id.ToString());
         _ = tran.SetRemoveAsync("jobs:failed", id.ToString());
         _ = tran.SetRemoveAsync("jobs:deadletter", id.ToString());

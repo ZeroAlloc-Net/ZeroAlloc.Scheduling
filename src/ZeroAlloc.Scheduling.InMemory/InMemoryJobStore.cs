@@ -73,8 +73,26 @@ public sealed class InMemoryJobStore : IJobStore, IJobDashboardStore, IDisposabl
         var claimTimeout = _options?.CurrentValue.ClaimTimeout ?? DefaultClaimTimeout;
         List<JobEntry>? claimed = null;
 
+        // A timeout longer than the time since DateTimeOffset.MinValue yields MinValue. Computed
+        // before any entry changes, so nothing can throw halfway through a claim.
+        var staleBefore = claimTimeout >= now - DateTimeOffset.MinValue ? DateTimeOffset.MinValue : now - claimTimeout;
+
         lock (_gate)
         {
+            // A Running entry whose claim has expired was abandoned by a run that recorded no
+            // outcome. Taking it back counts as a new attempt. Expired claims go first: they are
+            // overdue, and a queue that always has due jobs would otherwise never reach them.
+            foreach (var id in _running)
+            {
+                if (claimed?.Count >= batchSize) break;
+                if (!_entries.TryGetValue(id, out var e)) continue;
+                if (e.Status != JobStatus.Running || e.StartedAt > staleBefore) continue;
+
+                var running = Claimed(e, JobStatus.Running, e.Attempts + 1, now);
+                _entries[id] = running;
+                (claimed ??= new List<JobEntry>(Math.Min(batchSize, _running.Count))).Add(running);
+            }
+
             foreach (var id in _claimable)
             {
                 if (claimed?.Count >= batchSize) break;
@@ -88,20 +106,6 @@ public sealed class InMemoryJobStore : IJobStore, IJobDashboardStore, IDisposabl
                 var running = Claimed(e, status, e.Attempts, now);
                 _entries[id] = running;
                 (claimed ??= new List<JobEntry>(Math.Min(batchSize, _claimable.Count))).Add(running);
-            }
-
-            // A Running entry whose claim has expired was abandoned by a run that recorded no
-            // outcome. Taking it back counts as a new attempt.
-            var staleBefore = now - claimTimeout;
-            foreach (var id in _running)
-            {
-                if (claimed?.Count >= batchSize) break;
-                if (!_entries.TryGetValue(id, out var e)) continue;
-                if (e.Status != JobStatus.Running || e.StartedAt > staleBefore) continue;
-
-                var running = Claimed(e, JobStatus.Running, e.Attempts + 1, now);
-                _entries[id] = running;
-                (claimed ??= new List<JobEntry>(Math.Min(batchSize, _running.Count))).Add(running);
             }
 
             if (claimed is null)
@@ -226,11 +230,9 @@ public sealed class InMemoryJobStore : IJobStore, IJobDashboardStore, IDisposabl
         lock (_gate)
         {
             // A live run is one that is Pending, Running or Failed; a Failed run is retried. Finished
-            // runs, Succeeded or DeadLetter, are history: the new run is added next to them.
-            bool exists = _entries.ToValuesArray().Any(e =>
-                string.Equals(e.TypeName, typeName, StringComparison.Ordinal) &&
-                e.CronExpression != null &&
-                (e.Status == JobStatus.Pending || e.Status == JobStatus.Running || e.Status == JobStatus.Failed));
+            // runs, Succeeded or DeadLetter, are history: the new run is added next to them. The
+            // live runs are exactly the claimable and running indexes, so only those are searched.
+            bool exists = HasLiveRecurringRun(_claimable, typeName) || HasLiveRecurringRun(_running, typeName);
 
             if (!exists)
             {
@@ -310,6 +312,21 @@ public sealed class InMemoryJobStore : IJobStore, IJobDashboardStore, IDisposabl
 
     /// <summary>Returns the pooled bucket array. Tests typically rely on GC; production callers should dispose explicitly.</summary>
     public void Dispose() => _entries.Dispose();
+
+    private bool HasLiveRecurringRun(HashSet<JobId> ids, string typeName)
+    {
+        foreach (var id in ids)
+        {
+            if (_entries.TryGetValue(id, out var e)
+                && e.CronExpression != null
+                && string.Equals(e.TypeName, typeName, StringComparison.Ordinal))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     private static readonly TimeSpan DefaultClaimTimeout = new SchedulingOptions().ClaimTimeout;
 

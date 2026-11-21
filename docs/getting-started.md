@@ -134,7 +134,7 @@ builder.Services.AddScheduling(opt =>
 });
 ```
 
-`ClaimTimeout` decides when a job left Running, by a host that stopped or crashed during the run, is claimed again. Keep it above your longest run: a run that takes longer is claimed again while it still runs, so it runs twice. See [Abandoned runs](stores.md#abandoned-runs-and-claimtimeout).
+`ClaimTimeout` decides when a job left Running, by a host that stopped or crashed during the run, is claimed again. The timeout counts from the poll that claimed the job, and the worker runs a poll's jobs in turn, so keep it above the longest batch, up to `BatchSize` runs in a row. A job not done in time is claimed again while it still runs, so it runs twice. See [Abandoned runs](stores.md#abandoned-runs-and-claimtimeout).
 
 ## Next Steps
 
