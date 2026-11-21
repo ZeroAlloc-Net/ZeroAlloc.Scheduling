@@ -15,6 +15,9 @@
     <!-- PostgreSQL and SQL Server prove the live-run index filter on the other providers the store supports. -->
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.23" />
+    <!-- Renames the columns to snake case, as many PostgreSQL applications do, to prove the index
+         filter follows the column names. -->
+    <PackageReference Include="EFCore.NamingConventions" Version="9.0.0" />
     <PackageReference Include="Testcontainers.MsSql" Version="4.17.0" />
     <PackageReference Include="Testcontainers.PostgreSql" Version="4.17.0" />
     <PackageReference Include="ZeroAlloc.Outbox.InMemory" Version="4.7.2" />
