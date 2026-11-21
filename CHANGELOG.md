@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.4.2](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v2.4.1...v2.4.2) (2026-11-21)
+
+
+### Bug Fixes
+
+* **generator:** document the generated registration class and method ([ee83ebc](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/ee83ebcb76befa0a4e08d41e6652768a0e890302))
+* **generator:** give the registration of an internal job internal access ([ee83ebc](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/ee83ebcb76befa0a4e08d41e6652768a0e890302))
+* **generator:** resolve the store of the recurring seed in a scope of its own ([ee83ebc](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/ee83ebcb76befa0a4e08d41e6652768a0e890302))
+
 ## [2.4.1](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v2.4.0...v2.4.1) (2026-11-21)
 
 
