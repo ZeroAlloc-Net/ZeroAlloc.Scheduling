@@ -133,7 +133,15 @@ public sealed class OrmJobStore : IJobStore
         await _repo.MarkCompletedAsync(
             id.Value, (int)JobStatus.Succeeded, DateTimeOffset.UtcNow, ct).ConfigureAwait(false);
 
-        if (nextRunAt.HasValue)
+        if (nextRunAt.HasValue && cronExpression is not null)
+        {
+            // Skips the insert when another live run exists, which the unique index
+            // would otherwise reject.
+            await _dialectQueries.InsertRecurringAsync(
+                JobId.New().Value, existing.TypeName, existing.Payload, (int)JobStatus.Pending,
+                maxAttempts, nextRunAt.Value, cronExpression, ct).ConfigureAwait(false);
+        }
+        else if (nextRunAt.HasValue)
         {
             await _repo.InsertAsync(
                 JobId.New().Value, existing.TypeName, existing.Payload, (int)JobStatus.Pending,
@@ -165,9 +173,18 @@ public sealed class OrmJobStore : IJobStore
 
     /// <inheritdoc />
     /// <remarks>
-    /// Keyed on type name, matching the EF Core adapter: one recurring
-    /// definition per job type. Re-registering the same type updates the
-    /// existing row rather than accumulating duplicates that would each fire.
+    /// <para>
+    /// Keyed on type name, like the other stores: a recurring job has at most one
+    /// live run, one that is Pending, Running or Failed. Without one, a Pending run
+    /// is inserted; the unique index from migration 3 makes that atomic, so
+    /// instances that start at once seed a single run. With one, a Pending run takes
+    /// the given payload, attempts and schedule, and a Running or Failed run is left
+    /// to the worker. Completed runs are history and never come back.
+    /// </para>
+    /// <para>
+    /// Without a cron expression there is nothing recurring to key on, and the job is
+    /// enqueued as a one-off.
+    /// </para>
     /// </remarks>
     public async ValueTask UpsertRecurringAsync(
         string typeName,
@@ -180,19 +197,22 @@ public sealed class OrmJobStore : IJobStore
         ArgumentNullException.ThrowIfNull(typeName);
         ArgumentNullException.ThrowIfNull(payload);
 
-        var existing = await _dialectQueries.FindRecurringAsync(typeName, ct).ConfigureAwait(false);
-
-        if (existing is null)
+        if (cronExpression is null)
         {
-            await _repo.InsertAsync(
-                JobId.New().Value, typeName, payload, (int)JobStatus.Pending,
-                maxAttempts, scheduledAt, cronExpression, ct).ConfigureAwait(false);
+            await EnqueueAsync(typeName, payload, scheduledAt, maxAttempts, cronExpression: null, ct).ConfigureAwait(false);
             return;
         }
 
-        await _repo.UpdateRecurringAsync(
-            existing.Id, payload, scheduledAt, cronExpression, maxAttempts,
-            (int)JobStatus.Pending, ct).ConfigureAwait(false);
+        var inserted = await _dialectQueries.InsertRecurringAsync(
+            JobId.New().Value, typeName, payload, (int)JobStatus.Pending,
+            maxAttempts, scheduledAt, cronExpression, ct).ConfigureAwait(false);
+
+        if (inserted == 0)
+        {
+            await _repo.UpdatePendingRecurringAsync(
+                typeName, payload, scheduledAt, cronExpression, maxAttempts,
+                (int)JobStatus.Pending, ct).ConfigureAwait(false);
+        }
     }
 
     private static JobEntry ToEntry(JobRow row) => new()

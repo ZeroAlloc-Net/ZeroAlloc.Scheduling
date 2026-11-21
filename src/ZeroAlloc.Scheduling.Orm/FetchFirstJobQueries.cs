@@ -23,6 +23,7 @@ internal sealed partial class FetchFirstJobQueries(IAsyncDbConnection connection
             ORDER BY ScheduledAt
             OFFSET 0 ROWS FETCH NEXT @batchSize ROWS ONLY
         )
+          AND (Status = @pendingStatus OR Status = @failedStatus)
         """)]
     public partial Task<int> ClaimPendingAsync(
         int runningStatus,
@@ -33,12 +34,21 @@ internal sealed partial class FetchFirstJobQueries(IAsyncDbConnection connection
         Guid claimToken,
         CancellationToken ct);
 
-    [Query("""
-        SELECT Id, TypeName, Payload, Status, Attempts, MaxAttempts, ScheduledAt, StartedAt, CompletedAt, NextRunAt, CronExpression, Error
-        FROM SchedulingJobs
-        WHERE TypeName = @typeName AND CronExpression IS NOT NULL
-        ORDER BY ScheduledAt
-        OFFSET 0 ROWS FETCH NEXT 1 ROWS ONLY
+    [Command("""
+        INSERT INTO SchedulingJobs
+            (Id, TypeName, Payload, Status, Attempts, MaxAttempts, ScheduledAt, CronExpression)
+        SELECT @id, @typeName, @payload, @status, 0, @maxAttempts, @scheduledAt, @cronExpression
+        WHERE NOT EXISTS (
+            SELECT 1 FROM SchedulingJobs WITH (UPDLOCK, SERIALIZABLE)
+            WHERE TypeName = @typeName AND CronExpression IS NOT NULL AND Status IN (0, 1, 3))
         """)]
-    public partial Task<JobRow?> FindRecurringAsync(string typeName, CancellationToken ct);
+    public partial Task<int> InsertRecurringAsync(
+        Guid id,
+        string typeName,
+        byte[] payload,
+        int status,
+        int maxAttempts,
+        DateTimeOffset scheduledAt,
+        string cronExpression,
+        CancellationToken ct);
 }

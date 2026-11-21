@@ -211,4 +211,35 @@ public sealed class OrmJobStoreTests
 
         await act.Should().NotThrowAsync();
     }
+
+    [Fact]
+    public async Task UpsertRecurring_Without_A_Cron_Enqueues_A_One_Off()
+    {
+        await using var fx = new SqliteFixture();
+        await fx.MigrateAsync();
+        var store = await StoreAsync(fx);
+        var due = DateTimeOffset.UtcNow.AddSeconds(-1);
+
+        await store.UpsertRecurringAsync("Once", s_payload, due, null, 3, default);
+        await store.UpsertRecurringAsync("Once", s_payload, due, null, 3, default);
+
+        var claimed = await store.FetchPendingAsync(10, default);
+        claimed.Should().HaveCount(2, "without a cron there is no recurring job to key on");
+        claimed.Should().OnlyContain(job => job.CronExpression == null);
+    }
+
+    [Fact]
+    public async Task MarkSucceeded_With_A_Next_Run_But_No_Cron_Enqueues_It()
+    {
+        await using var fx = new SqliteFixture();
+        await fx.MigrateAsync();
+        var store = await StoreAsync(fx);
+        await store.EnqueueAsync("Once", s_payload, DateTimeOffset.UtcNow.AddSeconds(-1), 3, null, default);
+        var job = (await store.FetchPendingAsync(10, default))[0];
+
+        await store.MarkSucceededAsync(job.Id, DateTimeOffset.UtcNow.AddSeconds(-1), null, 3, default);
+
+        var next = await store.FetchPendingAsync(10, default);
+        next.Should().ContainSingle().Which.Id.Should().NotBe(job.Id);
+    }
 }

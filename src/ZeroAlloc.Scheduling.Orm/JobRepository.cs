@@ -93,18 +93,26 @@ internal sealed partial class JobRepository(IAsyncDbConnection connection)
     public partial Task<int> DeadLetterAsync(
         Guid id, int status, string error, DateTimeOffset completedAt, CancellationToken ct);
 
+    /// <summary>
+    /// Applies a recurring job's current definition to its Pending run. A changed
+    /// schedule also takes the new due time; an unchanged one keeps the run's own,
+    /// so a restart does not postpone a run that is due. A Running or Failed run
+    /// is left alone: it is in the worker's hands.
+    /// </summary>
     [Command("""
         UPDATE SchedulingJobs
-        SET Payload = @payload, ScheduledAt = @scheduledAt, CronExpression = @cronExpression,
-            MaxAttempts = @maxAttempts, Status = @status, Attempts = 0, Error = NULL
-        WHERE Id = @id
+        SET Payload = @payload,
+            MaxAttempts = @maxAttempts,
+            ScheduledAt = CASE WHEN CronExpression = @cronExpression THEN ScheduledAt ELSE @scheduledAt END,
+            CronExpression = @cronExpression
+        WHERE TypeName = @typeName AND CronExpression IS NOT NULL AND Status = @pendingStatus
         """)]
-    public partial Task<int> UpdateRecurringAsync(
-        Guid id,
+    public partial Task<int> UpdatePendingRecurringAsync(
+        string typeName,
         byte[] payload,
         DateTimeOffset scheduledAt,
-        string? cronExpression,
+        string cronExpression,
         int maxAttempts,
-        int status,
+        int pendingStatus,
         CancellationToken ct);
 }

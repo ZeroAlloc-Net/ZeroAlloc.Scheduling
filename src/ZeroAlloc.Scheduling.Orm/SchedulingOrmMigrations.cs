@@ -26,6 +26,13 @@ namespace ZeroAlloc.Scheduling.Orm;
 /// keeps a deployment's recorded version comparable across a provider move.
 /// </para>
 /// <para>
+/// Version 3 allows one live run, Pending, Running or Failed, per recurring job
+/// type, through a unique index over the live rows only, so the recurring seed is
+/// one atomic insert. Releases before it could leave several live runs of one job,
+/// so it first deletes all but the earliest. The status values in its SQL are those
+/// of <see cref="JobStatus"/>.
+/// </para>
+/// <para>
 /// Every provider's source is named <c>ZeroAlloc.Scheduling</c>, the name the
 /// ORM records its versions under, so the schema shares a history table with
 /// your own migrations without their version numbers colliding.
@@ -63,6 +70,19 @@ public static class SchedulingOrmMigrations
         ALTER TABLE SchedulingJobs ADD COLUMN ClaimToken BLOB NULL;
         CREATE INDEX IF NOT EXISTS IX_SchedulingJobs_ClaimToken
             ON SchedulingJobs (ClaimToken);
+        """,
+        """
+        DELETE FROM SchedulingJobs
+        WHERE CronExpression IS NOT NULL AND Status IN (0, 1, 3)
+          AND EXISTS (
+              SELECT 1 FROM SchedulingJobs AS Kept
+              WHERE Kept.TypeName = SchedulingJobs.TypeName
+                AND Kept.CronExpression IS NOT NULL AND Kept.Status IN (0, 1, 3)
+                AND (Kept.ScheduledAt < SchedulingJobs.ScheduledAt
+                     OR (Kept.ScheduledAt = SchedulingJobs.ScheduledAt AND Kept.Id < SchedulingJobs.Id)));
+        CREATE UNIQUE INDEX IF NOT EXISTS UX_SchedulingJobs_LiveRecurring
+            ON SchedulingJobs (TypeName)
+            WHERE CronExpression IS NOT NULL AND Status IN (0, 1, 3);
         """);
 
     /// <summary>Schema for PostgreSQL.</summary>
@@ -89,6 +109,19 @@ public static class SchedulingOrmMigrations
         ALTER TABLE SchedulingJobs ADD COLUMN IF NOT EXISTS ClaimToken UUID NULL;
         CREATE INDEX IF NOT EXISTS IX_SchedulingJobs_ClaimToken
             ON SchedulingJobs (ClaimToken);
+        """,
+        """
+        DELETE FROM SchedulingJobs
+        WHERE CronExpression IS NOT NULL AND Status IN (0, 1, 3)
+          AND EXISTS (
+              SELECT 1 FROM SchedulingJobs AS Kept
+              WHERE Kept.TypeName = SchedulingJobs.TypeName
+                AND Kept.CronExpression IS NOT NULL AND Kept.Status IN (0, 1, 3)
+                AND (Kept.ScheduledAt < SchedulingJobs.ScheduledAt
+                     OR (Kept.ScheduledAt = SchedulingJobs.ScheduledAt AND Kept.Id < SchedulingJobs.Id)));
+        CREATE UNIQUE INDEX IF NOT EXISTS UX_SchedulingJobs_LiveRecurring
+            ON SchedulingJobs (TypeName)
+            WHERE CronExpression IS NOT NULL AND Status IN (0, 1, 3);
         """);
 
     /// <summary>
@@ -134,9 +167,24 @@ public static class SchedulingOrmMigrations
         IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'IX_SchedulingJobs_ClaimToken'
                        AND object_id = OBJECT_ID(N'SchedulingJobs'))
         CREATE INDEX IX_SchedulingJobs_ClaimToken ON SchedulingJobs (ClaimToken);
+        """,
+        """
+        DELETE FROM SchedulingJobs
+        WHERE CronExpression IS NOT NULL AND Status IN (0, 1, 3)
+          AND EXISTS (
+              SELECT 1 FROM SchedulingJobs AS Kept
+              WHERE Kept.TypeName = SchedulingJobs.TypeName
+                AND Kept.CronExpression IS NOT NULL AND Kept.Status IN (0, 1, 3)
+                AND (Kept.ScheduledAt < SchedulingJobs.ScheduledAt
+                     OR (Kept.ScheduledAt = SchedulingJobs.ScheduledAt AND Kept.Id < SchedulingJobs.Id)));
+        IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = N'UX_SchedulingJobs_LiveRecurring'
+                       AND object_id = OBJECT_ID(N'SchedulingJobs'))
+        CREATE UNIQUE INDEX UX_SchedulingJobs_LiveRecurring
+            ON SchedulingJobs (TypeName)
+            WHERE CronExpression IS NOT NULL AND Status IN (0, 1, 3);
         """);
 
-    private sealed class Source(string createSql, string claimTokenSql) : IMigrationSource
+    private sealed class Source(string createSql, string claimTokenSql, string liveRecurringSql) : IMigrationSource
     {
         // The ORM scopes recorded versions by this name, so it is persisted in every
         // database the schema is applied to. A fixed string rather than the default,
@@ -149,6 +197,7 @@ public static class SchedulingOrmMigrations
         [
             new Migration(1, "create_scheduling_jobs", createSql),
             new Migration(2, "add_claim_token", claimTokenSql),
+            new Migration(3, "one_live_run_per_recurring_job", liveRecurringSql),
         ];
 
         public IReadOnlyList<Migration> GetMigrations() => _migrations;

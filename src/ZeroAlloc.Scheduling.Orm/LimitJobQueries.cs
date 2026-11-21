@@ -18,6 +18,7 @@ internal sealed partial class LimitJobQueries(IAsyncDbConnection connection) : I
             ORDER BY ScheduledAt
             LIMIT @batchSize
         )
+          AND (Status = @pendingStatus OR Status = @failedStatus)
         """)]
     public partial Task<int> ClaimPendingAsync(
         int runningStatus,
@@ -28,12 +29,20 @@ internal sealed partial class LimitJobQueries(IAsyncDbConnection connection) : I
         Guid claimToken,
         CancellationToken ct);
 
-    [Query("""
-        SELECT Id, TypeName, Payload, Status, Attempts, MaxAttempts, ScheduledAt, StartedAt, CompletedAt, NextRunAt, CronExpression, Error
-        FROM SchedulingJobs
-        WHERE TypeName = @typeName AND CronExpression IS NOT NULL
-        ORDER BY ScheduledAt
-        LIMIT 1
+    [Command("""
+        INSERT INTO SchedulingJobs
+            (Id, TypeName, Payload, Status, Attempts, MaxAttempts, ScheduledAt, CronExpression)
+        VALUES
+            (@id, @typeName, @payload, @status, 0, @maxAttempts, @scheduledAt, @cronExpression)
+        ON CONFLICT DO NOTHING
         """)]
-    public partial Task<JobRow?> FindRecurringAsync(string typeName, CancellationToken ct);
+    public partial Task<int> InsertRecurringAsync(
+        Guid id,
+        string typeName,
+        byte[] payload,
+        int status,
+        int maxAttempts,
+        DateTimeOffset scheduledAt,
+        string cronExpression,
+        CancellationToken ct);
 }
