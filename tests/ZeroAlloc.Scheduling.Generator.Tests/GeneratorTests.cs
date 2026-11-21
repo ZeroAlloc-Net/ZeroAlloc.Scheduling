@@ -1,4 +1,5 @@
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 
 namespace ZeroAlloc.Scheduling.Generator.Tests;
 
@@ -243,5 +244,82 @@ public sealed class GeneratorTests
 
         diagnostics.Should().ContainSingle()
             .Which.Id.Should().Be("ZASCH001");
+    }
+
+    [Theory]
+    [InlineData("[Job]")]
+    [InlineData("[Job(Every = Every.Hour)]")]
+    public void GeneratedPublicMembers_CarryXmlDocs_SoALibraryWithDocsAsErrorsCompiles(string attribute)
+    {
+        // A library that generates its documentation file reports CS1591 on every public member
+        // without docs, an error under TreatWarningsAsErrors.
+        var parse = CSharpParseOptions.Default.WithDocumentationMode(DocumentationMode.Diagnose);
+        var compilation = GeneratorTestHelper.CreateCompilation([CSharpSyntaxTree.ParseText($$"""
+            using ZeroAlloc.Scheduling;
+            namespace MyApp;
+            /// <summary>A job.</summary>
+            [{{attribute.Substring(1, attribute.Length - 2)}}]
+            public sealed class PingJob : IJob
+            {
+                /// <inheritdoc/>
+                public System.Threading.Tasks.ValueTask ExecuteAsync(JobContext ctx, System.Threading.CancellationToken ct) => default;
+            }
+            """, parse)]);
+
+        CSharpGeneratorDriver.Create([new SchedulingGenerator().AsSourceGenerator()], parseOptions: parse)
+            .RunGeneratorsAndUpdateCompilation(compilation, out var output, out _);
+
+        output.GetDiagnostics().Where(d => d.Severity >= DiagnosticSeverity.Warning)
+            .Should().BeEmpty();
+    }
+
+    [Fact]
+    public void RecurringStartup_ResolvesTheStoreInAScope_NotInItsConstructor()
+    {
+        var (source, _) = GeneratorTestHelper.Run("""
+            using ZeroAlloc.Scheduling;
+            namespace MyApp;
+            [Job(Every = Every.Hour)]
+            public sealed class PingJob : IJob
+            {
+                public System.Threading.Tasks.ValueTask ExecuteAsync(JobContext ctx, System.Threading.CancellationToken ct) => default;
+            }
+            """);
+
+        source.Should().NotContain("IJobStore store,");
+        source.Should().Contain("_scopeFactory.CreateAsyncScope()");
+        source.Should().Contain("await scope.DisposeAsync().ConfigureAwait(false);");
+    }
+
+    [Fact]
+    public void InternalJob_IsRegisteredThroughAnInternalClass_AndAPublicJobThroughThePublicOne()
+    {
+        // One namespace with both: the partial parts of one class cannot differ in accessibility.
+        var (sources, diagnostics, errors) = GeneratorTestHelper.RunAll("""
+            using ZeroAlloc.Scheduling;
+            namespace MyApp;
+            [Job(Every = Every.Hour)]
+            internal sealed class PruneJob : IJob
+            {
+                public System.Threading.Tasks.ValueTask ExecuteAsync(JobContext ctx, System.Threading.CancellationToken ct) => default;
+            }
+            [Job]
+            public sealed class PingJob : IJob
+            {
+                public System.Threading.Tasks.ValueTask ExecuteAsync(JobContext ctx, System.Threading.CancellationToken ct) => default;
+            }
+            internal static class Registration
+            {
+                public static void Register(ISchedulingBuilder builder) => builder.AddPruneJob().AddPingJob();
+            }
+            """);
+
+        diagnostics.Should().BeEmpty();
+        errors.Should().BeEmpty();
+        var prune = sources.Should().ContainSingle(s => s.Contains("AddPruneJob", StringComparison.Ordinal)).Subject;
+        prune.Should().Contain("internal static partial class InternalSchedulingServiceCollectionExtensions");
+        prune.Should().NotContain("public static partial class");
+        sources.Should().ContainSingle(s => s.Contains("AddPingJob", StringComparison.Ordinal))
+            .Which.Should().Contain("public static partial class SchedulingServiceCollectionExtensions");
     }
 }

@@ -64,12 +64,26 @@ public sealed class SchedulingWorkerServiceTests
         await store.EnqueueAsync("FailJob", [], DateTimeOffset.UtcNow, 3, null, CancellationToken.None);
 
         var worker = services.GetRequiredService<SchedulingWorkerService>();
-        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
         await worker.StartAsync(cts.Token);
-        await Task.Delay(1000, CancellationToken.None);
+
+        // Three attempts take at least three polls; a fixed delay was too short on a loaded runner.
+        var deadline = DateTime.UtcNow.AddSeconds(20);
+        while (!HasDeadLetter(store) && DateTime.UtcNow < deadline)
+            await Task.Delay(20, CancellationToken.None);
         await worker.StopAsync(CancellationToken.None);
 
         store.AllEntries.Should().ContainSingle(e => e.Status == JobStatus.DeadLetter);
+        callCount.Should().Be(3);
+    }
+
+    private static bool HasDeadLetter(InMemoryJobStore store)
+    {
+        foreach (var entry in store.AllEntries)
+        {
+            if (entry.Status == JobStatus.DeadLetter) return true;
+        }
+        return false;
     }
 
     private sealed class FakeExecutor : IJobTypeExecutor

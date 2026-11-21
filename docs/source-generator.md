@@ -123,7 +123,13 @@ The registration method is `Add{Name}Job()`, and a type name that already ends i
 
 The match is ordinal and case-sensitive, as the last row shows: only the exact suffix `Job` counts. Two job types in the same namespace that map to the same method, such as `Cleanup` and `CleanupJob`, are reported as the error [ZASCH011](diagnostics.md#zasch011--two-jobs-map-to-the-same-generated-registration-method) and neither is generated. Up to 1.x the suffix was always appended, so `SendInvoiceJob` registered with `AddSendInvoiceJobJob()`; see [Migrating to v2](migrating-to-v2.md#generated-registration-names).
 
-For a recurring job (`[Job(Every = Every.Hour)]`), the generator additionally emits an `IHostedService` that calls `IJobStore.UpsertRecurringAsync` at startup to seed the first scheduled run.
+For a recurring job (`[Job(Every = Every.Hour)]`), the generator additionally emits an `IHostedService` that calls `IJobStore.UpsertRecurringAsync` at startup to seed the first scheduled run. It resolves the store in a scope of its own, so a scoped store such as the EF Core or ORM one works in a host that validates scopes.
+
+### Registration accessibility
+
+The registration method has the job's accessibility. A public job is registered through the public `SchedulingServiceCollectionExtensions` class of its namespace, as above. An internal job is registered through `internal static partial class InternalSchedulingServiceCollectionExtensions` instead, so a library can keep a job internal without adding a public member: it calls the method itself, for example from its own `Add...()` extension. Both classes carry XML docs, so a library that builds its documentation file with warnings as errors compiles.
+
+Up to 2.4.1 the registration of an internal job was public. Another assembly that called it now gets a compile error: have the job's assembly expose a registration of its own, or make the job public.
 
 ### Jobs without state
 

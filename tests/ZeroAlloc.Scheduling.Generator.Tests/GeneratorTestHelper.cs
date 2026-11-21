@@ -71,6 +71,10 @@ internal static class GeneratorTestHelper
         refs.Add(MetadataReference.CreateFromFile(typeof(Microsoft.Extensions.Hosting.IHostedService).Assembly.Location));
         refs.Add(MetadataReference.CreateFromFile(typeof(Microsoft.Extensions.Options.IOptions<>).Assembly.Location));
         refs.Add(MetadataReference.CreateFromFile(typeof(Cronos.CronExpression).Assembly.Location));
+        // The facade that IServiceProvider, which the recurring seed resolves its store from, is
+        // referenced through. It has no type of its own to take the location from.
+        refs.Add(MetadataReference.CreateFromFile(Path.Combine(
+            Path.GetDirectoryName(typeof(object).Assembly.Location)!, "System.ComponentModel.dll")));
 
         return CSharpCompilation.Create(
             "TestAssembly",

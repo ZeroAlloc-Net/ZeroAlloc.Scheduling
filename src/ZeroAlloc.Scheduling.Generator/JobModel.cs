@@ -21,6 +21,10 @@ namespace ZeroAlloc.Scheduling.Generator;
 /// constructor the generated code can call, and is not a mediator bridge job. Such a job carries no state, so the generated code
 /// creates it without the job serializer and seeds a recurring run with an empty payload.
 /// </param>
+/// <param name="IsPublic">
+/// Whether the job type is public. The registration method of a job that is not public is
+/// internal too, so an internal job never adds a public member to its assembly.
+/// </param>
 /// <param name="MaxAttemptsIgnoredLocation">
 /// Where ZASCH001 is reported, the MaxAttempts argument, or null when the rule does not apply.
 /// </param>
@@ -37,5 +41,6 @@ internal sealed record JobModel(
     int MaxAttempts,
     bool IsMediatorBridge,
     bool IsStateless,
+    bool IsPublic,
     LocationInfo Location,
     LocationInfo? MaxAttemptsIgnoredLocation);
