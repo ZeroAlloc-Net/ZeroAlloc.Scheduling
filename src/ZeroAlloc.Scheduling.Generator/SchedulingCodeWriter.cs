@@ -26,7 +26,7 @@ internal static class SchedulingCodeWriter
             AppendRecurringStartup(sb, model, startupName, typeFqn);
 
         AppendDiExtension(sb, diMethodName, executorName, typeFqn, startupName,
-                          model.IsRecurring, model.IsMediatorBridge);
+                          model.IsRecurring, model.IsMediatorBridge, model.IsPublic);
 
         ctx.AddSource(model.HintName, SourceText.From(sb.ToString(), Encoding.UTF8));
     }
@@ -102,21 +102,23 @@ internal static class SchedulingCodeWriter
 
         sb.AppendLine($"internal sealed class {startupName} : global::Microsoft.Extensions.Hosting.IHostedService");
         sb.AppendLine("{");
-        sb.AppendLine("    private readonly global::ZeroAlloc.Scheduling.IJobStore _store;");
+        // The hosted service is a singleton and most stores are scoped, so the store is resolved
+        // in a scope of its own for the seed rather than taken in the constructor.
+        sb.AppendLine("    private readonly global::Microsoft.Extensions.DependencyInjection.IServiceScopeFactory _scopeFactory;");
         if (model.IsStateless)
         {
             // Nothing to serialize: the run is seeded with an empty payload, which the stateless
             // executor never reads, so no IJobSerializer has to be registered for this job.
             sb.AppendLine("    private readonly global::Microsoft.Extensions.Options.IOptions<global::ZeroAlloc.Scheduling.SchedulingOptions> _options;");
-            sb.AppendLine($"    public {startupName}(global::ZeroAlloc.Scheduling.IJobStore store, global::Microsoft.Extensions.Options.IOptions<global::ZeroAlloc.Scheduling.SchedulingOptions> options)");
-            sb.AppendLine("    { _store = store; _options = options; }");
+            sb.AppendLine($"    public {startupName}(global::Microsoft.Extensions.DependencyInjection.IServiceScopeFactory scopeFactory, global::Microsoft.Extensions.Options.IOptions<global::ZeroAlloc.Scheduling.SchedulingOptions> options)");
+            sb.AppendLine("    { _scopeFactory = scopeFactory; _options = options; }");
         }
         else
         {
             sb.AppendLine("    private readonly global::ZeroAlloc.Scheduling.IJobSerializer _serializer;");
             sb.AppendLine("    private readonly global::Microsoft.Extensions.Options.IOptions<global::ZeroAlloc.Scheduling.SchedulingOptions> _options;");
-            sb.AppendLine($"    public {startupName}(global::ZeroAlloc.Scheduling.IJobStore store, global::ZeroAlloc.Scheduling.IJobSerializer serializer, global::Microsoft.Extensions.Options.IOptions<global::ZeroAlloc.Scheduling.SchedulingOptions> options)");
-            sb.AppendLine("    { _store = store; _serializer = serializer; _options = options; }");
+            sb.AppendLine($"    public {startupName}(global::Microsoft.Extensions.DependencyInjection.IServiceScopeFactory scopeFactory, global::ZeroAlloc.Scheduling.IJobSerializer serializer, global::Microsoft.Extensions.Options.IOptions<global::ZeroAlloc.Scheduling.SchedulingOptions> options)");
+            sb.AppendLine("    { _scopeFactory = scopeFactory; _serializer = serializer; _options = options; }");
         }
         var payloadExpr = model.IsStateless
             ? "global::System.Array.Empty<byte>()"
@@ -137,15 +139,37 @@ internal static class SchedulingCodeWriter
         sb.AppendLine("        if (next is null) return;");
         sb.AppendLine($"        var maxAttempts = {maxAttemptsExpr};");
         sb.AppendLine($"        var payload = {payloadExpr};");
-        sb.AppendLine($"        await _store.UpsertRecurringAsync(\"{jobFqn}\", payload, next.Value, cron, maxAttempts, ct).ConfigureAwait(false);");
+        sb.AppendLine("        var scope = _scopeFactory.CreateAsyncScope();");
+        sb.AppendLine("        try");
+        sb.AppendLine("        {");
+        sb.AppendLine("            var store = global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::ZeroAlloc.Scheduling.IJobStore>(scope.ServiceProvider);");
+        sb.AppendLine($"            await store.UpsertRecurringAsync(\"{jobFqn}\", payload, next.Value, cron, maxAttempts, ct).ConfigureAwait(false);");
+        sb.AppendLine("        }");
+        sb.AppendLine("        finally");
+        sb.AppendLine("        {");
+        sb.AppendLine("            await scope.DisposeAsync().ConfigureAwait(false);");
+        sb.AppendLine("        }");
         sb.AppendLine("    }");
     }
 
     private static void AppendDiExtension(StringBuilder sb, string diMethodName, string executorName,
-        string typeFqn, string startupName, bool isRecurring, bool isMediatorBridge)
+        string typeFqn, string startupName, bool isRecurring, bool isMediatorBridge, bool isPublic)
     {
-        sb.AppendLine("public static partial class SchedulingServiceCollectionExtensions");
+        // The registration has the job's accessibility, so an internal job adds no public member to
+        // its assembly. Internal jobs get a class of their own: the partial parts of one class
+        // cannot differ in accessibility, and a namespace may hold public and internal jobs.
+        // The members carry XML docs: a library that generates its documentation file with
+        // warnings as errors would otherwise fail on CS1591.
+        sb.AppendLine("/// <summary>Registers the <c>[Job]</c> types of this namespace with ZeroAlloc.Scheduling. Generated.</summary>");
+        sb.AppendLine(isPublic
+            ? "public static partial class SchedulingServiceCollectionExtensions"
+            : "internal static partial class InternalSchedulingServiceCollectionExtensions");
         sb.AppendLine("{");
+        sb.AppendLine(isRecurring
+            ? $"    /// <summary>Registers the job <see cref=\"{typeFqn}\"/>: its executor, and a hosted service that seeds its recurring run at startup.</summary>"
+            : $"    /// <summary>Registers the job <see cref=\"{typeFqn}\"/>: its executor.</summary>");
+        sb.AppendLine("    /// <param name=\"builder\">The scheduling builder.</param>");
+        sb.AppendLine("    /// <returns>The same builder, for chaining.</returns>");
         sb.AppendLine($"    public static global::ZeroAlloc.Scheduling.ISchedulingBuilder {diMethodName}(");
         sb.AppendLine("        this global::ZeroAlloc.Scheduling.ISchedulingBuilder builder)");
         sb.AppendLine("    {");

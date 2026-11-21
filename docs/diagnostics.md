@@ -98,7 +98,7 @@ The generated code could not compile, so the generator reports the error on both
 
 ### Fix
 
-Rename one of the types, or move it to another namespace. Each namespace gets its own generated `SchedulingServiceCollectionExtensions` class, so the same method name in two namespaces does not collide.
+Rename one of the types, or move it to another namespace. Each namespace gets its own generated `SchedulingServiceCollectionExtensions` class, and `InternalSchedulingServiceCollectionExtensions` for internal jobs, so the same method name in two namespaces does not collide.
 
 ## ZASCH012 — [Job] type is nested or generic
 

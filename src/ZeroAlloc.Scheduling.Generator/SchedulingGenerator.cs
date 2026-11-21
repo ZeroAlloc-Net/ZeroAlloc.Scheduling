@@ -208,7 +208,8 @@ public sealed class SchedulingGenerator : IIncrementalGenerator
 
         return new JobModel(ns, symbol.Name, fqn, HintNames.ForJob(symbol), symbol.ToDisplayString(),
             UnsupportedShape(symbol), isRecurring, cron, every, maxAttempts,
-            isMediatorBridge, !isMediatorBridge && IsStateless(symbol), identifier, maxAttemptsIgnored);
+            isMediatorBridge, !isMediatorBridge && IsStateless(symbol),
+            symbol.DeclaredAccessibility == Accessibility.Public, identifier, maxAttemptsIgnored);
     }
 
     // A job without instance fields has nothing for a payload to carry. A mediator bridge job is
