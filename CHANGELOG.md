@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.6.0](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v2.5.0...v2.6.0) (2026-11-21)
+
+
+### Features
+
+* re-seed recurring jobs every ClaimTimeout while the host runs ([9cadf87](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/9cadf87bbee1af4926d0fdec0021c480423c3a45)), closes [#602](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/602)
+
 ## [2.5.0](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v2.4.2...v2.5.0) (2026-11-21)
 
 
