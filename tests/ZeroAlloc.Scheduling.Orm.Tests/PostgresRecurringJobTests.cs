@@ -47,7 +47,7 @@ public sealed class PostgresRecurringJobTests : RecurringJobContract, IAsyncLife
             return connection;
         }
 
-        public override async Task<OrmJobStore> StoreAsync() => new(await ConnectAsync().ConfigureAwait(false), OrmSchedulingDialect.Postgres);
+        protected override OrmSchedulingDialect Dialect => OrmSchedulingDialect.Postgres;
 
         public override async Task<long> CountAsync(string condition)
         {
@@ -65,6 +65,6 @@ public sealed class PostgresRecurringJobTests : RecurringJobContract, IAsyncLife
             }
         }
 
-        public override ValueTask DisposeAsync() => dataSource.DisposeAsync();
+        protected override ValueTask DropAsync() => dataSource.DisposeAsync();
     }
 }

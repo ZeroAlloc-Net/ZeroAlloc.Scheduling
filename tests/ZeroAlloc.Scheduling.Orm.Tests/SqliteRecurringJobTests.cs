@@ -20,7 +20,7 @@ public sealed class SqliteRecurringJobTests : RecurringJobContract
     {
         public override Task<IAsyncDbConnection> ConnectAsync() => fixture.ConnectAsync();
 
-        public override async Task<OrmJobStore> StoreAsync() => new(await ConnectAsync().ConfigureAwait(false), OrmSchedulingDialect.Sqlite);
+        protected override OrmSchedulingDialect Dialect => OrmSchedulingDialect.Sqlite;
 
         public override async Task<long> CountAsync(string condition)
         {
@@ -41,6 +41,6 @@ public sealed class SqliteRecurringJobTests : RecurringJobContract
             }
         }
 
-        public override ValueTask DisposeAsync() => fixture.DisposeAsync();
+        protected override ValueTask DropAsync() => fixture.DisposeAsync();
     }
 }

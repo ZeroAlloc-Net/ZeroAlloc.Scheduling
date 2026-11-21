@@ -40,4 +40,23 @@ public sealed class StatelessJobTests
             await host.StopAsync();
         }
     }
+
+    [Fact]
+    public async Task StatelessJob_WhoseConstructorThrowsOnce_RunsOnTheNextAttempt()
+    {
+        var services = new ServiceCollection();
+        services.AddScheduling().WithInMemoryStore().AddFlakyStartJob();
+        await using var provider = services.BuildServiceProvider();
+        var executor = provider.GetServices<IJobTypeExecutor>()
+            .Single(e => string.Equals(e.TypeName, typeof(FlakyStart).FullName, StringComparison.Ordinal));
+        var ctx = new JobContext { JobId = JobId.New(), Attempt = 1, ScheduledAt = DateTimeOffset.UtcNow, Services = provider };
+
+        var first = async () => await executor.ExecuteAsync([], ctx, default).ConfigureAwait(false);
+        await first.Should().ThrowAsync<InvalidOperationException>();
+
+        await executor.ExecuteAsync([], ctx, default);
+        await executor.ExecuteAsync([], ctx, default);
+
+        FlakyStart.Runs.Should().Be(2, "the failed construction is not cached, the successful one is");
+    }
 }

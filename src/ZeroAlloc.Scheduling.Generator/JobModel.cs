@@ -16,7 +16,8 @@ namespace ZeroAlloc.Scheduling.Generator;
 /// </param>
 /// <param name="Location">The identifier of the class declaration that carries [Job].</param>
 /// <param name="IsStateless">
-/// Whether the job has no instance fields, its base types included, and a parameterless
+/// Whether the job has no instance fields and no required members, its base types included,
+/// every base type is declared in source, and it has a parameterless
 /// constructor the generated code can call, and is not a mediator bridge job. Such a job carries no state, so the generated code
 /// creates it without the job serializer and seeds a recurring run with an empty payload.
 /// </param>

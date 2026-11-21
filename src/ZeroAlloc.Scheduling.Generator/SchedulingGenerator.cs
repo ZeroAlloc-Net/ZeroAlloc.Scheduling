@@ -233,12 +233,29 @@ public sealed class SchedulingGenerator : IIncrementalGenerator
 
         for (var type = symbol; type is not null && type.SpecialType != SpecialType.System_Object; type = type.BaseType)
         {
+            // A base type from a referenced assembly hides its private fields from the
+            // compilation, so whether it carries state cannot be known: keep the serializer.
+            if (!IsFromSource(type)) return false;
+
             foreach (var member in type.GetMembers())
             {
                 if (member is IFieldSymbol { IsStatic: false }) return false;
+
+                // A required member, even one without a backing field, makes `new T()` without
+                // an initializer a compile error, so the job has to come from its payload.
+                if (member is IPropertySymbol { IsRequired: true } or IFieldSymbol { IsRequired: true }) return false;
             }
         }
         return true;
+    }
+
+    private static bool IsFromSource(INamedTypeSymbol type)
+    {
+        foreach (var location in type.Locations)
+        {
+            if (location.IsInSource) return true;
+        }
+        return false;
     }
 
     // ZASCH012: the generated code names the job by its namespace and name only, so a nested

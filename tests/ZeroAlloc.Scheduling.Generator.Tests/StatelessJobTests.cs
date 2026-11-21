@@ -30,8 +30,9 @@ public sealed class StatelessJobTests
         var source = sources.Should().ContainSingle().Subject;
         source.Should().NotContain("IJobSerializer");
         source.Should().Contain("var payload = global::System.Array.Empty<byte>();");
-        source.Should().Contain("private static readonly global::MyApp.PruneJob s_job = new global::MyApp.PruneJob();");
-        source.Should().Contain("=> s_job.ExecuteAsync(ctx, ct);");
+        source.Should().Contain("private static global::MyApp.PruneJob? s_job;");
+        source.Should().Contain("=> (s_job ??= new global::MyApp.PruneJob()).ExecuteAsync(ctx, ct);");
+        source.Should().NotContain("static readonly", "a constructor that throws must fail one attempt, not the type");
     }
 
     [Fact]
@@ -57,6 +58,7 @@ public sealed class StatelessJobTests
     [InlineData("private readonly int _count;", "")]
     [InlineData("", "public PingJob(int count) { }")]
     [InlineData("", "private PingJob() { }")]
+    [InlineData("public required int Limit { get => 3; init { } }", "")]
     public void Job_WithStateOrWithoutAReachableConstructor_KeepsTheSerializer(string field, string constructor)
     {
         var (sources, _, errors) = GeneratorTestHelper.RunAll($$"""
@@ -93,6 +95,24 @@ public sealed class StatelessJobTests
         var source = sources.Should().ContainSingle().Subject;
         source.Should().Contain("_serializer.Deserialize<global::MyApp.CountJob>(payload)");
         source.Should().Contain("var payload = _serializer.Serialize(new global::MyApp.CountJob());");
+    }
+
+    [Fact]
+    public void Job_WhoseBaseTypeIsInAnotherAssembly_KeepsTheSerializer()
+    {
+        // The compilation cannot see private fields of a referenced assembly's type.
+        var (sources, _, errors) = GeneratorTestHelper.RunAll($$"""
+            using ZeroAlloc.Scheduling;
+            namespace MyApp;
+            [Job]
+            public sealed class NotifyJob : System.EventArgs, IJob
+            {
+                {{Execute}}
+            }
+            """);
+
+        errors.Should().BeEmpty();
+        sources.Should().ContainSingle().Which.Should().Contain("_serializer.Deserialize<global::MyApp.NotifyJob>(payload)");
     }
 
     [Fact]

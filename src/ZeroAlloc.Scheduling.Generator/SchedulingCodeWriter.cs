@@ -71,19 +71,21 @@ internal static class SchedulingCodeWriter
     }
 
     // A job without instance fields carries no state, so the payload is not read and the job
-    // serializer is not needed: one instance is created once and reused for every run.
+    // serializer is not needed. The first instance that constructs successfully is reused for
+    // every later run. It is not a static initializer: a constructor that throws must fail only
+    // that attempt, so a retry can construct the job again.
     private static void AppendStatelessExecutor(StringBuilder sb, string executorName, string typeFqn, string jobFqn, int maxAttempts)
     {
         sb.AppendLine($"internal sealed class {executorName} : global::ZeroAlloc.Scheduling.IJobTypeExecutor");
         sb.AppendLine("{");
-        sb.AppendLine($"    private static readonly {typeFqn} s_job = new {typeFqn}();");
+        sb.AppendLine($"    private static {typeFqn}? s_job;");
         sb.AppendLine($"    public string TypeName => \"{jobFqn}\";");
         sb.AppendLine($"    public int MaxAttempts => {maxAttempts.ToString(CultureInfo.InvariantCulture)};");
         sb.AppendLine("    public global::System.Threading.Tasks.ValueTask ExecuteAsync(");
         sb.AppendLine("        byte[] payload,");
         sb.AppendLine("        global::ZeroAlloc.Scheduling.JobContext ctx,");
         sb.AppendLine("        global::System.Threading.CancellationToken ct)");
-        sb.AppendLine("        => s_job.ExecuteAsync(ctx, ct);");
+        sb.AppendLine($"        => (s_job ??= new {typeFqn}()).ExecuteAsync(ctx, ct);");
         sb.AppendLine("}");
         sb.AppendLine();
     }

@@ -53,19 +53,27 @@ public abstract class RecurringJobContract
     }
 
     [Fact]
-    public async Task Seeding_While_A_Run_Is_Running_Or_Retrying_Adds_Nothing()
+    public async Task Seeding_While_A_Run_Is_Running_Or_Retrying_Leaves_It_Alone()
     {
         await using var db = await NewDatabaseAsync();
         var store = await db.StoreAsync();
         await store.UpsertRecurringAsync("Hourly", s_payload, DateTimeOffset.UtcNow.AddSeconds(-1), Hourly, 3, default);
         var run = (await store.FetchPendingAsync(10, default)).Should().ContainSingle().Subject;
 
-        await store.UpsertRecurringAsync("Hourly", [9], DateTimeOffset.UtcNow.AddHours(1), Hourly, 3, default);
+        await store.UpsertRecurringAsync("Hourly", [9], DateTimeOffset.UtcNow.AddHours(1), Hourly, 5, default);
         (await db.CountAsync("1 = 1")).Should().Be(1, "the running run is the live one");
+        (await db.CountAsync("Status = 1 AND MaxAttempts = 3")).Should().Be(1, "the running run keeps its definition");
 
-        await store.MarkFailedAsync(run.Id, 1, DateTimeOffset.UtcNow.AddMinutes(1), default);
-        await store.UpsertRecurringAsync("Hourly", [9], DateTimeOffset.UtcNow.AddHours(1), Hourly, 3, default);
+        await store.MarkFailedAsync(run.Id, 1, DateTimeOffset.UtcNow.AddSeconds(-1), default);
+        await store.UpsertRecurringAsync("Hourly", [9], DateTimeOffset.UtcNow.AddHours(1), Hourly, 5, default);
         (await db.CountAsync("1 = 1")).Should().Be(1, "the run waiting for its retry is the live one");
+
+        // Still due for its retry, with its attempt count and its own payload.
+        var retry = (await store.FetchPendingAsync(10, default)).Should().ContainSingle().Subject;
+        retry.Id.Should().Be(run.Id);
+        retry.Attempts.Should().Be(1);
+        retry.MaxAttempts.Should().Be(3);
+        retry.Payload.Should().Equal(s_payload);
     }
 
     [Fact]
@@ -135,9 +143,10 @@ public abstract class RecurringJobContract
         await using var db = await NewDatabaseAsync(shipped);
         var store = await db.StoreAsync();
         var first = DateTimeOffset.UtcNow.AddMinutes(10);
+        // MaxAttempts tells the duplicates apart; 4 is the earliest.
         await store.EnqueueAsync("Hourly", s_payload, first.AddMinutes(30), 3, Hourly, default);
-        await store.EnqueueAsync("Hourly", s_payload, first, 3, Hourly, default);
-        await store.EnqueueAsync("Hourly", s_payload, first.AddMinutes(50), 3, Hourly, default);
+        await store.EnqueueAsync("Hourly", s_payload, first, 4, Hourly, default);
+        await store.EnqueueAsync("Hourly", s_payload, first.AddMinutes(50), 5, Hourly, default);
         await store.EnqueueAsync("OneOff", s_payload, first, 3, null, default);
         await store.EnqueueAsync("OneOff", s_payload, first, 3, null, default);
 
@@ -145,6 +154,7 @@ public abstract class RecurringJobContract
 
         applied.Select(m => m.Version).Should().Equal(3);
         (await db.CountAsync("TypeName = 'Hourly'")).Should().Be(1);
+        (await db.CountAsync("TypeName = 'Hourly' AND MaxAttempts = 4")).Should().Be(1, "the earliest run is kept");
         (await db.CountAsync("TypeName = 'OneOff'")).Should().Be(2, "one-off jobs are not recurring runs");
         await store.UpsertRecurringAsync("Hourly", s_payload, first.AddHours(2), Hourly, 3, default);
         (await db.CountAsync("TypeName = 'Hourly'")).Should().Be(1);

@@ -127,7 +127,7 @@ For a recurring job (`[Job(Every = Every.Hour)]`), the generator additionally em
 
 ### Jobs without state
 
-A job without instance fields, its base types included, has nothing for a payload to carry. When it also has a public or internal parameterless constructor, the generator gives it an executor that never reads the payload and reuses one instance of the job, and a recurring seed that writes an empty payload. Neither needs an `IJobSerializer`, so such a job needs no `[ZeroAllocSerializable]`, and a library can ship a recurring job without the application's serializer having to know its type:
+A job without instance fields, its base types included, has nothing for a payload to carry. When it also has a public or internal parameterless constructor, no `required` members, and only base types declared in the same compilation, the generator gives it an executor that never reads the payload and reuses the first instance it constructs, and a recurring seed that writes an empty payload. Neither needs an `IJobSerializer`, so such a job needs no `[ZeroAllocSerializable]`, and a library can ship a recurring job without the application's serializer having to know its type:
 
 ```csharp
 [Job(Every = Every.Hour)]
@@ -138,7 +138,7 @@ internal sealed class PruneJob : IJob
 }
 ```
 
-Take dependencies from `ctx.Services`, which is the worker's scope, not from fields. A job with an auto-property or any other instance field keeps the serializer, as does a mediator bridge job, whose executor reads the payload.
+Take dependencies from `ctx.Services`, which is the worker's scope, not from fields. A job with an auto-property or any other instance field keeps the serializer, as does a mediator bridge job, whose executor reads the payload, and a job deriving from a type in another assembly, whose private fields the generator cannot see. Enqueueing a job through `IScheduler` always serializes it, so a host that does that still needs a serializer; only the generated recurring seed and the executor do without one.
 
 ## Mediator Bridge Detection
 

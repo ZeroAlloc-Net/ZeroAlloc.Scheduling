@@ -47,7 +47,7 @@ public sealed class SqlServerRecurringJobTests : RecurringJobContract, IAsyncLif
             return connection;
         }
 
-        public override async Task<OrmJobStore> StoreAsync() => new(await ConnectAsync().ConfigureAwait(false), OrmSchedulingDialect.SqlServer);
+        protected override OrmSchedulingDialect Dialect => OrmSchedulingDialect.SqlServer;
 
         public override async Task<long> CountAsync(string condition)
         {
@@ -68,7 +68,7 @@ public sealed class SqlServerRecurringJobTests : RecurringJobContract, IAsyncLif
             }
         }
 
-        public override ValueTask DisposeAsync()
+        protected override ValueTask DropAsync()
         {
             SqlConnection.ClearAllPools();
             return ValueTask.CompletedTask;
