@@ -348,19 +348,23 @@ public sealed class EfCoreJobStore : IJobStore, IJobDashboardStore
         var now = DateTimeOffset.UtcNow;
         try
         {
-            await RequeueOnceAsync(id, now, ct).ConfigureAwait(false);
+            await RequeueOnceAsync(_db.Jobs.Where(j => j.Id == id), now, ct).ConfigureAwait(false);
         }
         catch (DbException)
         {
             // A live run inserted after the statement read the table makes the index reject
             // it. Run once more, so the check sees that run; a second failure is a real one.
-            await RequeueOnceAsync(id, now, ct).ConfigureAwait(false);
+            // The retry applies only while the run is still finished. A failure can also hide
+            // a requeue that committed, after which a worker may have claimed the run, and the
+            // retry must not reset that claim.
+            await RequeueOnceAsync(
+                _db.Jobs.Where(j => j.Id == id && (j.Status == JobStatus.Succeeded || j.Status == JobStatus.DeadLetter)),
+                now, ct).ConfigureAwait(false);
         }
     }
 
-    private Task<int> RequeueOnceAsync(JobId id, DateTimeOffset now, CancellationToken ct)
-        => _db.Jobs
-            .Where(j => j.Id == id)
+    private Task<int> RequeueOnceAsync(IQueryable<JobEntryEntity> row, DateTimeOffset now, CancellationToken ct)
+        => row
             .ExecuteUpdateAsync(s => s
                 .SetProperty(j => j.Status, JobStatus.Pending)
                 .SetProperty(j => j.Attempts, 0)

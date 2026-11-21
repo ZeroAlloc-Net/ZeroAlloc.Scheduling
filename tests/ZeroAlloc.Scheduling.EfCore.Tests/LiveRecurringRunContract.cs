@@ -195,6 +195,30 @@ public abstract class LiveRecurringRunContract
         requeued.CronExpression.Should().Be(Hourly);
     }
 
+    [Fact]
+    public async Task A_Requeue_Retried_After_A_Lost_Response_Leaves_A_Claimed_Run_Alone()
+    {
+        // The first update commits, its response is lost, and a worker claims the run before the
+        // store retries. The retry must not reset that claim.
+        var plain = await NewDatabaseAsync();
+        var deadLettered = Run("Job", JobStatus.DeadLetter, Hourly);
+        await using (var seed = new SchedulingDbContext(plain))
+        {
+            seed.Jobs.Add(deadLettered);
+            await seed.SaveChangesAsync();
+        }
+
+        var options = new DbContextOptionsBuilder<SchedulingDbContext>(plain)
+            .AddInterceptors(new LostResponseThenClaim(plain, deadLettered.Id)).Options;
+        await using (var db = new SchedulingDbContext(options))
+            await new EfCoreJobStore(db).RequeueAsync(deadLettered.Id);
+
+        await using var check = new SchedulingDbContext(plain);
+        var run = await check.Jobs.SingleAsync(j => j.Id == deadLettered.Id);
+        run.Status.Should().Be(JobStatus.Running);
+        run.Attempts.Should().Be(1);
+    }
+
     private static async Task<int> LiveRunsAsync(DbContextOptions<SchedulingDbContext> options, string typeName)
     {
         var db = new SchedulingDbContext(options);
@@ -229,4 +253,31 @@ public abstract class LiveRecurringRunContract
             }
         }
     }
+
+    // Lets the first update commit, then claims the run as a worker would and reports a
+    // failure, as a connection that drops before the response arrives does.
+    private sealed class LostResponseThenClaim(DbContextOptions<SchedulingDbContext> options, JobId id) : DbCommandInterceptor
+    {
+        private bool _done;
+
+        public override async ValueTask<int> NonQueryExecutedAsync(
+            DbCommand command, CommandExecutedEventData eventData, int result, CancellationToken cancellationToken = default)
+        {
+            if (_done)
+                return result;
+
+            _done = true;
+            var db = new SchedulingDbContext(options);
+            await using (db.ConfigureAwait(false))
+            {
+                await db.Jobs.Where(j => j.Id == id).ExecuteUpdateAsync(s => s
+                    .SetProperty(j => j.Status, JobStatus.Running)
+                    .SetProperty(j => j.Attempts, 1), cancellationToken).ConfigureAwait(false);
+            }
+
+            throw new LostResponseException();
+        }
+    }
+
+    private sealed class LostResponseException() : DbException("The connection dropped before the response arrived.");
 }
