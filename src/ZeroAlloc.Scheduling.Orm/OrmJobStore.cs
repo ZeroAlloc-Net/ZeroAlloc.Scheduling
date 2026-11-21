@@ -1,4 +1,5 @@
 using System.Data.Async;
+using Microsoft.Extensions.Options;
 
 namespace ZeroAlloc.Scheduling.Orm;
 
@@ -20,11 +21,27 @@ namespace ZeroAlloc.Scheduling.Orm;
 /// rather than stubbed, so a dashboard pointed at this store fails at
 /// registration instead of silently reporting nothing.
 /// </para>
+/// <para>
+/// A poll also takes back a job that has been Running for longer than
+/// <see cref="SchedulingOptions.ClaimTimeout"/>. The store remembers the claim
+/// token each job was claimed under, and an outcome it records afterwards,
+/// success, failure or dead-letter, applies only while the row still holds that
+/// claim. A run that outlived its claim therefore cannot overwrite the run that
+/// took it back. An outcome for a job this instance did not claim is recorded
+/// unchecked.
+/// </para>
 /// </remarks>
 public sealed class OrmJobStore : IJobStore
 {
+    private static readonly TimeSpan DefaultClaimTimeout = new SchedulingOptions().ClaimTimeout;
+
     private readonly JobRepository _repo;
     private readonly IJobDialectQueries _dialectQueries;
+    private readonly IOptionsMonitor<SchedulingOptions>? _options;
+
+    // The claim token each job this instance claimed was claimed under, removed again when its
+    // outcome is recorded. The store is scoped, as is the worker's batch, so this holds one batch.
+    private readonly Dictionary<Guid, Guid> _claims = [];
 
     /// <summary>
     /// Creates a store over the application's connection, against SQLite.
@@ -60,6 +77,23 @@ public sealed class OrmJobStore : IJobStore
         };
     }
 
+    /// <summary>
+    /// Creates a store over the application's connection that takes back a
+    /// Running job after the configured <see cref="SchedulingOptions.ClaimTimeout"/>.
+    /// </summary>
+    /// <param name="connection">The connection the job table lives on.</param>
+    /// <param name="dialect">Which database this connection talks to.</param>
+    /// <param name="options">The scheduling options.</param>
+    public OrmJobStore(
+        IAsyncDbConnection connection,
+        OrmSchedulingDialect dialect,
+        IOptionsMonitor<SchedulingOptions> options)
+        : this(connection, dialect)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        _options = options;
+    }
+
     /// <inheritdoc />
     public async ValueTask EnqueueAsync(
         string typeName,
@@ -89,12 +123,14 @@ public sealed class OrmJobStore : IJobStore
         if (batchSize <= 0) return [];
 
         var claimToken = Guid.NewGuid();
+        var now = DateTimeOffset.UtcNow;
 
         var claimed = await _dialectQueries.ClaimPendingAsync(
             (int)JobStatus.Running,
             (int)JobStatus.Pending,
             (int)JobStatus.Failed,
-            DateTimeOffset.UtcNow,
+            now,
+            now - (_options?.CurrentValue.ClaimTimeout ?? DefaultClaimTimeout),
             batchSize,
             claimToken,
             ct).ConfigureAwait(false);
@@ -109,6 +145,7 @@ public sealed class OrmJobStore : IJobStore
         foreach (var row in rows)
         {
             result.Add(ToEntry(row));
+            _claims[row.Id] = claimToken;
         }
 
         return result;
@@ -130,8 +167,15 @@ public sealed class OrmJobStore : IJobStore
         var existing = await _repo.GetAsync(id.Value, ct).ConfigureAwait(false);
         if (existing is null) return;
 
-        await _repo.MarkCompletedAsync(
-            id.Value, (int)JobStatus.Succeeded, DateTimeOffset.UtcNow, ct).ConfigureAwait(false);
+        var completedAt = DateTimeOffset.UtcNow;
+        var updated = _claims.Remove(id.Value, out var claimToken)
+            ? await _repo.MarkCompletedClaimedAsync(
+                id.Value, claimToken, (int)JobStatus.Succeeded, completedAt, ct).ConfigureAwait(false)
+            : await _repo.MarkCompletedAsync(
+                id.Value, (int)JobStatus.Succeeded, completedAt, ct).ConfigureAwait(false);
+
+        // A run that lost its claim leaves the next occurrence to the run that took it back.
+        if (updated == 0) return;
 
         if (nextRunAt.HasValue && cronExpression is not null)
         {
@@ -158,6 +202,13 @@ public sealed class OrmJobStore : IJobStore
     public async ValueTask MarkFailedAsync(
         JobId id, int attempts, DateTimeOffset nextRetryAt, CancellationToken ct)
     {
+        if (_claims.Remove(id.Value, out var claimToken))
+        {
+            await _repo.MarkForRetryClaimedAsync(
+                id.Value, claimToken, (int)JobStatus.Failed, attempts, nextRetryAt, ct).ConfigureAwait(false);
+            return;
+        }
+
         await _repo.MarkForRetryAsync(
             id.Value, (int)JobStatus.Failed, attempts, nextRetryAt, ct).ConfigureAwait(false);
     }
@@ -166,6 +217,13 @@ public sealed class OrmJobStore : IJobStore
     public async ValueTask DeadLetterAsync(JobId id, string error, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(error);
+
+        if (_claims.Remove(id.Value, out var claimToken))
+        {
+            await _repo.DeadLetterClaimedAsync(
+                id.Value, claimToken, (int)JobStatus.DeadLetter, error, DateTimeOffset.UtcNow, ct).ConfigureAwait(false);
+            return;
+        }
 
         await _repo.DeadLetterAsync(
             id.Value, (int)JobStatus.DeadLetter, error, DateTimeOffset.UtcNow, ct).ConfigureAwait(false);

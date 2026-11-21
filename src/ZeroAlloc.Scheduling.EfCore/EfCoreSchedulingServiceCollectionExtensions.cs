@@ -2,6 +2,7 @@ using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Options;
 using ZeroAlloc.Outbox;
 
 namespace ZeroAlloc.Scheduling.EfCore;
@@ -18,7 +19,9 @@ public static class EfCoreSchedulingServiceCollectionExtensions
         Action<DbContextOptionsBuilder> configure)
     {
         builder.Services.AddDbContext<SchedulingDbContext>(configure);
-        builder.Services.TryAddScoped<IJobStore, EfCoreJobStore>();
+        builder.Services.TryAddScoped<IJobStore>(sp => new EfCoreJobStore(
+            sp.GetRequiredService<SchedulingDbContext>(),
+            sp.GetRequiredService<IOptionsMonitor<SchedulingOptions>>()));
         builder.Services.TryAddScoped<IJobDashboardStore>(sp => (IJobDashboardStore)sp.GetRequiredService<IJobStore>());
         return builder;
     }

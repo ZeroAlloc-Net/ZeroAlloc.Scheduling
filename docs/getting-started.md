@@ -109,6 +109,8 @@ public sealed class DailyDigestJob : IJob { ... }
 
 Register the same way — `AddPurgeExpiredSessionsJob()` registers both the executor and the startup service.
 
+When an occurrence fails on every attempt, it is dead-lettered and the worker still schedules the next occurrence, so one bad run does not stop the schedule.
+
 ## Dashboard
 
 Serve the built-in HTML dashboard with one line:
@@ -128,8 +130,11 @@ builder.Services.AddScheduling(opt =>
     opt.BatchSize         = 20;                        // jobs per poll
     opt.RetryBaseDelay    = TimeSpan.FromSeconds(2);   // exponential base
     opt.DefaultMaxAttempts = 3;                        // global retry limit
+    opt.ClaimTimeout      = TimeSpan.FromMinutes(15);  // a job Running longer is claimed again
 });
 ```
+
+`ClaimTimeout` decides when a job left Running, by a host that stopped or crashed during the run, is claimed again. Keep it above your longest run: a run that takes longer is claimed again while it still runs, so it runs twice. See [Abandoned runs](stores.md#abandoned-runs-and-claimtimeout).
 
 ## Next Steps
 

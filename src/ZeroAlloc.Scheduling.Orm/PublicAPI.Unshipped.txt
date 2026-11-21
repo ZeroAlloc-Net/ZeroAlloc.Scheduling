@@ -1,1 +1,2 @@
 #nullable enable
+ZeroAlloc.Scheduling.Orm.OrmJobStore.OrmJobStore(System.Data.Async.IAsyncDbConnection! connection, ZeroAlloc.Scheduling.Orm.OrmSchedulingDialect dialect, Microsoft.Extensions.Options.IOptionsMonitor<ZeroAlloc.Scheduling.SchedulingOptions!>! options) -> void
