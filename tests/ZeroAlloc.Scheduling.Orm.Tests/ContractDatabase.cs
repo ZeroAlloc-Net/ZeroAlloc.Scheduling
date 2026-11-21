@@ -36,6 +36,9 @@ public abstract class ContractDatabase : IAsyncDisposable
     /// <summary>Counts the job rows that match the SQL condition.</summary>
     public abstract Task<long> CountAsync(string condition);
 
+    /// <summary>Runs a SQL statement that changes job rows, as a lost write or another instance would.</summary>
+    public abstract Task ExecuteAsync(string sql);
+
     /// <summary>Applies the source's outstanding migrations and returns them.</summary>
     public abstract Task<IReadOnlyList<Migration>> MigrateAsync(IMigrationSource source);
 

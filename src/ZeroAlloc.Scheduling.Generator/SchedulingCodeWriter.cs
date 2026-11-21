@@ -100,38 +100,79 @@ internal static class SchedulingCodeWriter
             ? model.MaxAttempts.ToString(CultureInfo.InvariantCulture)
             : "_options.Value.DefaultMaxAttempts";
 
-        sb.AppendLine($"internal sealed class {startupName} : global::Microsoft.Extensions.Hosting.IHostedService");
+        // The service seeds the recurring run before the host starts, then seeds it again every
+        // ClaimTimeout until the host stops. The seed does nothing while a live run exists, so a
+        // repeat only brings back a next occurrence that a failed write lost, or puts the current
+        // definition back on a pending run that a stale run rewrote (#602).
+        sb.AppendLine($"internal sealed class {startupName} : global::Microsoft.Extensions.Hosting.BackgroundService");
         sb.AppendLine("{");
         // The hosted service is a singleton and most stores are scoped, so the store is resolved
-        // in a scope of its own for the seed rather than taken in the constructor.
+        // in a scope of its own for each seed rather than taken in the constructor.
         sb.AppendLine("    private readonly global::Microsoft.Extensions.DependencyInjection.IServiceScopeFactory _scopeFactory;");
+        // A stateless job has nothing to serialize: the run is seeded with an empty payload, which
+        // the stateless executor never reads, so no IJobSerializer has to be registered for it.
+        if (!model.IsStateless)
+            sb.AppendLine("    private readonly global::ZeroAlloc.Scheduling.IJobSerializer _serializer;");
+        sb.AppendLine("    private readonly global::Microsoft.Extensions.Options.IOptions<global::ZeroAlloc.Scheduling.SchedulingOptions> _options;");
+        sb.AppendLine($"    private readonly global::Microsoft.Extensions.Logging.ILogger<{startupName}> _logger;");
         if (model.IsStateless)
         {
-            // Nothing to serialize: the run is seeded with an empty payload, which the stateless
-            // executor never reads, so no IJobSerializer has to be registered for this job.
-            sb.AppendLine("    private readonly global::Microsoft.Extensions.Options.IOptions<global::ZeroAlloc.Scheduling.SchedulingOptions> _options;");
-            sb.AppendLine($"    public {startupName}(global::Microsoft.Extensions.DependencyInjection.IServiceScopeFactory scopeFactory, global::Microsoft.Extensions.Options.IOptions<global::ZeroAlloc.Scheduling.SchedulingOptions> options)");
-            sb.AppendLine("    { _scopeFactory = scopeFactory; _options = options; }");
+            sb.AppendLine($"    public {startupName}(global::Microsoft.Extensions.DependencyInjection.IServiceScopeFactory scopeFactory, global::Microsoft.Extensions.Options.IOptions<global::ZeroAlloc.Scheduling.SchedulingOptions> options, global::Microsoft.Extensions.Logging.ILogger<{startupName}> logger)");
+            sb.AppendLine("    { _scopeFactory = scopeFactory; _options = options; _logger = logger; }");
         }
         else
         {
-            sb.AppendLine("    private readonly global::ZeroAlloc.Scheduling.IJobSerializer _serializer;");
-            sb.AppendLine("    private readonly global::Microsoft.Extensions.Options.IOptions<global::ZeroAlloc.Scheduling.SchedulingOptions> _options;");
-            sb.AppendLine($"    public {startupName}(global::Microsoft.Extensions.DependencyInjection.IServiceScopeFactory scopeFactory, global::ZeroAlloc.Scheduling.IJobSerializer serializer, global::Microsoft.Extensions.Options.IOptions<global::ZeroAlloc.Scheduling.SchedulingOptions> options)");
-            sb.AppendLine("    { _scopeFactory = scopeFactory; _serializer = serializer; _options = options; }");
+            sb.AppendLine($"    public {startupName}(global::Microsoft.Extensions.DependencyInjection.IServiceScopeFactory scopeFactory, global::ZeroAlloc.Scheduling.IJobSerializer serializer, global::Microsoft.Extensions.Options.IOptions<global::ZeroAlloc.Scheduling.SchedulingOptions> options, global::Microsoft.Extensions.Logging.ILogger<{startupName}> logger)");
+            sb.AppendLine("    { _scopeFactory = scopeFactory; _serializer = serializer; _options = options; _logger = logger; }");
         }
         var payloadExpr = model.IsStateless
             ? "global::System.Array.Empty<byte>()"
             : $"_serializer.Serialize(new {typeFqn}())";
-        AppendStartAsyncBody(sb, model.TypeFqn, payloadExpr, cronLiteral, maxAttemptsExpr);
-        sb.AppendLine("    public global::System.Threading.Tasks.Task StopAsync(global::System.Threading.CancellationToken ct) => global::System.Threading.Tasks.Task.CompletedTask;");
+        AppendStartAndReseed(sb, model.TypeFqn);
+        AppendSeedBody(sb, model.TypeFqn, payloadExpr, cronLiteral, maxAttemptsExpr);
         sb.AppendLine("}");
         sb.AppendLine();
     }
 
-    private static void AppendStartAsyncBody(StringBuilder sb, string jobFqn, string payloadExpr, string cronLiteral, string maxAttemptsExpr)
+    private static void AppendStartAndReseed(StringBuilder sb, string jobFqn)
     {
-        sb.AppendLine("    public async global::System.Threading.Tasks.Task StartAsync(global::System.Threading.CancellationToken ct)");
+        // The first seed runs before the host starts, as it always has: a store that cannot be
+        // reached fails the start instead of leaving the job unscheduled.
+        sb.AppendLine("    public override async global::System.Threading.Tasks.Task StartAsync(global::System.Threading.CancellationToken cancellationToken)");
+        sb.AppendLine("    {");
+        sb.AppendLine("        await SeedAsync(cancellationToken).ConfigureAwait(false);");
+        sb.AppendLine("        await base.StartAsync(cancellationToken).ConfigureAwait(false);");
+        sb.AppendLine("    }");
+        // A failed repeat is logged and tried again one interval later; it never stops the host.
+        sb.AppendLine("    protected override async global::System.Threading.Tasks.Task ExecuteAsync(global::System.Threading.CancellationToken stoppingToken)");
+        sb.AppendLine("    {");
+        // Task.Delay takes at most uint.MaxValue - 1 milliseconds, about 49 days. A longer claim
+        // timeout re-seeds at that interval instead, which the seed's idempotence makes harmless.
+        sb.AppendLine("        var interval = _options.Value.ClaimTimeout;");
+        sb.AppendLine("        var longest = global::System.TimeSpan.FromMilliseconds(4294967294d);");
+        sb.AppendLine("        if (interval > longest) interval = longest;");
+        sb.AppendLine("        while (true)");
+        sb.AppendLine("        {");
+        sb.AppendLine("            try");
+        sb.AppendLine("            {");
+        sb.AppendLine("                await global::System.Threading.Tasks.Task.Delay(interval, stoppingToken).ConfigureAwait(false);");
+        sb.AppendLine("                await SeedAsync(stoppingToken).ConfigureAwait(false);");
+        sb.AppendLine("            }");
+        sb.AppendLine("            catch (global::System.OperationCanceledException) when (stoppingToken.IsCancellationRequested)");
+        sb.AppendLine("            {");
+        sb.AppendLine("                return;");
+        sb.AppendLine("            }");
+        sb.AppendLine("            catch (global::System.Exception ex)");
+        sb.AppendLine("            {");
+        sb.AppendLine($"                global::Microsoft.Extensions.Logging.LoggerExtensions.LogError(_logger, ex, \"Re-seeding recurring job {{JobType}} failed; it is tried again after SchedulingOptions.ClaimTimeout.\", \"{jobFqn}\");");
+        sb.AppendLine("            }");
+        sb.AppendLine("        }");
+        sb.AppendLine("    }");
+    }
+
+    private static void AppendSeedBody(StringBuilder sb, string jobFqn, string payloadExpr, string cronLiteral, string maxAttemptsExpr)
+    {
+        sb.AppendLine("    private async global::System.Threading.Tasks.Task SeedAsync(global::System.Threading.CancellationToken ct)");
         sb.AppendLine("    {");
         sb.AppendLine($"        var cron = {cronLiteral};");
         sb.AppendLine("        var expr = global::Cronos.CronExpression.Parse(cron, global::Cronos.CronFormat.Standard);");
@@ -166,7 +207,7 @@ internal static class SchedulingCodeWriter
             : "internal static partial class InternalSchedulingServiceCollectionExtensions");
         sb.AppendLine("{");
         sb.AppendLine(isRecurring
-            ? $"    /// <summary>Registers the job <see cref=\"{typeFqn}\"/>: its executor, and a hosted service that seeds its recurring run at startup.</summary>"
+            ? $"    /// <summary>Registers the job <see cref=\"{typeFqn}\"/>: its executor, and a hosted service that seeds its recurring run at startup and again every <see cref=\"global::ZeroAlloc.Scheduling.SchedulingOptions.ClaimTimeout\"/> while the host runs.</summary>"
             : $"    /// <summary>Registers the job <see cref=\"{typeFqn}\"/>: its executor.</summary>");
         sb.AppendLine("    /// <param name=\"builder\">The scheduling builder.</param>");
         sb.AppendLine("    /// <returns>The same builder, for chaining.</returns>");

@@ -56,6 +56,13 @@ public sealed class PostgresRecurringJobTests : RecurringJobContract, IAsyncLife
             return (long)(await command.ExecuteScalarAsync().ConfigureAwait(false))!;
         }
 
+        public override async Task ExecuteAsync(string sql)
+        {
+            var command = dataSource.CreateCommand(sql);
+            await using var commandScope = command.ConfigureAwait(false);
+            await command.ExecuteNonQueryAsync().ConfigureAwait(false);
+        }
+
         public override async Task<IReadOnlyList<Migration>> MigrateAsync(IMigrationSource source)
         {
             var connection = await ConnectAsync().ConfigureAwait(false);

@@ -93,7 +93,7 @@ The background worker polls the store every 5 seconds (configurable), claims pen
 
 ## Recurring Jobs
 
-Add `Every` or `Cron` to the attribute. The generator also emits an `IHostedService` that seeds the schedule on startup.
+Add `Every` or `Cron` to the attribute. The generator also emits a hosted service that seeds the schedule on startup and again every `ClaimTimeout` while the host runs, so a lost next occurrence comes back without a restart.
 
 ```csharp
 [Job(Every = Every.Hour)]
