@@ -17,7 +17,9 @@ internal static class SchedulingCodeWriter
 
         AppendHeader(sb, model.Namespace);
 
-        if (!model.IsMediatorBridge)
+        if (model.IsStateless)
+            AppendStatelessExecutor(sb, executorName, typeFqn, model.TypeFqn, model.MaxAttempts);
+        else if (!model.IsMediatorBridge)
             AppendExecutor(sb, executorName, typeFqn, model.TypeFqn, model.MaxAttempts);
 
         if (model.IsRecurring)
@@ -68,6 +70,26 @@ internal static class SchedulingCodeWriter
         sb.AppendLine();
     }
 
+    // A job without instance fields carries no state, so the payload is not read and the job
+    // serializer is not needed. The first instance that constructs successfully is reused for
+    // every later run. It is not a static initializer: a constructor that throws must fail only
+    // that attempt, so a retry can construct the job again.
+    private static void AppendStatelessExecutor(StringBuilder sb, string executorName, string typeFqn, string jobFqn, int maxAttempts)
+    {
+        sb.AppendLine($"internal sealed class {executorName} : global::ZeroAlloc.Scheduling.IJobTypeExecutor");
+        sb.AppendLine("{");
+        sb.AppendLine($"    private static {typeFqn}? s_job;");
+        sb.AppendLine($"    public string TypeName => \"{jobFqn}\";");
+        sb.AppendLine($"    public int MaxAttempts => {maxAttempts.ToString(CultureInfo.InvariantCulture)};");
+        sb.AppendLine("    public global::System.Threading.Tasks.ValueTask ExecuteAsync(");
+        sb.AppendLine("        byte[] payload,");
+        sb.AppendLine("        global::ZeroAlloc.Scheduling.JobContext ctx,");
+        sb.AppendLine("        global::System.Threading.CancellationToken ct)");
+        sb.AppendLine($"        => (s_job ??= new {typeFqn}()).ExecuteAsync(ctx, ct);");
+        sb.AppendLine("}");
+        sb.AppendLine();
+    }
+
     private static void AppendRecurringStartup(StringBuilder sb, JobModel model, string startupName, string typeFqn)
     {
         var cronLiteral = model.CronExpression != null
@@ -81,17 +103,31 @@ internal static class SchedulingCodeWriter
         sb.AppendLine($"internal sealed class {startupName} : global::Microsoft.Extensions.Hosting.IHostedService");
         sb.AppendLine("{");
         sb.AppendLine("    private readonly global::ZeroAlloc.Scheduling.IJobStore _store;");
-        sb.AppendLine("    private readonly global::ZeroAlloc.Scheduling.IJobSerializer _serializer;");
-        sb.AppendLine("    private readonly global::Microsoft.Extensions.Options.IOptions<global::ZeroAlloc.Scheduling.SchedulingOptions> _options;");
-        sb.AppendLine($"    public {startupName}(global::ZeroAlloc.Scheduling.IJobStore store, global::ZeroAlloc.Scheduling.IJobSerializer serializer, global::Microsoft.Extensions.Options.IOptions<global::ZeroAlloc.Scheduling.SchedulingOptions> options)");
-        sb.AppendLine("    { _store = store; _serializer = serializer; _options = options; }");
-        AppendStartAsyncBody(sb, model.TypeFqn, typeFqn, cronLiteral, maxAttemptsExpr);
+        if (model.IsStateless)
+        {
+            // Nothing to serialize: the run is seeded with an empty payload, which the stateless
+            // executor never reads, so no IJobSerializer has to be registered for this job.
+            sb.AppendLine("    private readonly global::Microsoft.Extensions.Options.IOptions<global::ZeroAlloc.Scheduling.SchedulingOptions> _options;");
+            sb.AppendLine($"    public {startupName}(global::ZeroAlloc.Scheduling.IJobStore store, global::Microsoft.Extensions.Options.IOptions<global::ZeroAlloc.Scheduling.SchedulingOptions> options)");
+            sb.AppendLine("    { _store = store; _options = options; }");
+        }
+        else
+        {
+            sb.AppendLine("    private readonly global::ZeroAlloc.Scheduling.IJobSerializer _serializer;");
+            sb.AppendLine("    private readonly global::Microsoft.Extensions.Options.IOptions<global::ZeroAlloc.Scheduling.SchedulingOptions> _options;");
+            sb.AppendLine($"    public {startupName}(global::ZeroAlloc.Scheduling.IJobStore store, global::ZeroAlloc.Scheduling.IJobSerializer serializer, global::Microsoft.Extensions.Options.IOptions<global::ZeroAlloc.Scheduling.SchedulingOptions> options)");
+            sb.AppendLine("    { _store = store; _serializer = serializer; _options = options; }");
+        }
+        var payloadExpr = model.IsStateless
+            ? "global::System.Array.Empty<byte>()"
+            : $"_serializer.Serialize(new {typeFqn}())";
+        AppendStartAsyncBody(sb, model.TypeFqn, payloadExpr, cronLiteral, maxAttemptsExpr);
         sb.AppendLine("    public global::System.Threading.Tasks.Task StopAsync(global::System.Threading.CancellationToken ct) => global::System.Threading.Tasks.Task.CompletedTask;");
         sb.AppendLine("}");
         sb.AppendLine();
     }
 
-    private static void AppendStartAsyncBody(StringBuilder sb, string jobFqn, string typeFqn, string cronLiteral, string maxAttemptsExpr)
+    private static void AppendStartAsyncBody(StringBuilder sb, string jobFqn, string payloadExpr, string cronLiteral, string maxAttemptsExpr)
     {
         sb.AppendLine("    public async global::System.Threading.Tasks.Task StartAsync(global::System.Threading.CancellationToken ct)");
         sb.AppendLine("    {");
@@ -100,7 +136,7 @@ internal static class SchedulingCodeWriter
         sb.AppendLine("        var next = expr.GetNextOccurrence(global::System.DateTimeOffset.UtcNow, global::System.TimeZoneInfo.Utc);");
         sb.AppendLine("        if (next is null) return;");
         sb.AppendLine($"        var maxAttempts = {maxAttemptsExpr};");
-        sb.AppendLine($"        var payload = _serializer.Serialize(new {typeFqn}());");
+        sb.AppendLine($"        var payload = {payloadExpr};");
         sb.AppendLine($"        await _store.UpsertRecurringAsync(\"{jobFqn}\", payload, next.Value, cron, maxAttempts, ct).ConfigureAwait(false);");
         sb.AppendLine("    }");
     }

@@ -74,15 +74,15 @@ public sealed class ClaimTokenUpgradeTests
         var legacyStore = new OrmJobStore(await fx.ConnectAsync());
         await legacyStore.EnqueueAsync("Legacy.Job", s_payload, DateTimeOffset.UtcNow.AddSeconds(-1), 3, null, default);
 
-        // Now upgrade. Only version 2 is outstanding.
+        // Now upgrade. Versions 2 and 3 are outstanding.
         var upgrade = await fx.ConnectAsync();
         await using (upgrade.ConfigureAwait(false))
         {
             var applied = await new MigrationRunner(
                 upgrade, SchedulingOrmMigrations.Sqlite, new SqliteMigrationDialect()).RunAsync(default);
 
-            // Version 1 is already recorded as applied, so only 2 is outstanding.
-            applied.Select(m => m.Version).Should().Equal([2]);
+            // Version 1 is already recorded as applied, so only 2 and 3 are outstanding.
+            applied.Select(m => m.Version).Should().Equal([2, 3]);
         }
 
         // The job enqueued under the old schema has a NULL ClaimToken. It must
@@ -134,7 +134,7 @@ public sealed class ClaimTokenUpgradeTests
             var applied = await new MigrationRunner(
                 upgrade, SchedulingOrmMigrations.Sqlite, new SqliteMigrationDialect()).RunAsync(default);
 
-            applied.Select(m => m.Version).Should().Equal([2]);
+            applied.Select(m => m.Version).Should().Equal([2, 3]);
         }
 
         var store = new OrmJobStore(await fx.ConnectAsync());

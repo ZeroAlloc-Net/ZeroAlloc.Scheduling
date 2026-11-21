@@ -208,7 +208,54 @@ public sealed class SchedulingGenerator : IIncrementalGenerator
 
         return new JobModel(ns, symbol.Name, fqn, HintNames.ForJob(symbol), symbol.ToDisplayString(),
             UnsupportedShape(symbol), isRecurring, cron, every, maxAttempts,
-            isMediatorBridge, identifier, maxAttemptsIgnored);
+            isMediatorBridge, !isMediatorBridge && IsStateless(symbol), identifier, maxAttemptsIgnored);
+    }
+
+    // A job without instance fields has nothing for a payload to carry. A mediator bridge job is
+    // never treated so: its executor is a library type that reads the payload. The generated code can
+    // create it directly only through a parameterless constructor it can reach from the same
+    // assembly, and only for a type that can be instantiated.
+    private static bool IsStateless(INamedTypeSymbol symbol)
+    {
+        if (symbol.IsAbstract || symbol.IsStatic || symbol.TypeKind != TypeKind.Class) return false;
+
+        var hasConstructor = false;
+        foreach (var constructor in symbol.InstanceConstructors)
+        {
+            if (constructor.Parameters.Length == 0
+                && constructor.DeclaredAccessibility is Accessibility.Public or Accessibility.Internal or Accessibility.ProtectedOrInternal)
+            {
+                hasConstructor = true;
+                break;
+            }
+        }
+        if (!hasConstructor) return false;
+
+        for (var type = symbol; type is not null && type.SpecialType != SpecialType.System_Object; type = type.BaseType)
+        {
+            // A base type from a referenced assembly hides its private fields from the
+            // compilation, so whether it carries state cannot be known: keep the serializer.
+            if (!IsFromSource(type)) return false;
+
+            foreach (var member in type.GetMembers())
+            {
+                if (member is IFieldSymbol { IsStatic: false }) return false;
+
+                // A required member, even one without a backing field, makes `new T()` without
+                // an initializer a compile error, so the job has to come from its payload.
+                if (member is IPropertySymbol { IsRequired: true } or IFieldSymbol { IsRequired: true }) return false;
+            }
+        }
+        return true;
+    }
+
+    private static bool IsFromSource(INamedTypeSymbol type)
+    {
+        foreach (var location in type.Locations)
+        {
+            if (location.IsInSource) return true;
+        }
+        return false;
     }
 
     // ZASCH012: the generated code names the job by its namespace and name only, so a nested

@@ -66,7 +66,7 @@ builder.Services
     .AddSendWelcomeEmailJob();
 ```
 
-`AddScheduling()` does not pick a serializer for you. To use reflection-based System.Text.Json instead, leave out `[ZeroAllocSerializable]` and `AddSerializerDispatcher()` and chain `.WithSystemTextJsonSerializer()`; that call warns under trimming or NativeAOT. With neither, the host fails to start with a message naming both options.
+`AddScheduling()` does not pick a serializer for you. To use reflection-based System.Text.Json instead, leave out `[ZeroAllocSerializable]` and `AddSerializerDispatcher()` and chain `.WithSystemTextJsonSerializer()`; that call warns under trimming or NativeAOT. With neither, the host fails to start with a message naming both options, unless every job it registers is a [job without state](source-generator.md#jobs-without-state). Such jobs run and seed their recurring runs without a serializer, but `IScheduler`, which you use in step 3, serializes every job you enqueue and still needs one.
 
 ### Step 3 — Enqueue
 

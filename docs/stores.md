@@ -127,7 +127,7 @@ services.AddScheduling()
 | PostgreSQL | `WithOrm(OrmSchedulingDialect.Postgres)` | `SchedulingOrmMigrations.Postgres` | `PostgresMigrationDialect` |
 | SQL Server 2012+ | `WithOrm(OrmSchedulingDialect.SqlServer)` | `SchedulingOrmMigrations.SqlServer` | `SqlServerMigrationDialect` |
 
-Only the claim query and the recurring-job lookup differ between dialects: SQLite and PostgreSQL use `LIMIT`, SQL Server uses `OFFSET … FETCH NEXT`. Everything else is plain ANSI SQL.
+Only the claim query and the recurring-job insert differ between dialects. The claim is bounded with `LIMIT` on SQLite and PostgreSQL and with `OFFSET … FETCH NEXT` on SQL Server. The recurring insert uses `ON CONFLICT DO NOTHING` on SQLite and PostgreSQL, and `INSERT … WHERE NOT EXISTS` under an update range lock on SQL Server. Everything else is plain ANSI SQL.
 
 #### A connection of its own
 
@@ -162,9 +162,11 @@ await using (connection)
 
 Use the schema source and migration dialect from the table above for PostgreSQL or SQL Server. The runner records applied versions under the name `ZeroAlloc.Scheduling`, so the job schema can share a history table with your own migrations without version numbers colliding. Running it again applies only what is missing, so it is safe to call on every startup.
 
-It creates a `SchedulingJobs` table with an index on `(Status, ScheduledAt)` for the poll and one on `ClaimToken` for the claim read-back. Finished jobs are kept, not deleted, so without the first index every poll would scan the whole table.
+It creates a `SchedulingJobs` table with an index on `(Status, ScheduledAt)` for the poll, one on `ClaimToken` for the claim read-back and a unique one over the live runs of recurring jobs. Finished jobs are kept, not deleted, so without the first index every poll would scan the whole table.
 
-`FetchPendingAsync` claims jobs with a single `UPDATE` that stamps a fresh claim token, then reads back by that token, so concurrent workers never dispatch the same job twice.
+`FetchPendingAsync` claims jobs with a single `UPDATE` that stamps a fresh claim token, then reads back by that token. The `UPDATE` checks the status again on each row it takes, so a worker that waited for another's row lock takes nothing, and concurrent workers never dispatch the same job twice.
+
+A recurring job has at most one live run, one that is Pending, Running or Failed. Version 3 of the schema adds a unique index over the live runs of recurring jobs, so instances that start at once seed one run, and a restart never revives a completed run. Releases before 2.5 could leave several live runs of one recurring job; version 3 first deletes all but the earliest. When the job's live run is Pending, a new seed updates its payload and attempts, and moves its due time only if the schedule changed.
 
 ### Compared with EF Core
 

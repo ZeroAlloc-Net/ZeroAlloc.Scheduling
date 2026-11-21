@@ -125,6 +125,21 @@ The match is ordinal and case-sensitive, as the last row shows: only the exact s
 
 For a recurring job (`[Job(Every = Every.Hour)]`), the generator additionally emits an `IHostedService` that calls `IJobStore.UpsertRecurringAsync` at startup to seed the first scheduled run.
 
+### Jobs without state
+
+A job without instance fields, its base types included, has nothing for a payload to carry. When it also has a public or internal parameterless constructor, no `required` members, and only base types declared in the same compilation, the generator gives it an executor that never reads the payload and reuses the first instance it constructs, and a recurring seed that writes an empty payload. Neither needs an `IJobSerializer`, so such a job needs no `[ZeroAllocSerializable]`, and a library can ship a recurring job without the application's serializer having to know its type:
+
+```csharp
+[Job(Every = Every.Hour)]
+internal sealed class PruneJob : IJob
+{
+    public ValueTask ExecuteAsync(JobContext ctx, CancellationToken ct)
+        => ctx.Services.GetRequiredService<IPruner>().PruneAsync(ct);
+}
+```
+
+Take dependencies from `ctx.Services`, which is the worker's scope, not from fields. A job with an auto-property or any other instance field keeps the serializer, as does a mediator bridge job, whose executor reads the payload, and a job deriving from a type in another assembly, whose private fields the generator cannot see. Enqueueing a job through `IScheduler` always serializes it, so a host that does that still needs a serializer; only the generated recurring seed and the executor do without one.
+
 ## Mediator Bridge Detection
 
 When a `[Job]` type also implements `ZeroAlloc.Mediator.IRequest<Unit>`, the generator automatically switches to a mediator-aware registration:
