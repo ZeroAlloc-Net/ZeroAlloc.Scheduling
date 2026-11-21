@@ -174,24 +174,47 @@ public sealed class EfCoreJobStore : IJobStore, IJobDashboardStore
             .Select(j => new { j.TypeName, j.Payload })
             .SingleAsync(ct).ConfigureAwait(false);
 
-        var next = new JobEntryEntity
+        // A recurring successor skips a live run that is already there, which the unique index
+        // would otherwise reject and with it the completion. A retried attempt adds its own
+        // successor, so a failed insert never leaves this one tracked.
+        await InsertRunAsync(new JobEntryEntity
         {
             Id = JobId.New(), TypeName = source.TypeName, Payload = source.Payload,
             Status = JobStatus.Pending, Attempts = 0, MaxAttempts = maxAttempts,
             ScheduledAt = nextRunAt.Value, CronExpression = cronExpression,
-        };
-        _db.Jobs.Add(next);
+        }, ct).ConfigureAwait(false);
+    }
+
+    // Inserts a run. A recurring run that the live-run index rejects, because another caller
+    // inserted a live run of the same job in the meantime, is skipped: that run is the one the
+    // job keeps. The conflict is confirmed by reading the live run back, since the error itself
+    // is provider-specific; any other failure is rethrown. Inside a transaction EF Core saves
+    // under a savepoint and rolls back to it on failure, so the transaction stays usable.
+    private async Task InsertRunAsync(JobEntryEntity run, CancellationToken ct)
+    {
+        _db.Jobs.Add(run);
         try
         {
             await _db.SaveChangesAsync(ct).ConfigureAwait(false);
         }
+        catch (DbUpdateException) when (run.CronExpression is not null)
+        {
+            _db.Entry(run).State = EntityState.Detached;
+            if (!await HasLiveRunAsync(run.TypeName, ct).ConfigureAwait(false))
+                throw;
+        }
         catch
         {
-            // A retried attempt adds its own successor; this one must not be saved with it.
-            _db.Entry(next).State = EntityState.Detached;
+            _db.Entry(run).State = EntityState.Detached;
             throw;
         }
     }
+
+    // A live run is one that is Pending, Running or Failed; a Failed run is retried. Finished
+    // runs, Succeeded or DeadLetter, are history.
+    private Task<bool> HasLiveRunAsync(string typeName, CancellationToken ct)
+        => _db.Jobs.AnyAsync(j => j.TypeName == typeName && j.CronExpression != null
+                               && (j.Status == JobStatus.Pending || j.Status == JobStatus.Running || j.Status == JobStatus.Failed), ct);
 
     public async ValueTask MarkFailedAsync(JobId id, int attempts, DateTimeOffset nextRetryAt, CancellationToken ct)
     {
@@ -243,26 +266,27 @@ public sealed class EfCoreJobStore : IJobStore, IJobDashboardStore
         return _db.Jobs.Where(j => j.Id == id && j.ClaimToken == claimToken && j.Status == JobStatus.Running);
     }
 
+    /// <inheritdoc />
+    /// <remarks>
+    /// A recurring job has at most one live run, one that is Pending, Running or Failed. Without
+    /// one, a Pending run is inserted next to the finished runs. The unique index
+    /// <c>UX_ScheduledJobs_LiveRecurring</c> makes that insert skip a live run another caller
+    /// inserted at the same moment, so instances that seed at once, or a seed racing the next
+    /// occurrence after a dead-letter, leave the job a single live run.
+    /// </remarks>
     public async ValueTask UpsertRecurringAsync(string typeName, byte[] payload, DateTimeOffset scheduledAt,
         string? cronExpression, int maxAttempts, CancellationToken ct)
     {
-        // A live run is one that is Pending, Running or Failed; a Failed run is retried. Finished
-        // runs, Succeeded or DeadLetter, are history: the new run is added next to them.
-        bool exists = await _db.Jobs
-            .AnyAsync(j => j.TypeName == typeName && j.CronExpression != null
-                        && (j.Status == JobStatus.Pending || j.Status == JobStatus.Running || j.Status == JobStatus.Failed), ct)
-            .ConfigureAwait(false);
+        // The check spares the usual case, a live run that is already there, a rejected insert.
+        if (await HasLiveRunAsync(typeName, ct).ConfigureAwait(false))
+            return;
 
-        if (!exists)
+        await InsertRunAsync(new JobEntryEntity
         {
-            _db.Jobs.Add(new JobEntryEntity
-            {
-                Id = JobId.New(), TypeName = typeName, Payload = payload,
-                Status = JobStatus.Pending, Attempts = 0, MaxAttempts = maxAttempts,
-                ScheduledAt = scheduledAt, CronExpression = cronExpression,
-            });
-            await _db.SaveChangesAsync(ct).ConfigureAwait(false);
-        }
+            Id = JobId.New(), TypeName = typeName, Payload = payload,
+            Status = JobStatus.Pending, Attempts = 0, MaxAttempts = maxAttempts,
+            ScheduledAt = scheduledAt, CronExpression = cronExpression,
+        }, ct).ConfigureAwait(false);
     }
 
     public async Task<JobSummary> GetSummaryAsync(CancellationToken ct = default)
