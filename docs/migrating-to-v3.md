@@ -25,7 +25,11 @@ A recurring job has one live run, one that is Pending, Running or Failed. Up to 
 
 ### What you need to do
 
-A database created by 2.x may already hold more than one live run of a recurring job, and then the index cannot be created. Delete all but the earliest live run of each job first. The statement keeps the run with the earliest `ScheduledAt`, and the lowest `Id` among runs due at the same time, which is what the ORM store's migration 3 does:
+A database created by 2.x may already hold more than one live run of a recurring job, and then the index cannot be created. Delete all but the earliest live run of each job first.
+
+**Stop every scheduler instance before you start, and keep them stopped until the index exists.** A 2.x instance that still runs can insert a second live run between the `DELETE` and the index, and then creating the index fails. The `DELETE` can also remove a run that a worker is still executing. Start the 3.0 instances once the index is in place.
+
+Then delete the duplicates. The statement keeps the run with the earliest `ScheduledAt`, and the lowest `Id` among runs due at the same time, which is what the ORM store's migration 3 does:
 
 ```sql
 -- SQL Server and SQLite
@@ -71,3 +75,7 @@ CREATE UNIQUE INDEX "UX_ScheduledJobs_LiveRecurring" ON "ScheduledJobs" ("TypeNa
 ```
 
 Without the index, 3.0 behaves as 2.x did: the store still checks for a live run before it inserts, but two callers that check at once can both insert.
+
+### Requeuing a finished run of a recurring job
+
+The dashboard's requeue sets a finished run back to Pending. When the job's next occurrence is already live, that would give the job a second live run, which the index rejects. The EF Core store therefore requeues such a run as a one-off: it clears the run's cron expression, so the run executes once and schedules no successor, and the schedule stays with the live run. A finished run of a job with no live run keeps its cron expression and takes the schedule back, as in 2.x.

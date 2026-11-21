@@ -54,6 +54,8 @@ dotnet ef database update --context SchedulingDbContext
 
 A recurring job has at most one live run, one that is Pending, Running or Failed. The schema enforces it with a filtered unique index, `UX_ScheduledJobs_LiveRecurring`, on `TypeName` over the live runs of recurring jobs. Instances that start at once therefore seed one run, and a seed that races the next occurrence after a dead-letter adds none: the store skips a run the index rejects, and the job keeps the run that is already there. The index arrived in 3.0. A database created by 2.x needs it added, after deleting duplicate live runs; [Migrating to v3](migrating-to-v3.md#ef-core-one-live-run-per-recurring-job) gives the statements.
 
+Requeuing a finished run of a recurring job whose next occurrence is already live runs it once more as a one-off: the store clears its cron expression, so the schedule stays with the live run.
+
 ### Enqueueing through the outbox
 
 `WithOutboxWriter<TJob>()` registers an `IOutboxWriter<TJob>` that writes a job into the [ZeroAlloc.Outbox](https://outbox.zeroalloc.net) store inside the same `DbTransaction` as your business write, so the job and the business row commit or roll back together.

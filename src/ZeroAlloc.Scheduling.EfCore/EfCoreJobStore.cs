@@ -1,3 +1,4 @@
+using System.Data.Common;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
@@ -188,16 +189,21 @@ public sealed class EfCoreJobStore : IJobStore, IJobDashboardStore
     // Inserts a run. A recurring run that the live-run index rejects, because another caller
     // inserted a live run of the same job in the meantime, is skipped: that run is the one the
     // job keeps. The conflict is confirmed by reading the live run back, since the error itself
-    // is provider-specific; any other failure is rethrown. Inside a transaction EF Core saves
-    // under a savepoint and rolls back to it on failure, so the transaction stays usable.
+    // is provider-specific. Any other failure is rethrown, and so is a failed save that also
+    // carried other changes tracked by the context: the error may be theirs, and they were not
+    // saved. Inside a transaction EF Core saves under a savepoint and rolls back to it on
+    // failure, so the transaction stays usable.
     private async Task InsertRunAsync(JobEntryEntity run, CancellationToken ct)
     {
+        // Providers that send one statement per batch, such as SQLite, report only the failing
+        // entry, so the other changes are checked here rather than in the exception.
+        var alone = !_db.ChangeTracker.HasChanges();
         _db.Jobs.Add(run);
         try
         {
             await _db.SaveChangesAsync(ct).ConfigureAwait(false);
         }
-        catch (DbUpdateException) when (run.CronExpression is not null)
+        catch (DbUpdateException ex) when (alone && run.CronExpression is not null && OnlyThisRun(ex, run))
         {
             _db.Entry(run).State = EntityState.Detached;
             if (!await HasLiveRunAsync(run.TypeName, ct).ConfigureAwait(false))
@@ -209,6 +215,10 @@ public sealed class EfCoreJobStore : IJobStore, IJobDashboardStore
             throw;
         }
     }
+
+    // Whether the failed save wrote this run and nothing else.
+    private static bool OnlyThisRun(DbUpdateException ex, JobEntryEntity run)
+        => ex.Entries.Count == 1 && ReferenceEquals(ex.Entries[0].Entity, run);
 
     // A live run is one that is Pending, Running or Failed; a Failed run is retried. Finished
     // runs, Succeeded or DeadLetter, are history.
@@ -325,18 +335,42 @@ public sealed class EfCoreJobStore : IJobStore, IJobDashboardStore
         return results.Select(e => e.ToJobEntry()).ToList();
     }
 
+    /// <inheritdoc />
+    /// <remarks>
+    /// A recurring job keeps one live run. Requeuing a finished run of a recurring job whose next
+    /// occurrence is already Pending, Running or Failed therefore runs it once more as a one-off:
+    /// its cron expression is cleared, so it schedules no successor of its own and the schedule
+    /// stays with the live run. Without a live run, the requeued run takes the schedule back.
+    /// </remarks>
     public async Task RequeueAsync(JobId id, CancellationToken ct = default)
     {
         // Captured first: inline, DateTimeOffset.UtcNow is not a value EF Core can translate.
         var now = DateTimeOffset.UtcNow;
-        await _db.Jobs
+        try
+        {
+            await RequeueOnceAsync(id, now, ct).ConfigureAwait(false);
+        }
+        catch (DbException)
+        {
+            // A live run inserted after the statement read the table makes the index reject
+            // it. Run once more, so the check sees that run; a second failure is a real one.
+            await RequeueOnceAsync(id, now, ct).ConfigureAwait(false);
+        }
+    }
+
+    private Task<int> RequeueOnceAsync(JobId id, DateTimeOffset now, CancellationToken ct)
+        => _db.Jobs
             .Where(j => j.Id == id)
             .ExecuteUpdateAsync(s => s
                 .SetProperty(j => j.Status, JobStatus.Pending)
                 .SetProperty(j => j.Attempts, 0)
                 .SetProperty(j => j.Error, (string?)null)
-                .SetProperty(j => j.ScheduledAt, now), ct).ConfigureAwait(false);
-    }
+                .SetProperty(j => j.ScheduledAt, now)
+                .SetProperty(j => j.CronExpression, j => _db.Jobs.Any(o => o.Id != j.Id && o.TypeName == j.TypeName
+                        && o.CronExpression != null
+                        && (o.Status == JobStatus.Pending || o.Status == JobStatus.Running || o.Status == JobStatus.Failed))
+                    ? null
+                    : j.CronExpression), ct);
 
     public async Task DeleteAsync(JobId id, CancellationToken ct = default)
     {

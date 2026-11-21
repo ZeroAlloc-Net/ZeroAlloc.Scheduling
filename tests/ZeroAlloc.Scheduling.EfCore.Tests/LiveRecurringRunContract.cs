@@ -136,6 +136,65 @@ public abstract class LiveRecurringRunContract
         db.ChangeTracker.Entries().Should().BeEmpty("the rejected run must not stay tracked");
     }
 
+    [Fact]
+    public async Task A_Conflict_Saved_With_Other_Changes_Is_Not_Skipped()
+    {
+        // The context also tracks a change of the caller's own. The failed save did not write it,
+        // so the store must not report success, even though the job has a live run.
+        var plain = await NewDatabaseAsync();
+        var options = new DbContextOptionsBuilder<SchedulingDbContext>(plain).AddInterceptors(new CompetingSeed(plain)).Options;
+        await using var db = new SchedulingDbContext(options);
+        db.Jobs.Add(Run("Other", JobStatus.Pending, cron: null));
+
+        var upsert = () => new EfCoreJobStore(db).UpsertRecurringAsync("Job", [1], DateTimeOffset.UtcNow, Hourly, 3, default).AsTask();
+
+        await upsert.Should().ThrowAsync<DbUpdateException>();
+        (await LiveRunsAsync(plain, "Job")).Should().Be(1);
+    }
+
+    [Fact]
+    public async Task Requeuing_A_Finished_Run_Next_To_A_Live_Run_Reruns_It_Once()
+    {
+        var options = await NewDatabaseAsync();
+        var deadLettered = Run("Job", JobStatus.DeadLetter, Hourly);
+        var next = Run("Job", JobStatus.Pending, Hourly);
+        await using (var seed = new SchedulingDbContext(options))
+        {
+            seed.Jobs.AddRange(deadLettered, next);
+            await seed.SaveChangesAsync();
+        }
+
+        await using (var db = new SchedulingDbContext(options))
+            await new EfCoreJobStore(db).RequeueAsync(deadLettered.Id);
+
+        await using var check = new SchedulingDbContext(options);
+        var requeued = await check.Jobs.SingleAsync(j => j.Id == deadLettered.Id);
+        requeued.Status.Should().Be(JobStatus.Pending);
+        requeued.CronExpression.Should().BeNull("the schedule stays with the live run");
+        (await check.Jobs.SingleAsync(j => j.Id == next.Id)).CronExpression.Should().Be(Hourly);
+        (await LiveRunsAsync(options, "Job")).Should().Be(1);
+    }
+
+    [Fact]
+    public async Task Requeuing_A_Finished_Run_Without_A_Live_Run_Keeps_Its_Schedule()
+    {
+        var options = await NewDatabaseAsync();
+        var deadLettered = Run("Job", JobStatus.DeadLetter, Hourly);
+        await using (var seed = new SchedulingDbContext(options))
+        {
+            seed.Jobs.Add(deadLettered);
+            await seed.SaveChangesAsync();
+        }
+
+        await using (var db = new SchedulingDbContext(options))
+            await new EfCoreJobStore(db).RequeueAsync(deadLettered.Id);
+
+        await using var check = new SchedulingDbContext(options);
+        var requeued = await check.Jobs.SingleAsync(j => j.Id == deadLettered.Id);
+        requeued.Status.Should().Be(JobStatus.Pending);
+        requeued.CronExpression.Should().Be(Hourly);
+    }
+
     private static async Task<int> LiveRunsAsync(DbContextOptions<SchedulingDbContext> options, string typeName)
     {
         var db = new SchedulingDbContext(options);
