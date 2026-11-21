@@ -29,6 +29,8 @@ A database created by 2.x may already hold more than one live run of a recurring
 
 **Stop every scheduler instance before you start, and keep them stopped until the index exists.** A 2.x instance that still runs can insert a second live run between the `DELETE` and the index, and then creating the index fails. The `DELETE` can also remove a run that a worker is still executing. Start the 3.0 instances once the index is in place.
 
+The statements below use the default column names. If your application applies a column naming convention, for example `UseSnakeCaseNamingConvention()` from EFCore.NamingConventions, the columns are named differently, such as `type_name`, `cron_expression` and `status`. Adapt the names in every statement to match. The index that EF Core creates itself, through `EnsureCreated` or a migration, already uses the renamed columns.
+
 Then delete the duplicates. The statement keeps the run with the earliest `ScheduledAt`, and the lowest `Id` among runs due at the same time, which is what the ORM store's migration 3 does:
 
 ```sql
