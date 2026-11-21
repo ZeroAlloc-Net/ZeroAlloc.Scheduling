@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.4.1](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v2.4.0...v2.4.1) (2026-11-21)
+
+
+### Bug Fixes
+
+* load the generator on .NET 10 and keep one run per recurring job in the ORM store ([d09a693](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/d09a6938db6fac07effe126b9cfc147255c8ee30))
+
 ## [2.4.0](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v2.3.2...v2.4.0) (2026-11-20)
 
 
