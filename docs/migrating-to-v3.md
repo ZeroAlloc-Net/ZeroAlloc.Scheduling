@@ -74,7 +74,7 @@ CREATE UNIQUE INDEX "UX_ScheduledJobs_LiveRecurring" ON "ScheduledJobs" ("TypeNa
     WHERE "CronExpression" IS NOT NULL AND "Status" IN (0, 1, 3);
 ```
 
-Without the index, 3.0 behaves as 2.x did: the store still checks for a live run before it inserts, but two callers that check at once can both insert.
+Without the index, seeding and successors behave as in 2.x: the store still checks for a live run before it inserts, but two callers that check at once can both insert. Requeue does not fall back: it clears the cron expression of a finished run next to a live run whether or not the index exists, as the next section describes.
 
 ### Requeuing a finished run of a recurring job
 
