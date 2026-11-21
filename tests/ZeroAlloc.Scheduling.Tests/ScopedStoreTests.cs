@@ -20,7 +20,13 @@ public sealed class ScopedStoreTests
             new ServiceProviderOptions { ValidateScopes = true, ValidateOnBuild = true }));
         builder.Services.AddLogging();
         builder.Services.AddSingleton<TickSink>();
-        builder.Services.AddScoped<IJobStore>(_ => new ScopedStore(shared));
+        var stores = new System.Collections.Concurrent.ConcurrentBag<ScopedStore>();
+        builder.Services.AddScoped<IJobStore>(_ =>
+        {
+            var store = new ScopedStore(shared);
+            stores.Add(store);
+            return store;
+        });
         builder.Services
             .AddScheduling(o => o.PollingInterval = TimeSpan.FromMinutes(1))
             .AddTickJob();
@@ -31,6 +37,8 @@ public sealed class ScopedStoreTests
         {
             var seeded = (await shared.GetRecurringAsync()).Should().ContainSingle().Subject;
             seeded.TypeName.Should().Be(typeof(Tick).FullName);
+            stores.Where(static store => store.Upserted).Should().ContainSingle()
+                .Which.Disposed.Should().BeTrue("the seed disposes its scope once the run is seeded, before the host stops");
         }
         finally
         {
@@ -38,9 +46,22 @@ public sealed class ScopedStoreTests
         }
     }
 
-    /// <summary>A scoped store over one shared in-memory store, which the container must not dispose per scope.</summary>
-    private sealed class ScopedStore(InMemoryJobStore inner) : IJobStore
+    /// <summary>
+    /// A scoped store over one shared in-memory store, which the container must not dispose per scope. It records
+    /// whether it seeded a run and whether its scope disposed it.
+    /// </summary>
+    private sealed class ScopedStore(InMemoryJobStore inner) : IJobStore, IAsyncDisposable
     {
+        public bool Upserted { get; private set; }
+
+        public bool Disposed { get; private set; }
+
+        public ValueTask DisposeAsync()
+        {
+            Disposed = true;
+            return ValueTask.CompletedTask;
+        }
+
         public ValueTask EnqueueAsync(string typeName, byte[] payload, DateTimeOffset scheduledAt, int maxAttempts, string? cronExpression, CancellationToken ct)
             => inner.EnqueueAsync(typeName, payload, scheduledAt, maxAttempts, cronExpression, ct);
 
@@ -57,6 +78,9 @@ public sealed class ScopedStoreTests
             => inner.DeadLetterAsync(id, error, ct);
 
         public ValueTask UpsertRecurringAsync(string typeName, byte[] payload, DateTimeOffset scheduledAt, string? cronExpression, int maxAttempts, CancellationToken ct)
-            => inner.UpsertRecurringAsync(typeName, payload, scheduledAt, cronExpression, maxAttempts, ct);
+        {
+            Upserted = true;
+            return inner.UpsertRecurringAsync(typeName, payload, scheduledAt, cronExpression, maxAttempts, ct);
+        }
     }
 }
