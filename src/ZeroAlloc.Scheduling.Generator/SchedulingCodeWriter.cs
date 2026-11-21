@@ -148,9 +148,13 @@ internal static class SchedulingCodeWriter
         sb.AppendLine("    {");
         // Task.Delay takes at most uint.MaxValue - 1 milliseconds, about 49 days. A longer claim
         // timeout re-seeds at that interval instead, which the seed's idempotence makes harmless.
+        // It truncates to whole milliseconds, so a timeout below one would not wait at all and the
+        // loop would spin; it waits one millisecond instead.
         sb.AppendLine("        var interval = _options.Value.ClaimTimeout;");
         sb.AppendLine("        var longest = global::System.TimeSpan.FromMilliseconds(4294967294d);");
+        sb.AppendLine("        var shortest = global::System.TimeSpan.FromMilliseconds(1d);");
         sb.AppendLine("        if (interval > longest) interval = longest;");
+        sb.AppendLine("        else if (interval < shortest) interval = shortest;");
         sb.AppendLine("        while (true)");
         sb.AppendLine("        {");
         sb.AppendLine("            try");

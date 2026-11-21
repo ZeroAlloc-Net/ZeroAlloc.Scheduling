@@ -27,7 +27,9 @@ public sealed class RecurringReseedTests
             {
                 var interval = _options.Value.ClaimTimeout;
                 var longest = global::System.TimeSpan.FromMilliseconds(4294967294d);
+                var shortest = global::System.TimeSpan.FromMilliseconds(1d);
                 if (interval > longest) interval = longest;
+                else if (interval < shortest) interval = shortest;
                 while (true)
                 {
                     try
@@ -85,7 +87,9 @@ public sealed class RecurringReseedTests
             {
                 var interval = _options.Value.ClaimTimeout;
                 var longest = global::System.TimeSpan.FromMilliseconds(4294967294d);
+                var shortest = global::System.TimeSpan.FromMilliseconds(1d);
                 if (interval > longest) interval = longest;
+                else if (interval < shortest) interval = shortest;
                 while (true)
                 {
                     try

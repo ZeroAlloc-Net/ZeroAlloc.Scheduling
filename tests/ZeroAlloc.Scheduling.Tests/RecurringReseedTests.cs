@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using ZeroAlloc.Scheduling.InMemory;
 
 namespace ZeroAlloc.Scheduling.Tests;
@@ -95,18 +96,47 @@ public sealed class RecurringReseedTests
         using var inner = new InMemoryJobStore();
         var store = new RecordingStore(inner);
         var logs = new CapturingLoggerProvider();
-        using var host = BuildHost(store, o => o.ClaimTimeout = TimeSpan.MaxValue, logs);
+        // The seed reads the options once for its maximum attempts, and the loop once more for the
+        // interval right before its first delay, so a second read shows the loop got that far.
+        var options = new CountingOptions(new SchedulingOptions { ClaimTimeout = TimeSpan.MaxValue });
+        using var host = BuildHost(store, logging: logs, options: options);
 
         await host.StartAsync();
+        try
+        {
+            await WaitForAsync(() => Task.FromResult(options.Reads >= 2 ? (object?)true : null));
+            await Task.Delay(ReseedInterval);
+        }
+        finally
+        {
+            await host.StopAsync();
+        }
+
+        store.Upserts.Should().Be(1, "only the startup seed runs within the test");
+        logs.Entries.Should().NotContain(static e => e.Level >= LogLevel.Error, "a delay out of range would throw and be logged");
+    }
+
+    [Fact]
+    public async Task A_Claim_Timeout_Below_A_Millisecond_Waits_Between_Seeds()
+    {
+        using var inner = new InMemoryJobStore();
+        var store = new RecordingStore(inner);
+        using var host = BuildHost(store, o => o.ClaimTimeout = TimeSpan.FromTicks(1));
+
+        await host.StartAsync();
+        await WaitForAsync(() => Task.FromResult(store.Upserts >= 3 ? (object?)true : null));
         await Task.Delay(ReseedInterval);
         await host.StopAsync();
 
-        store.Upserts.Should().Be(1, "only the startup seed runs within the test");
-        logs.Entries.Should().NotContain(static e => e.Level >= LogLevel.Error);
+        // Without a wait the loop would seed without pause, many thousands of times in this span.
+        store.Upserts.Should().BeLessThan(1000, "the loop waits at least a millisecond between seeds");
     }
 
     private static IHost BuildHost(
-        RecordingStore store, Action<SchedulingOptions>? configure = null, CapturingLoggerProvider? logging = null)
+        RecordingStore store,
+        Action<SchedulingOptions>? configure = null,
+        CapturingLoggerProvider? logging = null,
+        IOptions<SchedulingOptions>? options = null)
     {
         var builder = Host.CreateEmptyApplicationBuilder(new HostApplicationBuilderSettings());
         builder.Services.AddLogging(l =>
@@ -124,6 +154,8 @@ public sealed class RecurringReseedTests
                 configure?.Invoke(o);
             })
             .AddTickJob();
+        if (options is not null)
+            builder.Services.AddSingleton(options);
         return builder.Build();
     }
 
@@ -188,6 +220,23 @@ public sealed class RecurringReseedTests
                 throw new InvalidOperationException("The store is unreachable.");
 
             return inner.UpsertRecurringAsync(typeName, payload, scheduledAt, cronExpression, maxAttempts, ct);
+        }
+    }
+
+    /// <summary>Fixed options that count how often the seed service reads them.</summary>
+    private sealed class CountingOptions(SchedulingOptions value) : IOptions<SchedulingOptions>
+    {
+        private int _reads;
+
+        public int Reads => Volatile.Read(ref _reads);
+
+        public SchedulingOptions Value
+        {
+            get
+            {
+                Interlocked.Increment(ref _reads);
+                return value;
+            }
         }
     }
 
