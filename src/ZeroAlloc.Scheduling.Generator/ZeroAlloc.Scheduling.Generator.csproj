@@ -20,9 +20,14 @@
   <ItemGroup>
     <InternalsVisibleTo Include="ZeroAlloc.Scheduling.Generator.Tests" />
   </ItemGroup>
+  <!--
+    Roslyn stays at 5.9, the compiler of the newest .NET 10 SDK band. A generator built against a newer
+    Roslyn does not load on that SDK (CS9057), which breaks every consumer still on .NET 10, as 2.4.0 did.
+    renovate.json caps these two packages for that reason.
+  -->
   <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.12.0" PrivateAssets="all" />
-    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="5.12.0" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.9.0" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="5.9.0" PrivateAssets="all" />
   </ItemGroup>
   <!--
     Release tracking for the ZASCH diagnostics. AnalyzerReleases.Shipped.md records the release
