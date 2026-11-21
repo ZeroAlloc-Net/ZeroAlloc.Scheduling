@@ -152,6 +152,8 @@ ZeroAlloc.Scheduling.JobTrigger.Succeed = 1 -> ZeroAlloc.Scheduling.JobTrigger
 ZeroAlloc.Scheduling.SchedulingOptions
 ZeroAlloc.Scheduling.SchedulingOptions.BatchSize.get -> int
 ZeroAlloc.Scheduling.SchedulingOptions.BatchSize.set -> void
+ZeroAlloc.Scheduling.SchedulingOptions.ClaimTimeout.get -> System.TimeSpan
+ZeroAlloc.Scheduling.SchedulingOptions.ClaimTimeout.set -> void
 ZeroAlloc.Scheduling.SchedulingOptions.DefaultMaxAttempts.get -> int
 ZeroAlloc.Scheduling.SchedulingOptions.DefaultMaxAttempts.set -> void
 ZeroAlloc.Scheduling.SchedulingOptions.PollingInterval.get -> System.TimeSpan

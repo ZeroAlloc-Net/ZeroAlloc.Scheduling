@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.5.0](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v2.4.2...v2.5.0) (2026-11-21)
+
+
+### Features
+
+* claim a run left Running again after SchedulingOptions.ClaimTimeout ([0a478cc](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/0a478cca823ae52b7822be9e70d0aafeb9bf04e9))
+
+
+### Bug Fixes
+
+* schedule the next occurrence of a dead-lettered recurring job ([0a478cc](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/0a478cca823ae52b7822be9e70d0aafeb9bf04e9))
+
 ## [2.4.2](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v2.4.1...v2.4.2) (2026-11-21)
 
 

@@ -1,3 +1,1 @@
 #nullable enable
-ZeroAlloc.Scheduling.SchedulingOptions.ClaimTimeout.get -> System.TimeSpan
-ZeroAlloc.Scheduling.SchedulingOptions.ClaimTimeout.set -> void
