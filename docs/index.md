@@ -8,7 +8,7 @@ sidebar_position: 0
 
 # ZeroAlloc.Scheduling Documentation
 
-Source-generated background job scheduler for .NET 8, 9 and 10.
+Source-generated background job scheduler for .NET 10 and .NET 11.
 
 ## Features
 
@@ -29,7 +29,7 @@ Source-generated background job scheduler for .NET 8, 9 and 10.
 | `ZeroAlloc.Scheduling.Generator` | Source generator — **legacy**, already bundled inside `ZeroAlloc.Scheduling` |
 | `ZeroAlloc.Scheduling.InMemory` | In-process store for development and testing |
 | `ZeroAlloc.Scheduling.EfCore` | EF Core store (SQL Server, PostgreSQL, SQLite) |
-| `ZeroAlloc.Scheduling.Orm` | ZeroAlloc.ORM store (SQLite, PostgreSQL, SQL Server), `WithOrm()`; net10.0 only |
+| `ZeroAlloc.Scheduling.Orm` | ZeroAlloc.ORM store (SQLite, PostgreSQL, SQL Server), `WithOrm()` |
 | `ZeroAlloc.Scheduling.Redis` | Redis store for distributed deployments |
 | `ZeroAlloc.Scheduling.Dashboard` | Embedded HTML dashboard (`MapJobsDashboard`) |
 | `ZeroAlloc.Scheduling.Dashboard.Blazor` | Blazor component library |
@@ -51,6 +51,7 @@ Source-generated background job scheduler for .NET 8, 9 and 10.
 | 8 | [Diagnostics](diagnostics.md) | ZASCH001, ZASCH011, ZASCH012 and ZASCH013 compiler diagnostic reference |
 | 9 | [Performance](performance.md) | Throughput, allocation profile, and tuning guide |
 | 10 | [Migrating to v2](migrating-to-v2.md) | Choose a job serializer, adopt Outbox 4.0, replace the removed 1.x aliases |
+| 11 | [Migrating to v3](migrating-to-v3.md) | Move to .NET 10 or .NET 11, add the EF Core store's live-run index |
 
 ## Quick Reference
 

@@ -94,8 +94,6 @@ With neither, resolving `IOutboxWriter<TJob>` throws an `InvalidOperationExcepti
 
 Persist jobs through [ZeroAlloc.ORM](https://github.com/ZeroAlloc-Net/ZeroAlloc.ORM): raw SQL with compile-time parameter binding, no change tracker and no runtime reflection. Supports SQLite, PostgreSQL and SQL Server, and is NativeAOT compatible.
 
-The package targets **net10.0 only**, because ZeroAlloc.ORM ships for net10.0 only. On net8.0 or net9.0, use the EF Core store.
-
 ```bash
 dotnet add package ZeroAlloc.Scheduling.Orm
 dotnet add package Microsoft.Data.Sqlite   # or Npgsql, or Microsoft.Data.SqlClient
@@ -235,6 +233,6 @@ services.TryAddScoped<IJobDashboardStore>(sp =>
 |-------------|---------------------|
 | Local development / unit tests | InMemory |
 | Single-server with persistence | EF Core (SQLite or SQL Server) |
-| Persistence under NativeAOT, no dashboard needed | ORM (net10.0) |
+| Persistence under NativeAOT, no dashboard needed | ORM |
 | Multi-server / distributed | Redis |
 | Custom / existing database | Implement `IJobStore` + `IJobDashboardStore` |
