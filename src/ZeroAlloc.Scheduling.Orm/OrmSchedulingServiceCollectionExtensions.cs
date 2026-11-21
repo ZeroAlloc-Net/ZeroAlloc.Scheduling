@@ -1,6 +1,7 @@
 using System.Data.Async;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Options;
 
 namespace ZeroAlloc.Scheduling.Orm;
 
@@ -56,7 +57,10 @@ public static class OrmSchedulingServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(builder);
 
         builder.Services.TryAddScoped<IJobStore>(sp =>
-            new OrmJobStore(sp.GetRequiredService<IAsyncDbConnection>(), dialect));
+            new OrmJobStore(
+                sp.GetRequiredService<IAsyncDbConnection>(),
+                dialect,
+                sp.GetRequiredService<IOptionsMonitor<SchedulingOptions>>()));
 
         return builder;
     }
@@ -109,7 +113,10 @@ public static class OrmSchedulingServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(connectionKey);
 
         builder.Services.TryAddScoped<IJobStore>(sp =>
-            new OrmJobStore(sp.GetRequiredKeyedService<IAsyncDbConnection>(connectionKey), dialect));
+            new OrmJobStore(
+                sp.GetRequiredKeyedService<IAsyncDbConnection>(connectionKey),
+                dialect,
+                sp.GetRequiredService<IOptionsMonitor<SchedulingOptions>>()));
 
         return builder;
     }

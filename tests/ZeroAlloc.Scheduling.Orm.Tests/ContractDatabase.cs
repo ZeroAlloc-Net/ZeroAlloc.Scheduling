@@ -19,7 +19,8 @@ public abstract class ContractDatabase : IAsyncDisposable
     public abstract Task<IAsyncDbConnection> ConnectAsync();
 
     /// <summary>A store on a new connection, closed when this database is disposed.</summary>
-    public async Task<OrmJobStore> StoreAsync()
+    /// <param name="claimTimeout">The store's claim timeout; the default when <see langword="null"/>.</param>
+    public async Task<OrmJobStore> StoreAsync(TimeSpan? claimTimeout = null)
     {
         var connection = await ConnectAsync().ConfigureAwait(false);
         lock (_storeConnections)
@@ -27,7 +28,9 @@ public abstract class ContractDatabase : IAsyncDisposable
             _storeConnections.Add(connection);
         }
 
-        return new OrmJobStore(connection, Dialect);
+        return claimTimeout is { } timeout
+            ? new OrmJobStore(connection, Dialect, new FixedOptions(new SchedulingOptions { ClaimTimeout = timeout }))
+            : new OrmJobStore(connection, Dialect);
     }
 
     /// <summary>Counts the job rows that match the SQL condition.</summary>

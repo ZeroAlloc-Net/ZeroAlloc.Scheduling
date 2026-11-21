@@ -15,21 +15,24 @@ internal sealed partial class FetchFirstJobQueries(IAsyncDbConnection connection
 {
     [Command("""
         UPDATE SchedulingJobs
-        SET Status = @runningStatus, StartedAt = @now, ClaimToken = @claimToken
+        SET Attempts = CASE WHEN Status = @runningStatus THEN Attempts + 1 ELSE Attempts END,
+            Status = @runningStatus, StartedAt = @now, ClaimToken = @claimToken
         WHERE Id IN (
             SELECT Id FROM SchedulingJobs
-            WHERE (Status = @pendingStatus OR Status = @failedStatus)
-              AND ScheduledAt <= @now
+            WHERE ((Status = @pendingStatus OR Status = @failedStatus) AND ScheduledAt <= @now)
+               OR (Status = @runningStatus AND StartedAt <= @staleBefore)
             ORDER BY ScheduledAt
             OFFSET 0 ROWS FETCH NEXT @batchSize ROWS ONLY
         )
-          AND (Status = @pendingStatus OR Status = @failedStatus)
+          AND (((Status = @pendingStatus OR Status = @failedStatus) AND ScheduledAt <= @now)
+               OR (Status = @runningStatus AND StartedAt <= @staleBefore))
         """)]
     public partial Task<int> ClaimPendingAsync(
         int runningStatus,
         int pendingStatus,
         int failedStatus,
         DateTimeOffset now,
+        DateTimeOffset staleBefore,
         int batchSize,
         Guid claimToken,
         CancellationToken ct);

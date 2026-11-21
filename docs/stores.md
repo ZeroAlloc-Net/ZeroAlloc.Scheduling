@@ -26,7 +26,7 @@ services.AddScheduling()
 
 Jobs are stored in memory inside the process. All state is lost on restart.
 
-Finished jobs (Succeeded and DeadLetter) stay in the store, as they do in the other backends, so the dashboard can count, list and requeue them. Delete one through the dashboard or `IJobDashboardStore.DeleteAsync` to free it. A poll only looks at Pending and Failed jobs, so its cost does not grow with the number of finished jobs, but memory does.
+Finished jobs (Succeeded and DeadLetter) stay in the store, as they do in the other backends, so the dashboard can count, list and requeue them. Delete one through the dashboard or `IJobDashboardStore.DeleteAsync` to free it. A poll only looks at Pending, Failed and Running jobs, so its cost does not grow with the number of finished jobs, but memory does.
 
 ## EF Core
 
@@ -192,6 +192,25 @@ services.AddScheduling()
 Jobs are stored as Redis hashes. The store maintains three tracking Sets (`jobs:succeeded`, `jobs:failed`, `jobs:deadletter`) for O(1) summary queries without scanning all keys.
 
 > **Upgrade note.** Hash keys are now derived from `JobId.ToString()`, a 26-character ULID base32 string, instead of the previous `Guid` representation. Live deployments must drain the queue (let in-flight jobs complete and stop producing new ones) before upgrading: existing keys written by the older version will not be discovered by the new lookups, so they should be allowed to finish or be cleared explicitly before the rollout.
+
+## Abandoned runs and `ClaimTimeout`
+
+A host that stops or crashes while a job runs records no outcome, so the job stays Running. Every store claims such a job again once its start is older than `SchedulingOptions.ClaimTimeout`, 15 minutes by default, and counts that claim as a new attempt. When the abandoned run was the job's last attempt, the worker dead-letters the job instead of running it, and schedules the next occurrence if the job is recurring.
+
+The timeout cannot tell a stopped run from a slow one. It counts from the poll that claimed the job, and the worker runs a poll's jobs in turn, so a job's wait for the jobs claimed before it counts too. **A job that is not done within `ClaimTimeout` is claimed again while it still runs, so it runs twice.** Set the timeout above the longest batch you expect, up to `BatchSize` runs in a row, and keep jobs idempotent.
+
+A poll takes expired claims before due jobs, so a busy queue cannot keep an abandoned job waiting. Redis keeps the Running jobs in a `jobs:claims` sorted set by claim start, in milliseconds; the first poll of a store adds jobs that were already Running before the upgrade.
+
+When the slow run finishes after all, its outcome must not overwrite the run that took the job over. Stores that stamp each claim with a token record an outcome only while the job still holds the claim the run started with:
+
+| Store | Outcome of a run that lost its claim |
+|---|---|
+| EF Core | Ignored. The store is scoped, so each poll has its own claims. |
+| ORM | Ignored. The store is scoped, so each poll has its own claims. |
+| Redis | Ignored when another host took the job over. Workers in one process share the singleton store, and there the late outcome is recorded. |
+| InMemory | Recorded. One instance serves every worker. |
+
+A custom `IJobStore` should claim an expired Running job again in `FetchPendingAsync` as well. Otherwise a recurring job whose run was abandoned never runs again.
 
 ## Dashboard Integration
 

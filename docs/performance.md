@@ -92,6 +92,16 @@ services.AddScheduling(opt => opt.DefaultMaxAttempts = 5);
 
 Override per job type with `[Job(MaxAttempts = N)]`.
 
+### `ClaimTimeout`
+
+How long a claimed job may stay Running before a poll claims it again. Default: 15 minutes.
+
+```csharp
+services.AddScheduling(opt => opt.ClaimTimeout = TimeSpan.FromHours(1));
+```
+
+A host that stops or crashes while a job runs leaves the job Running. Once its start is older than the timeout, the next poll claims it again as a new attempt. The timeout counts from the poll that claimed the job, and the worker runs a poll's jobs in turn, so a job's wait for the jobs claimed before it counts too. A job not done in time is claimed again while it still runs, so set the timeout above the longest batch, up to `BatchSize` runs in a row. See [Abandoned runs](stores.md#abandoned-runs-and-claimtimeout).
+
 ## Multiple Workers
 
 The store implementations are safe for concurrent workers. `FetchPendingAsync` uses an atomic claim pattern:

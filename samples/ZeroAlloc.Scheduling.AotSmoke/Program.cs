@@ -17,6 +17,7 @@ using ZeroAlloc.Scheduling.Orm;
 using ZeroAlloc.Scheduling.Redis;
 using ZeroAlloc.Scheduling.Resilience;
 using ZeroAlloc.Scheduling.Telemetry;
+using StackExchange.Redis;
 
 // Exercises every package under PublishAot=true, with no trim or AOT suppression anywhere. Each
 // scenario builds its own host from the documented registration: AddSerializerDispatcher() plus
@@ -51,7 +52,10 @@ var redis = Environment.GetEnvironmentVariable("ZA_SMOKE_REDIS");
 if (string.IsNullOrEmpty(redis))
     Console.WriteLine("AOT smoke: Redis skipped, ZA_SMOKE_REDIS is not set");
 else
+{
     await RunAsync("Redis", failures, b => b.WithRedis(redis).AddSendEmailJob()).ConfigureAwait(false);
+    await RunRedisClaimTimeoutAsync(redis, failures).ConfigureAwait(false);
+}
 
 if (failures.Count > 0)
 {
@@ -105,6 +109,103 @@ static async Task RunOrmAsync(List<string> failures)
         b.Services.AddScoped<IAsyncDbConnection>(_ => new SqliteConnection(connectionString).AsAsync());
         b.WithOrm().AddSendEmailJob();
     }).ConfigureAwait(false);
+}
+
+// Issue #600 on Redis, which has no test project: a Running job is claimed again once its claim is
+// older than ClaimTimeout, the abandoned run's late outcome is ignored, and a dead-lettered recurring
+// occurrence leaves room for its next occurrence. Each store here is one instance of a host.
+static async Task RunRedisClaimTimeoutAsync(string redis, List<string> failures)
+{
+    var multiplexer = await ConnectionMultiplexer.ConnectAsync(redis).ConfigureAwait(false);
+    await using var multiplexerScope = multiplexer.ConfigureAwait(false);
+    var db = multiplexer.GetDatabase();
+    var before = failures.Count;
+
+    await RunRedisReclaimAsync(db, failures).ConfigureAwait(false);
+    await RunRedisDeadLetteredOccurrenceAsync(db, failures).ConfigureAwait(false);
+
+    if (failures.Count == before)
+        Console.WriteLine("AOT smoke: Redis claim timeout PASS");
+}
+
+static async Task RunRedisReclaimAsync(IDatabase db, List<string> failures)
+{
+    const string Name = "Redis claim timeout";
+    var ct = CancellationToken.None;
+
+    // Redis stores times in whole seconds, so the claim must be at least a second old.
+    var shortTimeout = new FixedOptions(new SchedulingOptions { ClaimTimeout = TimeSpan.FromSeconds(1) });
+    var longTimeout = new FixedOptions(new SchedulingOptions { ClaimTimeout = TimeSpan.FromHours(1) });
+    var abandoned = new RedisJobStore(db, longTimeout);
+    var typeName = $"AotSmoke.Abandoned.{Guid.NewGuid():N}";
+
+    await abandoned.EnqueueAsync(typeName, [1], DateTimeOffset.UtcNow.AddSeconds(-1), 3, null, ct).ConfigureAwait(false);
+    var run = Find(await abandoned.FetchPendingAsync(100, ct).ConfigureAwait(false), typeName);
+    if (run is null)
+    {
+        failures.Add($"{Name}: the job was not claimed");
+        return;
+    }
+
+    if (Find(await new RedisJobStore(db, longTimeout).FetchPendingAsync(100, ct).ConfigureAwait(false), typeName) is not null)
+        failures.Add($"{Name}: a claim newer than the timeout was claimed again");
+
+    await Task.Delay(TimeSpan.FromSeconds(2.2)).ConfigureAwait(false);
+    var reclaimer = new RedisJobStore(db, shortTimeout);
+    var retaken = Find(await reclaimer.FetchPendingAsync(100, ct).ConfigureAwait(false), typeName);
+    if (retaken is null || retaken.Attempts != run.Attempts + 1)
+    {
+        failures.Add($"{Name}: an expired claim was not claimed again as a new attempt");
+        return;
+    }
+
+    await abandoned.MarkSucceededAsync(run.Id, null, null, 3, ct).ConfigureAwait(false);
+    var status = (string?)await db.HashGetAsync($"job:{run.Id}", "status").ConfigureAwait(false);
+    if (!string.Equals(status, "Running", StringComparison.Ordinal))
+        failures.Add($"{Name}: the abandoned run's late outcome overwrote the new run, status {status}");
+
+    await reclaimer.MarkSucceededAsync(retaken.Id, null, null, 3, ct).ConfigureAwait(false);
+    status = (string?)await db.HashGetAsync($"job:{run.Id}", "status").ConfigureAwait(false);
+    if (!string.Equals(status, "Succeeded", StringComparison.Ordinal))
+        failures.Add($"{Name}: the new run's outcome was not recorded, status {status}");
+}
+
+// What the worker does when the last attempt of a recurring occurrence fails: dead-letter it, then
+// upsert its next occurrence.
+static async Task RunRedisDeadLetteredOccurrenceAsync(IDatabase db, List<string> failures)
+{
+    const string Name = "Redis dead-lettered occurrence";
+    var ct = CancellationToken.None;
+    var reclaimer = new RedisJobStore(db, new FixedOptions(new SchedulingOptions()));
+    var recurring = $"AotSmoke.Recurring.{Guid.NewGuid():N}";
+    await reclaimer.UpsertRecurringAsync(recurring, [1], DateTimeOffset.UtcNow.AddSeconds(-1), "0 0 1 1 *", 1, ct).ConfigureAwait(false);
+    var occurrence = Find(await reclaimer.FetchPendingAsync(100, ct).ConfigureAwait(false), recurring);
+    if (occurrence is null)
+    {
+        failures.Add($"{Name}: the recurring job was not claimed");
+        return;
+    }
+
+    await reclaimer.DeadLetterAsync(occurrence.Id, "boom", ct).ConfigureAwait(false);
+    await reclaimer.UpsertRecurringAsync(recurring, [1], DateTimeOffset.UtcNow.AddYears(1), "0 0 1 1 *", 1, ct).ConfigureAwait(false);
+
+    var pending = await reclaimer.QueryByStatusAsync([JobStatus.Pending], 1, 1000, ct).ConfigureAwait(false);
+    if (Find(pending, recurring) is null)
+        failures.Add($"{Name}: no next occurrence after the dead-lettered one");
+    var error = (string?)await db.HashGetAsync($"job:{occurrence.Id}", "error").ConfigureAwait(false);
+    if (!string.Equals(error, "boom", StringComparison.Ordinal))
+        failures.Add($"{Name}: the dead-lettered occurrence lost its error");
+}
+
+static JobEntry? Find(IReadOnlyList<JobEntry> entries, string typeName)
+{
+    foreach (var entry in entries)
+    {
+        if (string.Equals(entry.TypeName, typeName, StringComparison.Ordinal))
+            return entry;
+    }
+
+    return null;
 }
 
 static async Task<bool> RunAsync(

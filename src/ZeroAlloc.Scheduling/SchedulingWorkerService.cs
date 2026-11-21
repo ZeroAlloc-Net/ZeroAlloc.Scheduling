@@ -29,6 +29,9 @@ public sealed class SchedulingWorkerService : BackgroundService
     private static readonly ConcurrentDictionary<string, Cronos.CronExpression> _cronCache =
         new(StringComparer.Ordinal);
 
+    internal const string AbandonedClaimError =
+        "The last attempt was abandoned while running: its claim expired after SchedulingOptions.ClaimTimeout.";
+
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly IOptionsMonitor<SchedulingOptions> _options;
     private readonly ILogger<SchedulingWorkerService> _logger;
@@ -103,6 +106,12 @@ public sealed class SchedulingWorkerService : BackgroundService
             return;
         }
 
+        if (entry.Attempts > 0 && entry.Attempts >= entry.MaxAttempts)
+        {
+            await DeadLetterAbandonedAsync(store, entry, ct).ConfigureAwait(false);
+            return;
+        }
+
         int attempt = entry.Attempts + 1;
         var ctx = new JobContext
         {
@@ -149,6 +158,19 @@ public sealed class SchedulingWorkerService : BackgroundService
         }
     }
 
+    // A fresh or retried claim always has attempts left, since a failure that uses the last one
+    // dead-letters the job. Only a claim taken back after SchedulingOptions.ClaimTimeout can arrive
+    // with none: the abandoned run counted as an attempt, and it was the last.
+    private async Task DeadLetterAbandonedAsync(IJobStore store, JobEntry entry, CancellationToken ct)
+    {
+        _logger.LogError("Job {Id} ({TypeName}) dead-lettered: its last attempt was abandoned while running.",
+            entry.Id, entry.TypeName);
+        if (_jobDeadLetters.Enabled)
+            _jobDeadLetters.Add(1, new TagList { { "job.type", entry.TypeName } });
+        await store.DeadLetterAsync(entry.Id, AbandonedClaimError, ct).ConfigureAwait(false);
+        await ScheduleNextOccurrenceAsync(store, entry, ct).ConfigureAwait(false);
+    }
+
     private async Task HandleJobFailureAsync(IJobStore store, JobEntry entry, Exception ex, CancellationToken ct)
     {
         int newAttempts = entry.Attempts + 1;
@@ -158,6 +180,10 @@ public sealed class SchedulingWorkerService : BackgroundService
             if (_jobDeadLetters.Enabled)
                 _jobDeadLetters.Add(1, new TagList { { "job.type", entry.TypeName } });
             await store.DeadLetterAsync(entry.Id, ex.Message, ct).ConfigureAwait(false);
+
+            // A dead-lettered occurrence ends that occurrence only. Without its successor a recurring
+            // job would not run again until a host restart seeded it anew.
+            await ScheduleNextOccurrenceAsync(store, entry, ct).ConfigureAwait(false);
         }
         else
         {
@@ -169,6 +195,21 @@ public sealed class SchedulingWorkerService : BackgroundService
                 _jobRetries.Add(1, new TagList { { "job.type", entry.TypeName }, { "job.attempt", BoxAttempt(newAttempts) } });
             await store.MarkFailedAsync(entry.Id, newAttempts, nextRetry, ct).ConfigureAwait(false);
         }
+    }
+
+    // Inserts the next occurrence of a recurring job whose current occurrence was dead-lettered. The
+    // dead-lettered row keeps its status and error; UpsertRecurringAsync adds a new Pending row, and
+    // inserts nothing when the job already has a live run, such as one that took back a lost claim.
+    private static async ValueTask ScheduleNextOccurrenceAsync(IJobStore store, JobEntry entry, CancellationToken ct)
+    {
+        if (entry.CronExpression is null) return;
+
+        var nextRunAt = ComputeNextRun(entry.CronExpression);
+        if (nextRunAt is null) return;
+
+        await store.UpsertRecurringAsync(
+            entry.TypeName, entry.Payload, nextRunAt.Value, entry.CronExpression, entry.MaxAttempts, ct)
+            .ConfigureAwait(false);
     }
 
     private static DateTimeOffset? ComputeNextRun(string cronExpression)

@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection;
 using ZeroAlloc.ORM.Migrations;
 
 namespace ZeroAlloc.Scheduling.Orm.Tests;
@@ -10,6 +11,9 @@ namespace ZeroAlloc.Scheduling.Orm.Tests;
 public abstract class RecurringJobContract
 {
     private const string Hourly = "0 * * * *";
+    private const string Yearly = "0 0 1 1 *";
+    private static readonly TimeSpan ShortClaimTimeout = TimeSpan.FromMilliseconds(1);
+    private static readonly TimeSpan ExpiredClaimDelay = TimeSpan.FromMilliseconds(50);
     private static readonly byte[] s_payload = [4, 2];
 
     /// <summary>A new, empty database, migrated unless <paramref name="migrations"/> says otherwise.</summary>
@@ -158,6 +162,123 @@ public abstract class RecurringJobContract
         (await db.CountAsync("TypeName = 'OneOff'")).Should().Be(2, "one-off jobs are not recurring runs");
         await store.UpsertRecurringAsync("Hourly", s_payload, first.AddHours(2), Hourly, 3, default);
         (await db.CountAsync("TypeName = 'Hourly'")).Should().Be(1);
+    }
+
+    [Fact]
+    public async Task A_Running_Claim_Older_Than_The_Claim_Timeout_Is_Claimed_Again()
+    {
+        await using var db = await NewDatabaseAsync();
+        var abandoned = await db.StoreAsync();
+        await abandoned.EnqueueAsync("Abandoned", s_payload, DateTimeOffset.UtcNow.AddSeconds(-1), 3, null, default);
+        var run = (await abandoned.FetchPendingAsync(10, default)).Should().ContainSingle().Subject;
+
+        (await (await db.StoreAsync(TimeSpan.FromHours(1))).FetchPendingAsync(10, default))
+            .Should().BeEmpty("the claim is newer than the timeout");
+
+        await Task.Delay(ExpiredClaimDelay);
+        var retaken = (await (await db.StoreAsync(ShortClaimTimeout)).FetchPendingAsync(10, default))
+            .Should().ContainSingle("the claim is older than the timeout").Subject;
+
+        retaken.Id.Should().Be(run.Id);
+        retaken.Status.Should().Be(JobStatus.Running);
+        retaken.Attempts.Should().Be(run.Attempts + 1, "the abandoned run counts as an attempt");
+    }
+
+    [Fact]
+    public async Task The_Longest_Claim_Timeout_Never_Expires_A_Claim()
+    {
+        await using var db = await NewDatabaseAsync();
+        var store = await db.StoreAsync(TimeSpan.MaxValue);
+        await store.EnqueueAsync("Job", s_payload, DateTimeOffset.UtcNow.AddSeconds(-1), 3, null, default);
+
+        (await store.FetchPendingAsync(10, default)).Should().ContainSingle();
+        (await store.FetchPendingAsync(10, default)).Should().BeEmpty();
+    }
+
+    [Theory]
+    [InlineData(Outcome.Succeeded)]
+    [InlineData(Outcome.Failed)]
+    [InlineData(Outcome.DeadLetter)]
+    public async Task A_Late_Outcome_Of_An_Abandoned_Claim_Does_Not_Overwrite_The_New_Run(Outcome outcome)
+    {
+        await using var db = await NewDatabaseAsync();
+        var abandoned = await db.StoreAsync();
+        await abandoned.UpsertRecurringAsync("Hourly", s_payload, DateTimeOffset.UtcNow.AddSeconds(-1), Hourly, 3, default);
+        var run = (await abandoned.FetchPendingAsync(10, default)).Should().ContainSingle().Subject;
+
+        await Task.Delay(ExpiredClaimDelay);
+        var reclaimer = await db.StoreAsync(ShortClaimTimeout);
+        var retaken = (await reclaimer.FetchPendingAsync(10, default)).Should().ContainSingle().Subject;
+
+        var nextRun = DateTimeOffset.UtcNow.AddHours(1);
+        switch (outcome)
+        {
+            case Outcome.Succeeded:
+                await abandoned.MarkSucceededAsync(run.Id, nextRun, Hourly, 3, default);
+                break;
+            case Outcome.Failed:
+                await abandoned.MarkFailedAsync(run.Id, 1, DateTimeOffset.UtcNow.AddSeconds(-1), default);
+                break;
+            default:
+                await abandoned.DeadLetterAsync(run.Id, "late", default);
+                break;
+        }
+
+        (await db.CountAsync("1 = 1")).Should().Be(1, "the late outcome adds no next occurrence");
+        (await db.CountAsync($"Status = 1 AND Attempts = {retaken.Attempts} AND Error IS NULL"))
+            .Should().Be(1, "the run that took the claim back is still running");
+
+        await reclaimer.MarkSucceededAsync(retaken.Id, nextRun, Hourly, 3, default);
+        (await db.CountAsync("Status = 2")).Should().Be(1);
+        (await db.CountAsync("Status = 0")).Should().Be(1);
+    }
+
+    [Fact]
+    public async Task A_Recurring_Job_That_Always_Fails_Is_Dead_Lettered_And_Keeps_Its_Schedule()
+    {
+        await using var db = await NewDatabaseAsync();
+        var store = await db.StoreAsync();
+        await store.UpsertRecurringAsync("Failing", s_payload, DateTimeOffset.UtcNow.AddSeconds(-1), Yearly, 2, default);
+        var executor = new AlwaysFailingExecutor("Failing");
+        const string Successor = "Status = 0 AND CronExpression IS NOT NULL AND Attempts = 0";
+
+        await using (var services = new ServiceCollection()
+            .AddSingleton<IJobStore>(store)
+            .AddSingleton<IJobTypeExecutor>(executor)
+            .AddScheduling(o =>
+            {
+                o.PollingInterval = TimeSpan.FromMilliseconds(20);
+                o.RetryBaseDelay = TimeSpan.FromMilliseconds(1);
+            })
+            .Services.BuildServiceProvider())
+        {
+            var worker = services.GetRequiredService<SchedulingWorkerService>();
+            await worker.StartAsync(default);
+            var deadline = DateTime.UtcNow.AddSeconds(20);
+            while ((await db.CountAsync("Status = 4") == 0 || await db.CountAsync(Successor) == 0)
+                   && DateTime.UtcNow < deadline)
+            {
+                await Task.Delay(20);
+            }
+
+            await worker.StopAsync(default);
+        }
+
+        // The worker inserts the next occurrence right after the dead-letter; stopping it in
+        // between would cancel that insert, so the wait above is for both.
+        executor.Calls.Should().Be(2, "retries of the occurrence stay bounded by its maximum attempts");
+        (await db.CountAsync("Status = 4 AND Error IS NOT NULL")).Should().Be(1, "the dead-lettered occurrence keeps its error");
+        (await db.CountAsync(Successor)).Should().Be(1, "the next occurrence is scheduled");
+        (await (await db.StoreAsync()).FetchPendingAsync(10, default))
+            .Should().BeEmpty("the next occurrence is not due before next year");
+    }
+
+    /// <summary>The outcome a run records.</summary>
+    public enum Outcome
+    {
+        Succeeded,
+        Failed,
+        DeadLetter,
     }
 
     /// <summary>The first <c>count</c> migrations of a source, under its name, as an older release shipped them.</summary>

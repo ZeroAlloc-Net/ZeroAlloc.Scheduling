@@ -7,6 +7,11 @@ public interface IJobStore
     ValueTask EnqueueAsync(string typeName, byte[] payload, DateTimeOffset scheduledAt, int maxAttempts, string? cronExpression, CancellationToken ct);
 
     /// <summary>Atomically fetches up to <paramref name="batchSize"/> jobs where Status=Pending and ScheduledAt &lt;= UtcNow, marking them Running.</summary>
+    /// <remarks>
+    /// The built-in stores also take back a job that has been Running for longer than
+    /// <see cref="SchedulingOptions.ClaimTimeout"/>, and count that claim as a new attempt by
+    /// incrementing <see cref="JobEntry.Attempts"/>.
+    /// </remarks>
     ValueTask<IReadOnlyList<JobEntry>> FetchPendingAsync(int batchSize, CancellationToken ct);
 
     /// <summary>Marks a job succeeded. For recurring jobs, inserts a new Pending entry with the next scheduled time.</summary>
@@ -19,5 +24,9 @@ public interface IJobStore
     ValueTask DeadLetterAsync(JobId id, string error, CancellationToken ct);
 
     /// <summary>Upserts a recurring job's initial Pending entry on startup (keyed by TypeName — no-op if one already exists).</summary>
+    /// <remarks>
+    /// The worker also calls this to schedule the next occurrence of a recurring job whose current
+    /// occurrence was dead-lettered. It must add a new entry and leave the dead-lettered one as it is.
+    /// </remarks>
     ValueTask UpsertRecurringAsync(string typeName, byte[] payload, DateTimeOffset scheduledAt, string? cronExpression, int maxAttempts, CancellationToken ct);
 }

@@ -77,6 +77,25 @@ internal sealed partial class JobRepository(IAsyncDbConnection connection)
     public partial Task<int> MarkCompletedAsync(
         Guid id, int status, DateTimeOffset completedAt, CancellationToken ct);
 
+    /// <summary>
+    /// <see cref="MarkCompletedAsync"/>, applied only while the row still holds
+    /// <paramref name="claimToken"/> and is Running.
+    /// </summary>
+    /// <remarks>
+    /// A poll that takes back an expired claim stamps a new token, so a run that
+    /// outlived its claim updates nothing here and cannot overwrite the run that
+    /// took it back. Requiring Running as well means one outcome per claim: after
+    /// a success, a failure write for the same run changes nothing. The three
+    /// outcome writes each have a claimed form like this.
+    /// </remarks>
+    [Command("""
+        UPDATE SchedulingJobs
+        SET Status = @status, CompletedAt = @completedAt
+        WHERE Id = @id AND ClaimToken = @claimToken AND Status = @runningStatus
+        """)]
+    public partial Task<int> MarkCompletedClaimedAsync(
+        Guid id, Guid claimToken, int runningStatus, int status, DateTimeOffset completedAt, CancellationToken ct);
+
     [Command("""
         UPDATE SchedulingJobs
         SET Status = @status, Attempts = @attempts, ScheduledAt = @scheduledAt
@@ -87,11 +106,27 @@ internal sealed partial class JobRepository(IAsyncDbConnection connection)
 
     [Command("""
         UPDATE SchedulingJobs
+        SET Status = @status, Attempts = @attempts, ScheduledAt = @scheduledAt
+        WHERE Id = @id AND ClaimToken = @claimToken AND Status = @runningStatus
+        """)]
+    public partial Task<int> MarkForRetryClaimedAsync(
+        Guid id, Guid claimToken, int runningStatus, int status, int attempts, DateTimeOffset scheduledAt, CancellationToken ct);
+
+    [Command("""
+        UPDATE SchedulingJobs
         SET Status = @status, Error = @error, CompletedAt = @completedAt
         WHERE Id = @id
         """)]
     public partial Task<int> DeadLetterAsync(
         Guid id, int status, string error, DateTimeOffset completedAt, CancellationToken ct);
+
+    [Command("""
+        UPDATE SchedulingJobs
+        SET Status = @status, Error = @error, CompletedAt = @completedAt
+        WHERE Id = @id AND ClaimToken = @claimToken AND Status = @runningStatus
+        """)]
+    public partial Task<int> DeadLetterClaimedAsync(
+        Guid id, Guid claimToken, int runningStatus, int status, string error, DateTimeOffset completedAt, CancellationToken ct);
 
     /// <summary>
     /// Applies a recurring job's current definition to its Pending run. A changed
