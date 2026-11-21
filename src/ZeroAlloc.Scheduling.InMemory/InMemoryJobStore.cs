@@ -26,11 +26,7 @@ public sealed class InMemoryJobStore : IJobStore, IJobDashboardStore, IDisposabl
     private readonly HashSet<JobId> _running = [];
 
     private readonly IOptionsMonitor<SchedulingOptions>? _options;
-#if NET9_0_OR_GREATER
     private readonly Lock _gate = new();
-#else
-    private readonly object _gate = new();
-#endif
 
     /// <summary>
     /// Creates a store that takes back a Running job after the default

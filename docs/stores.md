@@ -52,6 +52,10 @@ dotnet ef database update --context SchedulingDbContext
 
 `FetchPendingAsync` uses an atomic `ExecuteUpdateAsync` pattern (EF Core 7+) to claim jobs without loading them first, preventing double-dispatch under concurrent workers.
 
+A recurring job has at most one live run, one that is Pending, Running or Failed. The schema enforces it with a filtered unique index, `UX_ScheduledJobs_LiveRecurring`, on `TypeName` over the live runs of recurring jobs. Instances that start at once therefore seed one run, and a seed that races the next occurrence after a dead-letter adds none: the store skips a run the index rejects, and the job keeps the run that is already there. The index arrived in 3.0. A database created by 2.x needs it added, after deleting duplicate live runs; [Migrating to v3](migrating-to-v3.md#ef-core-one-live-run-per-recurring-job) gives the statements. The index filter names the `CronExpression` and `Status` columns as they are in the database, so a column naming convention, such as `UseSnakeCaseNamingConvention()` from EFCore.NamingConventions, works with it.
+
+Requeuing a finished run of a recurring job whose next occurrence is already live runs it once more as a one-off: the store clears its cron expression, so the schedule stays with the live run.
+
 ### Enqueueing through the outbox
 
 `WithOutboxWriter<TJob>()` registers an `IOutboxWriter<TJob>` that writes a job into the [ZeroAlloc.Outbox](https://outbox.zeroalloc.net) store inside the same `DbTransaction` as your business write, so the job and the business row commit or roll back together.
@@ -93,8 +97,6 @@ With neither, resolving `IOutboxWriter<TJob>` throws an `InvalidOperationExcepti
 ## ORM
 
 Persist jobs through [ZeroAlloc.ORM](https://github.com/ZeroAlloc-Net/ZeroAlloc.ORM): raw SQL with compile-time parameter binding, no change tracker and no runtime reflection. Supports SQLite, PostgreSQL and SQL Server, and is NativeAOT compatible.
-
-The package targets **net10.0 only**, because ZeroAlloc.ORM ships for net10.0 only. On net8.0 or net9.0, use the EF Core store.
 
 ```bash
 dotnet add package ZeroAlloc.Scheduling.Orm
@@ -235,6 +237,6 @@ services.TryAddScoped<IJobDashboardStore>(sp =>
 |-------------|---------------------|
 | Local development / unit tests | InMemory |
 | Single-server with persistence | EF Core (SQLite or SQL Server) |
-| Persistence under NativeAOT, no dashboard needed | ORM (net10.0) |
+| Persistence under NativeAOT, no dashboard needed | ORM |
 | Multi-server / distributed | Redis |
 | Custom / existing database | Implement `IJobStore` + `IJobDashboardStore` |

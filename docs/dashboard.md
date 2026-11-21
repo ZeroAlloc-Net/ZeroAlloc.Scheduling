@@ -27,7 +27,7 @@ Open `/jobs/` in a browser to see:
 - **Summary cards** — counts for pending, running, succeeded, failed, and dead-lettered jobs
 - **Jobs table** — ID, type, status, attempts, scheduled time, last error, and actions
 - **Auto-refresh** — the page polls all API endpoints every 5 seconds
-- **Requeue** — re-enqueue a dead-lettered job with one click
+- **Requeue** — re-enqueue a dead-lettered job with one click. On the EF Core store, requeuing a finished run of a recurring job whose next occurrence is already live runs it once as a one-off, and the schedule stays with the live run; see [EF Core](stores.md#ef-core)
 - **Delete** — remove any job from the store
 
 ![Scheduler dashboard — desktop](screenshots/dashboard-desktop.png)
@@ -43,7 +43,7 @@ The dashboard is served from an embedded resource (no static file middleware req
 | `GET /jobs/api/running` | Currently running jobs |
 | `GET /jobs/api/failed` | Failed jobs awaiting retry |
 | `GET /jobs/api/succeeded` | Recently succeeded jobs |
-| `POST /jobs/api/{id}/requeue` | Re-enqueue a dead-lettered job |
+| `POST /jobs/api/{id}/requeue` | Re-enqueue a dead-lettered job; on EF Core, a finished recurring run next to a live one runs once as a one-off |
 | `DELETE /jobs/api/{id}` | Delete a job |
 
 The `{id}` route segment binds to a strongly-typed `JobId`, which serializes as a 26-character ULID base32 string (e.g. `01H8XGJWBWBAQ4ZQ8Y9ABZ35TX`). URLs that embed the legacy `Guid` format no longer match these routes — clients holding job IDs from a previous version must be refreshed before issuing requeue or delete requests. The Blazor `JobsDashboardClient` already builds these URLs from `JobId.ToString()`, so no caller changes are required when consuming the component.

@@ -12,6 +12,14 @@
     <!-- CVE-2025-6965 / GHSA-2m69-gcr7-jv3q: pin the native SQLite binary (3.50.3) pulled
          transitively by Microsoft.Data.Sqlite / EF Core Sqlite (2.1.x is vulnerable). -->
     <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3" Version="3.50.3" />
+    <!-- PostgreSQL and SQL Server prove the live-run index filter on the other providers the store supports. -->
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.23" />
+    <!-- Renames the columns to snake case, as many PostgreSQL applications do, to prove the index
+         filter follows the column names. -->
+    <PackageReference Include="EFCore.NamingConventions" Version="9.0.0" />
+    <PackageReference Include="Testcontainers.MsSql" Version="4.17.0" />
+    <PackageReference Include="Testcontainers.PostgreSql" Version="4.17.0" />
     <PackageReference Include="ZeroAlloc.Outbox.InMemory" Version="4.7.2" />
     <!-- ZeroAlloc.Outbox brings ZeroAlloc.Mediator in transitively at its 5.1.5 floor; run the
          tests against the newest major, as the Mediator-facing test projects do. -->

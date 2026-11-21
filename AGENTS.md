@@ -10,8 +10,8 @@ the stores `InMemory`, `EfCore`, `Orm` and `Redis`, the `Dashboard` and `Dashboa
 
 - `src/ZeroAlloc.Scheduling.Generator` targets `netstandard2.0` and is the source generator. The core project
   references it as an analyzer and packs the DLL under `analyzers/dotnet/cs`. Tests reference it the same way.
-- Libraries target `net8.0;net9.0;net10.0;net11.0`. `Orm` targets only `net10.0;net11.0`.
-- Test projects target `net10.0;net11.0`, so no test runs on .NET 8 or 9. There is no Redis test project:
+- Libraries target `net10.0;net11.0`.
+- Test projects target `net10.0;net11.0`, like the libraries. There is no Redis test project:
   Redis is covered by the AOT smoke only.
 - `benchmarks/` targets `net10.0` only, not every library framework.
 - `samples/ZeroAlloc.Scheduling.AotSmoke` is the NativeAOT publish check, not a demo. It targets `net11.0`
@@ -19,8 +19,8 @@ the stores `InMemory`, `EfCore`, `Orm` and `Redis`, the `Dashboard` and `Dashboa
   string.
 - Each package except `Dashboard.Blazor` has its own `PublicAPI.Shipped.txt` and `PublicAPI.Unshipped.txt`. The generator has
   `AnalyzerReleases.Shipped.md` and `AnalyzerReleases.Unshipped.md` for its `ZASCH` diagnostics.
-- `apicompat-suppressions.xml` lists the intended breaks of 2.0.0 against the 1.4.11 baseline. It is
-  deleted once 2.0.0 is the published baseline.
+- `apicompat-suppressions.xml` lists the intended breaks of 3.0.0 against the 2.6.0 baseline: the dropped
+  net8.0 and net9.0 builds. It is deleted once 3.0.0 is the published baseline.
 - `docs/performance.md` and the README carry measured allocation figures.
 
 ## Build and test

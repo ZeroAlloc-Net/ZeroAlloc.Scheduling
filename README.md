@@ -72,13 +72,13 @@ For a recurring job, use `[Job(Cron = "0 * * * *")]` or `[Job(Every = Every.Hour
 - One-off jobs, delayed jobs and recurring jobs from cron expressions or fixed intervals.
 - Exponential-backoff retry per job or globally, then dead-lettering.
 - A background worker that polls the store in batches and runs each job through its generated executor.
-- Targets .NET 8, 9 and 10.
+- Targets .NET 10 and .NET 11.
 
 Stores and integrations:
 
 - [`ZeroAlloc.Scheduling.InMemory`](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/blob/main/docs/stores.md#inmemory): in-process store for development and tests.
 - [`ZeroAlloc.Scheduling.EfCore`](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/blob/main/docs/stores.md#ef-core): EF Core store on SQL Server, PostgreSQL or SQLite.
-- [`ZeroAlloc.Scheduling.Orm`](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/blob/main/docs/stores.md#orm): ZeroAlloc.ORM store on SQLite, PostgreSQL or SQL Server, `WithOrm()`, net10.0 only.
+- [`ZeroAlloc.Scheduling.Orm`](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/blob/main/docs/stores.md#orm): ZeroAlloc.ORM store on SQLite, PostgreSQL or SQL Server, `WithOrm()`.
 - [`ZeroAlloc.Scheduling.Redis`](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/blob/main/docs/stores.md#redis): Redis store for distributed deployments.
 - [`ZeroAlloc.Scheduling.Mediator`](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/blob/main/docs/mediator-bridge.md): run a job through ZeroAlloc.Mediator and its pipeline behaviors.
 - [`ZeroAlloc.Scheduling.Resilience`](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/blob/main/docs/resilience-bridge.md): retry, timeout and circuit-breaker around job execution.
@@ -104,7 +104,7 @@ What you pay for is `[Job]` itself: declarative retries, cron and store-backed p
 
 - Documentation: [scheduling.zeroalloc.net](https://scheduling.zeroalloc.net)
 - Reference: [source generator](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/blob/main/docs/source-generator.md), [diagnostics](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/blob/main/docs/diagnostics.md), [features and packages](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/blob/main/docs/index.md)
-- Upgrading: [migrating to v2](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/blob/main/docs/migrating-to-v2.md)
+- Upgrading: [migrating to v3](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/blob/main/docs/migrating-to-v3.md), [migrating to v2](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/blob/main/docs/migrating-to-v2.md)
 - Related: [ZeroAlloc.Outbox](https://github.com/ZeroAlloc-Net/ZeroAlloc.Outbox), [ZeroAlloc.Mediator](https://github.com/ZeroAlloc-Net/ZeroAlloc.Mediator), [ZeroAlloc.Resilience](https://github.com/ZeroAlloc-Net/ZeroAlloc.Resilience), [ZeroAlloc.Telemetry](https://github.com/ZeroAlloc-Net/ZeroAlloc.Telemetry)
 - Contributing: issues and pull requests are welcome on [GitHub](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues)
 - License: MIT, see [LICENSE](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/blob/main/LICENSE)

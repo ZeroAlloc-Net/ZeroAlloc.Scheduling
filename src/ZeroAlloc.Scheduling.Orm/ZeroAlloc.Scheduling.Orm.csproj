@@ -1,11 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!--
-      net10.0;net11.0 only, unlike the EF Core adapter's net8.0 to net11.0.
-      ZeroAlloc.ORM ships net10.0 only, so there is nothing older to build
-      against; net11.0 consumes its net10.0 asset. Widening this further
-      means widening the ORM first.
-    -->
     <TargetFrameworks>net10.0;net11.0</TargetFrameworks>
     <PackageId>ZeroAlloc.Scheduling.Orm</PackageId>
     <Description>ZeroAlloc.ORM job store adapter for ZeroAlloc.Scheduling. Raw-SQL persistence with compile-time parameter binding, a token-based atomic claim, and MigrationRunner-owned schema. Supports SQLite, PostgreSQL and SQL Server. Zero runtime reflection; Native AOT compatible.</Description>
