@@ -29,9 +29,11 @@ public sealed class RedisJobStore : IJobStore, IJobDashboardStore
         "local r=redis.call('ZREM',KEYS[1],ARGV[1]) if r==0 then return nil end redis.call('SADD',KEYS[2],ARGV[1]) redis.call('HSET',KEYS[3],'status','Running','startedAt',ARGV[2],'claim',ARGV[3]) redis.call('ZADD',KEYS[4],ARGV[4],ARGV[1]) return 1";
 
     // Takes back a Running job whose claim started at or before ARGV[1], counting it as an attempt.
-    // The status and start are checked inside the script, so of two pollers only one takes it.
+    // The status and start are checked inside the script, so of two pollers only one takes it. An
+    // index entry for a job that is no longer Running is stale, left by a release that did not keep
+    // the index, and is dropped so it cannot hold a place in every later poll.
     private const string ReclaimScript =
-        "if redis.call('HGET',KEYS[1],'status')~='Running' then return nil end local t=tonumber(redis.call('ZSCORE',KEYS[2],ARGV[4])) if t==nil or t>tonumber(ARGV[1]) then return nil end redis.call('HSET',KEYS[1],'startedAt',ARGV[2],'claim',ARGV[3]) redis.call('HINCRBY',KEYS[1],'attempts',1) redis.call('ZADD',KEYS[2],ARGV[5],ARGV[4]) return 1";
+        "if redis.call('HGET',KEYS[1],'status')~='Running' then redis.call('ZREM',KEYS[2],ARGV[4]) return nil end local t=tonumber(redis.call('ZSCORE',KEYS[2],ARGV[4])) if t==nil or t>tonumber(ARGV[1]) then return nil end redis.call('HSET',KEYS[1],'startedAt',ARGV[2],'claim',ARGV[3]) redis.call('HINCRBY',KEYS[1],'attempts',1) redis.call('ZADD',KEYS[2],ARGV[5],ARGV[4]) return 1";
 
     // Adds Running jobs claimed by a release without jobs:claims to that index, once per instance.
     // Their start is stored in whole seconds, so the next second is used: a claim is never taken
@@ -94,11 +96,14 @@ public sealed class RedisJobStore : IJobStore, IJobDashboardStore
         var claimToken = Guid.NewGuid().ToString("N");
         var claimed = new List<JobEntry>();
 
-        if (Interlocked.Exchange(ref _backfilled, 1) == 0)
+        // Marked done only once it has run, so a failed attempt is repeated by a later poll. Running
+        // it twice is harmless: the script leaves indexed jobs alone.
+        if (Volatile.Read(ref _backfilled) == 0)
         {
             await _db.ScriptEvaluateAsync(
                 BackfillScript, [(RedisKey)"jobs:running", (RedisKey)ClaimsKey], [(RedisValue)nowMs])
                 .ConfigureAwait(false);
+            Volatile.Write(ref _backfilled, 1);
         }
 
         // A Running job whose claim has expired was abandoned by a run that recorded no outcome.

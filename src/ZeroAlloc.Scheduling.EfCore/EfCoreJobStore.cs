@@ -132,15 +132,23 @@ public sealed class EfCoreJobStore : IJobStore, IJobDashboardStore
         else
         {
             var strategy = _db.Database.CreateExecutionStrategy();
-            await strategy.ExecuteAsync(async cancel =>
-            {
-                var transaction = await _db.Database.BeginTransactionAsync(cancel).ConfigureAwait(false);
-                await using (transaction.ConfigureAwait(false))
+            await strategy.ExecuteAsync(
+                (Store: this, Id: id, NextRunAt: nextRunAt, CronExpression: cronExpression, MaxAttempts: maxAttempts),
+                static async (_, state, cancel) =>
                 {
-                    await CompleteAsync(id, nextRunAt, cronExpression, maxAttempts, cancel).ConfigureAwait(false);
-                    await transaction.CommitAsync(cancel).ConfigureAwait(false);
-                }
-            }, ct).ConfigureAwait(false);
+                    var database = state.Store._db.Database;
+                    var transaction = await database.BeginTransactionAsync(cancel).ConfigureAwait(false);
+                    await using (transaction.ConfigureAwait(false))
+                    {
+                        await state.Store.CompleteAsync(
+                            state.Id, state.NextRunAt, state.CronExpression, state.MaxAttempts, cancel).ConfigureAwait(false);
+                        await transaction.CommitAsync(cancel).ConfigureAwait(false);
+                    }
+
+                    return true;
+                },
+                verifySucceeded: null,
+                ct).ConfigureAwait(false);
         }
 
         // Released only once the outcome is written: should a write throw, the worker's
