@@ -69,6 +69,7 @@ internal static class GeneratorTestHelper
         // necessarily loaded into the AppDomain yet when a test runs.
         refs.Add(MetadataReference.CreateFromFile(typeof(Microsoft.Extensions.DependencyInjection.IServiceCollection).Assembly.Location));
         refs.Add(MetadataReference.CreateFromFile(typeof(Microsoft.Extensions.Hosting.IHostedService).Assembly.Location));
+        refs.Add(MetadataReference.CreateFromFile(typeof(Microsoft.Extensions.Logging.ILogger<>).Assembly.Location));
         refs.Add(MetadataReference.CreateFromFile(typeof(Microsoft.Extensions.Options.IOptions<>).Assembly.Location));
         refs.Add(MetadataReference.CreateFromFile(typeof(Cronos.CronExpression).Assembly.Location));
         // The facade that IServiceProvider, which the recurring seed resolves its store from, is

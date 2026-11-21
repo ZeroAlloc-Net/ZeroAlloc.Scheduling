@@ -23,4 +23,11 @@
     <Using Include="Xunit" />
     <Using Include="AwesomeAssertions" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- The core's generator reference is PrivateAssets="all", so attach it here to generate the
+         recurring seed of the [Job] the re-seed tests run. -->
+    <ProjectReference Include="..\..\src\ZeroAlloc.Scheduling.Generator\ZeroAlloc.Scheduling.Generator.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false" />
+  </ItemGroup>
 </Project>

@@ -123,7 +123,7 @@ The registration method is `Add{Name}Job()`, and a type name that already ends i
 
 The match is ordinal and case-sensitive, as the last row shows: only the exact suffix `Job` counts. Two job types in the same namespace that map to the same method, such as `Cleanup` and `CleanupJob`, are reported as the error [ZASCH011](diagnostics.md#zasch011--two-jobs-map-to-the-same-generated-registration-method) and neither is generated. Up to 1.x the suffix was always appended, so `SendInvoiceJob` registered with `AddSendInvoiceJobJob()`; see [Migrating to v2](migrating-to-v2.md#generated-registration-names).
 
-For a recurring job (`[Job(Every = Every.Hour)]`), the generator additionally emits an `IHostedService` that calls `IJobStore.UpsertRecurringAsync` at startup to seed the first scheduled run. It resolves the store in a scope of its own, so a scoped store such as the EF Core or ORM one works in a host that validates scopes.
+For a recurring job (`[Job(Every = Every.Hour)]`), the generator additionally emits a hosted service, a `BackgroundService`, that calls `IJobStore.UpsertRecurringAsync` to seed the job's run. It seeds once before the host starts, so a store that cannot be reached fails the start, and then again every `SchedulingOptions.ClaimTimeout` until the host stops, with the job's current definition. The seed does nothing while the job has a live run, so the repeats only bring back a next occurrence that a failed write lost; see [Recurring jobs get their live run back](stores.md#recurring-jobs-get-their-live-run-back). A repeat that fails is logged as an error and tried again one interval later. Each seed resolves the store in a scope of its own, so a scoped store such as the EF Core or ORM one works in a host that validates scopes. The repeats run on their own timer, apart from the worker, so the worker's poll allocates nothing more for them.
 
 ### Registration accessibility
 
@@ -165,6 +165,6 @@ This routes execution through the ZeroAlloc.Mediator pipeline (behaviors, interc
 | Attribute argument | Effect | Generated artifact |
 |--------------------|--------|--------------------|
 | _(none)_ | Fire-and-forget | Executor + `AddXxxJob()` |
-| `Every = Every.Hour` | Hourly recurring | Executor + startup `IHostedService` + `AddXxxJob()` |
-| `Cron = "0 * * * *"` | Custom recurring | Executor + startup `IHostedService` + `AddXxxJob()` |
+| `Every = Every.Hour` | Hourly recurring | Executor + seeding `BackgroundService` + `AddXxxJob()` |
+| `Cron = "0 * * * *"` | Custom recurring | Executor + seeding `BackgroundService` + `AddXxxJob()` |
 | `MaxAttempts = N` | Per-job retry limit | `MaxAttempts => N` property on executor |

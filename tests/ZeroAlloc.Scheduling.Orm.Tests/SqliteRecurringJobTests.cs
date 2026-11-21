@@ -32,6 +32,16 @@ public sealed class SqliteRecurringJobTests : RecurringJobContract
             return Convert.ToInt64(await command.ExecuteScalarAsync().ConfigureAwait(false), System.Globalization.CultureInfo.InvariantCulture);
         }
 
+        public override async Task ExecuteAsync(string sql)
+        {
+            var connection = new SqliteConnection(fixture.ConnectionString);
+            await using var connectionScope = connection.ConfigureAwait(false);
+            await connection.OpenAsync().ConfigureAwait(false);
+            var command = new SqliteCommand(sql, connection);
+            await using var commandScope = command.ConfigureAwait(false);
+            await command.ExecuteNonQueryAsync().ConfigureAwait(false);
+        }
+
         public override async Task<IReadOnlyList<Migration>> MigrateAsync(IMigrationSource source)
         {
             var connection = await ConnectAsync().ConfigureAwait(false);

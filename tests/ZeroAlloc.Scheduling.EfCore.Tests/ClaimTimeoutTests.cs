@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using ZeroAlloc.Scheduling.EfCore;
 
@@ -153,6 +154,46 @@ public sealed class ClaimTimeoutTests : IDisposable
         next.CronExpression.Should().Be(Yearly);
         next.Attempts.Should().Be(0);
         next.ScheduledAt.Should().BeAfter(DateTimeOffset.UtcNow);
+    }
+
+    [Fact]
+    public async Task The_Periodic_Seed_Brings_Back_A_Lost_Run_Without_A_Restart()
+    {
+        // Issue #602: a dead-letter or a success whose next-occurrence insert failed leaves the
+        // job without a live run until the seed runs again.
+        var services = new ServiceCollection()
+            .AddScheduling(o => o.ClaimTimeout = TimeSpan.FromMilliseconds(100))
+            .WithEfCore(o => o.UseSqlite(_connectionString))
+            .AddYearlySweepJob()
+            .Services.BuildServiceProvider();
+        await using (services)
+        {
+            var seed = services.GetServices<IHostedService>().OfType<YearlySweepRecurringStartup>().Single();
+            await seed.StartAsync(default);
+            try
+            {
+                var seeded = (await ReadAllAsync()).Should().ContainSingle().Subject;
+                using (var db = NewContext())
+                {
+                    await db.Jobs.Where(j => j.Id == seeded.Id)
+                        .ExecuteUpdateAsync(u => u.SetProperty(j => j.Status, JobStatus.DeadLetter));
+                }
+
+                var deadline = DateTime.UtcNow.AddSeconds(10);
+                while (!(await ReadAllAsync()).Exists(r => r.Status == JobStatus.Pending) && DateTime.UtcNow < deadline)
+                    await Task.Delay(20);
+            }
+            finally
+            {
+                await seed.StopAsync(default);
+            }
+        }
+
+        var rows = await ReadAllAsync();
+        rows.Should().ContainSingle(r => r.Status == JobStatus.DeadLetter);
+        var next = rows.Should().ContainSingle(r => r.Status == JobStatus.Pending, "the seed scheduled the job again").Subject;
+        next.TypeName.Should().Be(typeof(YearlySweep).FullName);
+        next.CronExpression.Should().Be(Yearly);
     }
 
     private SchedulingDbContext NewContext()

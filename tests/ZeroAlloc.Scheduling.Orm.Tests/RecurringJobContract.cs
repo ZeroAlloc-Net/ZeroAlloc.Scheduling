@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using ZeroAlloc.ORM.Migrations;
 
 namespace ZeroAlloc.Scheduling.Orm.Tests;
@@ -271,6 +272,54 @@ public abstract class RecurringJobContract
         (await db.CountAsync(Successor)).Should().Be(1, "the next occurrence is scheduled");
         (await (await db.StoreAsync()).FetchPendingAsync(10, default))
             .Should().BeEmpty("the next occurrence is not due before next year");
+    }
+
+    [Fact]
+    public async Task The_Periodic_Seed_Brings_Back_A_Lost_Run_And_The_Current_Definition()
+    {
+        await using var db = await NewDatabaseAsync();
+        var store = await db.StoreAsync();
+        const string Sweep = "TypeName = 'ZeroAlloc.Scheduling.Orm.Tests.YearlySweep'";
+        const string Live = Sweep + " AND Status IN (0, 1, 3)";
+
+        await using var services = new ServiceCollection()
+            .AddSingleton<IJobStore>(store)
+            .AddScheduling(o => o.ClaimTimeout = TimeSpan.FromMilliseconds(100))
+            .AddYearlySweepJob()
+            .Services.BuildServiceProvider();
+        var seed = services.GetServices<IHostedService>().OfType<YearlySweepRecurringStartup>().Single();
+
+        await seed.StartAsync(default);
+        try
+        {
+            (await db.CountAsync(Live)).Should().Be(1, "the seed at startup schedules the job");
+
+            // A dead-letter or a success whose next-occurrence insert failed leaves no live run.
+            await db.ExecuteAsync($"UPDATE SchedulingJobs SET Status = 4 WHERE {Sweep}");
+            await WaitForCountAsync(db, Live + " AND MaxAttempts = 3", 1);
+
+            // The upsert of a stale run put an old definition on the pending run.
+            await db.ExecuteAsync($"UPDATE SchedulingJobs SET MaxAttempts = 9 WHERE {Sweep} AND Status = 0");
+            await WaitForCountAsync(db, Live + " AND MaxAttempts = 3", 1);
+        }
+        finally
+        {
+            await seed.StopAsync(default);
+        }
+
+        (await db.CountAsync(Live)).Should().Be(1, "repeating the seed adds no second live run");
+        (await db.CountAsync(Sweep + " AND Status = 4")).Should().Be(1);
+    }
+
+    private static async Task WaitForCountAsync(ContractDatabase db, string condition, long expected)
+    {
+        var deadline = DateTime.UtcNow.AddSeconds(10);
+        while (await db.CountAsync(condition).ConfigureAwait(false) != expected)
+        {
+            if (DateTime.UtcNow > deadline)
+                throw new TimeoutException($"No {expected} rows matched '{condition}' within the deadline.");
+            await Task.Delay(20).ConfigureAwait(false);
+        }
     }
 
     /// <summary>The outcome a run records.</summary>

@@ -71,7 +71,7 @@ public sealed class PurgeExpiredTokensJob : IJob
 {
     public async ValueTask ExecuteAsync(JobContext ctx, CancellationToken ct) { ... }
 }
-// AddPurgeExpiredTokensJob() also registers an IHostedService that seeds the schedule on startup
+// AddPurgeExpiredTokensJob() also registers a hosted service that seeds the schedule on startup and every ClaimTimeout
 
 // Recurring job (custom cron)
 [Job(Cron = "0 9 * * 1-5")]   // weekdays at 09:00

@@ -46,6 +46,7 @@ await RunAsync("Resilience", failures, b =>
 }).ConfigureAwait(false);
 
 await RunTelemetryAsync(failures).ConfigureAwait(false);
+await RunRecurringReseedAsync(failures).ConfigureAwait(false);
 await RunOrmAsync(failures).ConfigureAwait(false);
 
 var redis = Environment.GetEnvironmentVariable("ZA_SMOKE_REDIS");
@@ -86,6 +87,52 @@ static async Task RunTelemetryAsync(List<string> failures)
         if (!stopped.Contains("scheduling.job_execute"))
             failures.Add($"Telemetry: no scheduling.job_execute activity, saw [{string.Join(", ", stopped)}]");
     }
+}
+
+// Issue #602: the generated hosted service of a recurring job seeds it again every ClaimTimeout, so
+// a seed that a failed write lost is made good without a restart.
+static async Task RunRecurringReseedAsync(List<string> failures)
+{
+    const string Name = "Recurring re-seed";
+    using var inner = new InMemoryJobStore();
+    var store = new FirstSeedLosingStore(inner);
+    var builder = Host.CreateEmptyApplicationBuilder(new HostApplicationBuilderSettings());
+    builder.Services.AddLogging();
+    builder.Services.AddSerializerDispatcher();
+    builder.Services.AddSingleton<IJobStore>(store);
+    builder.Services
+        .AddScheduling(o =>
+        {
+            o.PollingInterval = TimeSpan.FromMinutes(1);
+            o.ClaimTimeout = TimeSpan.FromMilliseconds(100);
+        })
+        .AddYearlySweepJob();
+
+    using var host = builder.Build();
+    await host.StartAsync().ConfigureAwait(false);
+    IReadOnlyList<JobEntry> recurring;
+    try
+    {
+        var deadline = DateTime.UtcNow.AddSeconds(10);
+        do
+        {
+            await Task.Delay(50).ConfigureAwait(false);
+            recurring = await inner.GetRecurringAsync().ConfigureAwait(false);
+        }
+        while (recurring.Count == 0 && DateTime.UtcNow < deadline);
+    }
+    finally
+    {
+        await host.StopAsync().ConfigureAwait(false);
+    }
+
+    if (recurring.Count != 1 || !string.Equals(recurring[0].TypeName, typeof(YearlySweepJob).FullName, StringComparison.Ordinal))
+    {
+        failures.Add($"{Name}: expected one scheduled run after {store.Seeds} seeds, found {recurring.Count}");
+        return;
+    }
+
+    Console.WriteLine($"AOT smoke: {Name} PASS");
 }
 
 static async Task RunOrmAsync(List<string> failures)

@@ -210,6 +210,12 @@ When the slow run finishes after all, its outcome must not overwrite the run tha
 | Redis | Ignored when another host took the job over. Workers in one process share the singleton store, and there the late outcome is recorded. |
 | InMemory | Recorded. One instance serves every worker. |
 
+### Recurring jobs get their live run back
+
+The worker writes a recurring job's next occurrence in a write of its own, after the outcome of the run before it: after a dead-letter in every store, and on the ORM store also after a success. When that write fails, for example on a transient store error, the job has no live run left. And a run that lost its claim can seed the job with the definition it started with, which on the ORM store rewrites the Pending next occurrence.
+
+So the hosted service generated for a recurring job seeds it again every `ClaimTimeout` while the host runs, with the job's current definition: its payload, schedule and maximum attempts. The seed does nothing while the job has a live run, so repeating it is safe. A lost next occurrence comes back within one `ClaimTimeout`, without a restart. On the ORM store the seed also puts the current definition back on a Pending run; the InMemory, EF Core and Redis stores leave a Pending run as it is. A repeat that fails is logged as an error and tried again one `ClaimTimeout` later. Only the seed at startup fails the host start. A `ClaimTimeout` above about 49 days, the longest delay `Task.Delay` accepts, re-seeds every 49 days instead, and one below a millisecond re-seeds every millisecond.
+
 A custom `IJobStore` should claim an expired Running job again in `FetchPendingAsync` as well. Otherwise a recurring job whose run was abandoned never runs again.
 
 ## Dashboard Integration

@@ -24,7 +24,7 @@ public sealed class GeneratorTests
         source.Should().Contain("IJobTypeExecutor");
         source.Should().Contain("SendEmailJob");
         source.Should().Contain("AddSendEmailJob");
-        source.Should().NotContain("IHostedService"); // fire-and-forget: no startup service
+        source.Should().NotContain("BackgroundService"); // fire-and-forget: no startup service
     }
 
     [Fact]
@@ -166,7 +166,7 @@ public sealed class GeneratorTests
             }
             """);
 
-        source.Should().Contain("IHostedService");
+        source.Should().Contain(": global::Microsoft.Extensions.Hosting.BackgroundService");
         source.Should().Contain("UpsertRecurringAsync");
     }
 
@@ -183,7 +183,7 @@ public sealed class GeneratorTests
             }
             """);
 
-        source.Should().Contain("IHostedService");
+        source.Should().Contain(": global::Microsoft.Extensions.Hosting.BackgroundService");
         source.Should().Contain("UpsertRecurringAsync");
     }
 
@@ -224,7 +224,7 @@ public sealed class GeneratorTests
         diagnostics.Should().BeEmpty();
         source.Should().Contain("MediatorJobTypeExecutor");
         source.Should().Contain("AddHourlyReportJob");
-        source.Should().Contain("IHostedService");         // recurring startup still emitted
+        source.Should().Contain(": global::Microsoft.Extensions.Hosting.BackgroundService");         // recurring startup still emitted
         source.Should().NotContain("TypeExecutor : global::ZeroAlloc.Scheduling.IJobTypeExecutor"); // no direct executor
     }
 

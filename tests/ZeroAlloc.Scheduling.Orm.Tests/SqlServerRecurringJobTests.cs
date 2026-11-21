@@ -59,6 +59,16 @@ public sealed class SqlServerRecurringJobTests : RecurringJobContract, IAsyncLif
             return (long)(await command.ExecuteScalarAsync().ConfigureAwait(false))!;
         }
 
+        public override async Task ExecuteAsync(string sql)
+        {
+            var connection = new SqlConnection(connectionString);
+            await using var connectionScope = connection.ConfigureAwait(false);
+            await connection.OpenAsync().ConfigureAwait(false);
+            var command = new SqlCommand(sql, connection);
+            await using var commandScope = command.ConfigureAwait(false);
+            await command.ExecuteNonQueryAsync().ConfigureAwait(false);
+        }
+
         public override async Task<IReadOnlyList<Migration>> MigrateAsync(IMigrationSource source)
         {
             var connection = await ConnectAsync().ConfigureAwait(false);
