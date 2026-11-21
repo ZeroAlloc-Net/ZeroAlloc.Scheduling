@@ -346,20 +346,37 @@ public sealed class EfCoreJobStore : IJobStore, IJobDashboardStore
     {
         // Captured first: inline, DateTimeOffset.UtcNow is not a value EF Core can translate.
         var now = DateTimeOffset.UtcNow;
+
+        // The run as it is before the requeue, to tell after a failure whether the requeue
+        // was rejected or committed with its response lost.
+        var before = await _db.Jobs
+            .AsNoTracking()
+            .Where(j => j.Id == id)
+            .Select(j => new { j.TypeName, j.Status, j.CompletedAt, j.ScheduledAt })
+            .SingleOrDefaultAsync(ct).ConfigureAwait(false);
+        if (before is null)
+            return;
+
         try
         {
             await RequeueOnceAsync(_db.Jobs.Where(j => j.Id == id), now, ct).ConfigureAwait(false);
         }
         catch (DbException)
         {
-            // A live run inserted after the statement read the table makes the index reject
-            // it. Run once more, so the check sees that run; a second failure is a real one.
-            // The retry applies only while the run is still finished. A failure can also hide
-            // a requeue that committed, after which a worker may have claimed the run, and the
-            // retry must not reset that claim.
-            await RequeueOnceAsync(
-                _db.Jobs.Where(j => j.Id == id && (j.Status == JobStatus.Succeeded || j.Status == JobStatus.DeadLetter)),
-                now, ct).ConfigureAwait(false);
+            // A live run inserted after the statement read the table makes the index reject the
+            // requeue. That is confirmed when the run is unchanged and the job now has a live
+            // run; the requeue then runs once more, sees that run and clears the cron
+            // expression. Anything else is rethrown: an unrelated failure, or a requeue that
+            // committed before its response was lost, after which a worker may have claimed or
+            // even finished the run.
+            var unchanged = _db.Jobs.Where(j => j.Id == id && j.Status == before.Status
+                && j.CompletedAt == before.CompletedAt && j.ScheduledAt == before.ScheduledAt);
+            if (!await unchanged.AnyAsync(ct).ConfigureAwait(false)
+                || !await HasLiveRunAsync(before.TypeName, ct).ConfigureAwait(false)
+                || await RequeueOnceAsync(unchanged, now, ct).ConfigureAwait(false) == 0)
+            {
+                throw;
+            }
         }
     }
 

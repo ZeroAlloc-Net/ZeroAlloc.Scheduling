@@ -196,27 +196,96 @@ public abstract class LiveRecurringRunContract
     }
 
     [Fact]
-    public async Task A_Requeue_Retried_After_A_Lost_Response_Leaves_A_Claimed_Run_Alone()
+    public async Task A_Requeue_The_Index_Rejected_Is_Run_Again_As_A_One_Off()
     {
-        // The first update commits, its response is lost, and a worker claims the run before the
-        // store retries. The retry must not reset that claim.
+        // A live run appears after the update read the table, and the index rejects the update.
         var plain = await NewDatabaseAsync();
-        var deadLettered = Run("Job", JobStatus.DeadLetter, Hourly);
-        await using (var seed = new SchedulingDbContext(plain))
-        {
-            seed.Jobs.Add(deadLettered);
-            await seed.SaveChangesAsync();
-        }
+        var deadLettered = await SeedAsync(plain, Run("Job", JobStatus.DeadLetter, Hourly));
 
-        var options = new DbContextOptionsBuilder<SchedulingDbContext>(plain)
-            .AddInterceptors(new LostResponseThenClaim(plain, deadLettered.Id)).Options;
-        await using (var db = new SchedulingDbContext(options))
-            await new EfCoreJobStore(db).RequeueAsync(deadLettered.Id);
+        await RequeueThroughAsync(plain, deadLettered.Id, new FailFirstUpdate(plain, commit: false,
+            db =>
+            {
+                db.Jobs.Add(Run("Job", JobStatus.Pending, Hourly));
+                return Task.CompletedTask;
+            }));
 
-        await using var check = new SchedulingDbContext(plain);
-        var run = await check.Jobs.SingleAsync(j => j.Id == deadLettered.Id);
+        var run = await ReadAsync(plain, deadLettered.Id);
+        run.Status.Should().Be(JobStatus.Pending);
+        run.CronExpression.Should().BeNull("the schedule stays with the live run");
+        (await LiveRunsAsync(plain, "Job")).Should().Be(1);
+    }
+
+    [Fact]
+    public async Task A_Requeue_That_Committed_Is_Not_Repeated_On_A_Run_A_Worker_Claimed()
+    {
+        var plain = await NewDatabaseAsync();
+        var deadLettered = await SeedAsync(plain, Run("Job", JobStatus.DeadLetter, Hourly));
+
+        var requeue = () => RequeueThroughAsync(plain, deadLettered.Id, new FailFirstUpdate(plain, commit: true,
+            db => db.Jobs.Where(j => j.Id == deadLettered.Id).ExecuteUpdateAsync(s => s
+                .SetProperty(j => j.Status, JobStatus.Running)
+                .SetProperty(j => j.Attempts, 1))));
+
+        await requeue.Should().ThrowAsync<LostResponseException>();
+        var run = await ReadAsync(plain, deadLettered.Id);
         run.Status.Should().Be(JobStatus.Running);
         run.Attempts.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task A_Requeue_That_Committed_Is_Not_Repeated_On_A_Run_A_Worker_Finished()
+    {
+        var plain = await NewDatabaseAsync();
+        var deadLettered = await SeedAsync(plain, Run("Job", JobStatus.DeadLetter, Hourly));
+        var finishedAt = DateTimeOffset.UtcNow.AddMinutes(1);
+
+        var requeue = () => RequeueThroughAsync(plain, deadLettered.Id, new FailFirstUpdate(plain, commit: true,
+            db => db.Jobs.Where(j => j.Id == deadLettered.Id).ExecuteUpdateAsync(s => s
+                .SetProperty(j => j.Status, JobStatus.Succeeded)
+                .SetProperty(j => j.CompletedAt, finishedAt))));
+
+        await requeue.Should().ThrowAsync<LostResponseException>();
+        var run = await ReadAsync(plain, deadLettered.Id);
+        run.Status.Should().Be(JobStatus.Succeeded, "the run finished and must not run a second time");
+    }
+
+    [Fact]
+    public async Task A_Requeue_That_Fails_For_Another_Reason_Reports_It()
+    {
+        var plain = await NewDatabaseAsync();
+        var deadLettered = await SeedAsync(plain, Run("Job", JobStatus.DeadLetter, Hourly));
+
+        var requeue = () => RequeueThroughAsync(plain, deadLettered.Id, new FailFirstUpdate(plain, commit: false, _ => Task.CompletedTask));
+
+        await requeue.Should().ThrowAsync<LostResponseException>();
+        (await ReadAsync(plain, deadLettered.Id)).Status.Should().Be(JobStatus.DeadLetter);
+    }
+
+    private static async Task<JobEntryEntity> SeedAsync(DbContextOptions<SchedulingDbContext> options, JobEntryEntity run)
+    {
+        var db = new SchedulingDbContext(options);
+        await using (db.ConfigureAwait(false))
+        {
+            db.Jobs.Add(run);
+            await db.SaveChangesAsync().ConfigureAwait(false);
+        }
+
+        return run;
+    }
+
+    private static async Task<JobEntryEntity> ReadAsync(DbContextOptions<SchedulingDbContext> options, JobId id)
+    {
+        var db = new SchedulingDbContext(options);
+        await using (db.ConfigureAwait(false))
+            return await db.Jobs.AsNoTracking().SingleAsync(j => j.Id == id).ConfigureAwait(false);
+    }
+
+    private static async Task RequeueThroughAsync(DbContextOptions<SchedulingDbContext> plain, JobId id, IInterceptor interceptor)
+    {
+        var options = new DbContextOptionsBuilder<SchedulingDbContext>(plain).AddInterceptors(interceptor).Options;
+        var db = new SchedulingDbContext(options);
+        await using (db.ConfigureAwait(false))
+            await new EfCoreJobStore(db).RequeueAsync(id).ConfigureAwait(false);
     }
 
     private static async Task<int> LiveRunsAsync(DbContextOptions<SchedulingDbContext> options, string typeName)
@@ -254,30 +323,46 @@ public abstract class LiveRecurringRunContract
         }
     }
 
-    // Lets the first update commit, then claims the run as a worker would and reports a
-    // failure, as a connection that drops before the response arrives does.
-    private sealed class LostResponseThenClaim(DbContextOptions<SchedulingDbContext> options, JobId id) : DbCommandInterceptor
+    // Fails the store's first update with a database error. With commit, the update runs first, as
+    // when a connection drops before the response arrives; without, it never runs. In between,
+    // another session makes the change the test needs.
+    private sealed class FailFirstUpdate(
+        DbContextOptions<SchedulingDbContext> options, bool commit, Func<SchedulingDbContext, Task> meanwhile) : DbCommandInterceptor
     {
         private bool _done;
+
+        public override async ValueTask<InterceptionResult<int>> NonQueryExecutingAsync(
+            DbCommand command, CommandEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default)
+        {
+            if (!commit)
+                await FailAsync().ConfigureAwait(false);
+            return result;
+        }
 
         public override async ValueTask<int> NonQueryExecutedAsync(
             DbCommand command, CommandExecutedEventData eventData, int result, CancellationToken cancellationToken = default)
         {
+            if (commit)
+                await FailAsync().ConfigureAwait(false);
+            return result;
+        }
+
+        private async Task FailAsync()
+        {
             if (_done)
-                return result;
+                return;
 
             _done = true;
             var db = new SchedulingDbContext(options);
             await using (db.ConfigureAwait(false))
             {
-                await db.Jobs.Where(j => j.Id == id).ExecuteUpdateAsync(s => s
-                    .SetProperty(j => j.Status, JobStatus.Running)
-                    .SetProperty(j => j.Attempts, 1), cancellationToken).ConfigureAwait(false);
+                await meanwhile(db).ConfigureAwait(false);
+                await db.SaveChangesAsync().ConfigureAwait(false);
             }
 
             throw new LostResponseException();
         }
     }
 
-    private sealed class LostResponseException() : DbException("The connection dropped before the response arrived.");
+    private sealed class LostResponseException() : DbException("The database reported a failure.");
 }
