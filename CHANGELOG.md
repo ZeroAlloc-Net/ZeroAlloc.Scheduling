@@ -1,5 +1,22 @@
 # Changelog
 
+## [3.0.0](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v2.6.0...v3.0.0) (2026-11-21)
+
+
+### ⚠ BREAKING CHANGES
+
+* net8.0 and net9.0 assets are no longer shipped, so applications must move to .NET 10 or .NET 11; the EF Core schema adds the unique index UX_ScheduledJobs_LiveRecurring, so a database created by 2.x must delete duplicate live runs of recurring jobs and then add the index; on EF Core, requeuing a finished recurring run while the job has a live run now clears its cron expression so it runs once as a one-off; a recurring seed or successor that loses a race is skipped instead of added. See the Behaviour change section of PR 607 and docs/migrating-to-v3.md for the migration steps.
+
+### Features
+
+* target net10.0 and net11.0, drop net8.0 and net9.0 ([2278b65](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/2278b65699e2aac34f516a24b8b7dac9f2e047a4))
+
+
+### Bug Fixes
+
+* keep one live run per recurring job on the EF Core store, through a filtered unique index that skips a duplicate seed or successor ([2278b65](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/2278b65699e2aac34f516a24b8b7dac9f2e047a4))
+* requeue a finished recurring run on the EF Core store as a one-off while its next occurrence is live ([2278b65](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/2278b65699e2aac34f516a24b8b7dac9f2e047a4))
+
 ## [2.6.0](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v2.5.0...v2.6.0) (2026-11-21)
 
 
