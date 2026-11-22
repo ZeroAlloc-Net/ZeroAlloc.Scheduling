@@ -34,7 +34,7 @@
   <ItemGroup>
     <PackageReference Include="ZeroAlloc.Scheduling" Version="[$(ZeroAllocSchedulingVersion)]" />
     <PackageReference Include="ZeroAlloc.Scheduling.InMemory" Version="[$(ZeroAllocSchedulingVersion)]" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.*" />
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.*" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.1*" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.1*" />
   </ItemGroup>
 </Project>
