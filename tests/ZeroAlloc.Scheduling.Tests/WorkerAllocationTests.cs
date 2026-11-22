@@ -12,7 +12,12 @@ namespace ZeroAlloc.Scheduling.Tests;
 /// store: the <see cref="JobContext"/> handed to the job, and nothing else. No listener is attached
 /// to the worker's meter or activity source, so metric tags and activity tags must cost nothing,
 /// and a recurring job must not re-parse its cron expression on every run.
-/// </summary>
+/// <remarks>
+/// Runs in a non-parallel collection: AllocationGate waits for tiered compilation to settle, and
+/// the runtime holds tiering back while other test classes are still calling methods for the
+/// first time. Sharing the start of the run with them timed the gate out on a loaded runner.
+/// </remarks>
+[Collection(WorkerAllocationCollection.Name)]
 public sealed class WorkerAllocationTests
 {
     private const int Jobs = 1_000;
