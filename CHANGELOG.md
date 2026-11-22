@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.0.1](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v3.0.0...v3.0.1) (2026-11-22)
+
+
+### Bug Fixes
+
+* build the generator against Roslyn 5.0 so every .NET 10 SDK loads it ([#615](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/615)) ([d8a456b](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/d8a456b73c088e67385c705babcd5b657ac084bd))
+
 ## [3.0.0](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v2.6.0...v3.0.0) (2026-11-21)
 
 
