@@ -12,3 +12,4 @@ BenchmarkDotNet.Artifacts/
 
 # Test results and coverage reports
 TestResults/
+artifacts/
