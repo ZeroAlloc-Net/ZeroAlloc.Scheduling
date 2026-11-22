@@ -70,7 +70,27 @@ dotnet test tests/ZeroAlloc.Scheduling.Tests --no-build -c Release -f net10.0 --
 dotnet test tests/ZeroAlloc.Scheduling.Generator.Tests -c Release -f net11.0 -p:Version=9.9.9-local.abc1234
 ```
 
+CI job `sdk10-consumer` needs a 10.0.1xx SDK; `tests/ZeroAlloc.Scheduling.Sdk10Smoke/global.json` pins
+10.0.100 with `rollForward: latestPatch`, so a newer band cannot stand in for it. It builds and runs a
+consumer of the packed packages with Roslyn 5.0:
+
+```bash
+dotnet pack src/ZeroAlloc.Scheduling -c Release -o artifacts -p:Version=9.9.9-local.sha$(git rev-parse --short HEAD)
+dotnet pack src/ZeroAlloc.Scheduling.InMemory -c Release -o artifacts -p:Version=9.9.9-local.sha$(git rev-parse --short HEAD)
+cd tests/ZeroAlloc.Scheduling.Sdk10Smoke/Consumer
+dotnet run -c Release -p:ZeroAllocSchedulingVersion=9.9.9-local.sha$(git rev-parse --short HEAD)
+```
+
+CI job `roslyn-floor` calls the shared `roslyn-floor.yml` from ZeroAlloc-Net/.github: it packs the
+solution and fails when a packed DLL references Roslyn above 5.0.0.
+
 ## Conventions and gotchas
+- The generator references `Microsoft.CodeAnalysis.CSharp` 5.0.0, the compiler of SDK band 10.0.1xx, the
+  oldest supported SDK. A compiler older than the Roslyn the DLL references skips the generator with
+  `CS9057`, and nothing is generated. The shared Renovate preset holds it below 5.1, so the repo has no
+  Roslyn rule of its own. `RoslynFloorTests` fails when the generator references anything newer than 5.0.
+  If a newer Roslyn API is needed, change the code; raise the floor only together with the minimum SDK.
+  The generator test project may use a newer Roslyn.
 
 - **Versions.** The csproj files carry `<Version>0.0.0-local</Version>` as a placeholder. `dotnet pack` fails
   with `ZAVERSION001` or `ZAVERSION002` unless the release version reaches the build too. When you pack with

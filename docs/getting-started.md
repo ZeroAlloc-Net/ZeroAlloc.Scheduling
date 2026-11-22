@@ -25,6 +25,8 @@ a store package: `ZeroAlloc.Scheduling.InMemory` for development and tests, or
 
 > The standalone `ZeroAlloc.Scheduling.Generator` package is still published for backwards compatibility with existing direct PackageReferences, but new consumers should reference only `ZeroAlloc.Scheduling`.
 
+The generator needs the .NET 10 SDK 10.0.100 or later, or Visual Studio 2026 or later. It is built against Roslyn 5.0, and an older compiler skips it with warning CS9057, after which the generated `Add...Job` methods are missing. Version 3.0.0 was built against Roslyn 5.9 and does not load in SDK 10.0.1xx; on .NET 10, use 3.0.1 or later.
+
 ## Your First Job
 
 ### Step 1 — Define the job

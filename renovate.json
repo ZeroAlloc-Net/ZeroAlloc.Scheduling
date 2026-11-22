@@ -30,18 +30,6 @@
       "groupName": "Microsoft.CodeAnalysis"
     },
     {
-      "description": "Keep the generator on the Roslyn of the newest .NET 10 SDK band: a generator built against a newer Roslyn does not load for .NET 10 consumers (CS9057)",
-      "matchFileNames": [
-        "src/ZeroAlloc.Scheduling.Generator/**",
-        "tests/ZeroAlloc.Scheduling.Generator.Tests/**"
-      ],
-      "matchPackageNames": [
-        "Microsoft.CodeAnalysis.CSharp",
-        "Microsoft.CodeAnalysis.Analyzers"
-      ],
-      "allowedVersions": "<5.10"
-    },
-    {
       "description": "Group Microsoft.EntityFrameworkCore packages",
       "matchPackagePrefixes": ["Microsoft.EntityFrameworkCore."],
       "groupName": "Microsoft.EntityFrameworkCore"
