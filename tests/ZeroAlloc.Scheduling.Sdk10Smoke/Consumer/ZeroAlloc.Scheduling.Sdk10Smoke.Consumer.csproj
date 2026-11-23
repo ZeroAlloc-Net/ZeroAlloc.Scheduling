@@ -3,11 +3,10 @@
     Builds a consumer of the packed ZeroAlloc.Scheduling and ZeroAlloc.Scheduling.InMemory packages with the oldest supported .NET
     SDK band, 10.0.1xx, whose compiler is Roslyn 5.0. If a generator in the package references a newer Roslyn
     than the compiler that loads it, it is skipped with CS9057 and the generated AddPingJob method goes missing.
-    CS9057 itself is not an error here: dependencies of the packages, ZeroAlloc.Serialisation 2.11.1,
-    ZeroAlloc.Resilience 3.5.1, ZeroAlloc.StateMachine 1.8.1 and ZeroAlloc.ValueObjects 2.4.1, ship
-    generators built against Roslyn 5.9, which this SDK skips with that warning. It stays visible in
-    the build log and is tracked in ZeroAlloc-Net/.github#77. The consumer registers a job without
-    state, so it needs none of them.
+    CS9057 is an error here as well. Dependencies of the packages, ZeroAlloc.Serialisation 2.11.2,
+    ZeroAlloc.Resilience 3.6.0, ZeroAlloc.StateMachine 1.8.2, ZeroAlloc.ValueObjects 2.4.3 and
+    ZeroAlloc.Collections 1.3.2, also ship generators built against Roslyn 5.0, so no package in
+    this build may be skipped.
 
     The parent folder's global.json pins the 10.0.1xx band with rollForward latestPatch, so a
     newer band cannot stand in for it. Run locally with a 10.0.1xx SDK installed:
@@ -26,7 +25,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <IsPackable>false</IsPackable>
-    <WarningsAsErrors>$(WarningsAsErrors);CS8032</WarningsAsErrors>
+    <WarningsAsErrors>$(WarningsAsErrors);CS8032;CS9057</WarningsAsErrors>
   </PropertyGroup>
 
   <Target Name="RequireZeroAllocSchedulingVersion" BeforeTargets="CollectPackageReferences">
