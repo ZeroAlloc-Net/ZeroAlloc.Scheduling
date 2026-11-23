@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.0.2](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v3.0.1...v3.0.2) (2026-11-23)
+
+
+### Bug Fixes
+
+* depend on maintenance patches whose generators load on SDK 10.0.1xx ([#621](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/issues/621)) ([acbb906](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/commit/acbb906ff437390cd7e2d2dcafd7cd9c40c852fc))
+
 ## [3.0.1](https://github.com/ZeroAlloc-Net/ZeroAlloc.Scheduling/compare/v3.0.0...v3.0.1) (2026-11-22)
 
 
