@@ -83,7 +83,8 @@ dotnet run -c Release -p:ZeroAllocSchedulingVersion="${v:?no random suffix}"
 ```
 
 Each step stops when the random suffix cannot be generated. Runs in one checkout share its `obj/` and
-`bin/` folders, so they must not overlap: give each concurrent run its own worktree.
+`bin/` folders, so they must not overlap: give each concurrent run its own worktree. `CS9057` is an
+error in the consumer, so a generator from any package in its graph that this SDK skips fails it.
 
 CI job `roslyn-floor` calls the shared `roslyn-floor.yml` from ZeroAlloc-Net/.github: it packs the
 solution and fails when a packed DLL references Roslyn above 5.0.0.
