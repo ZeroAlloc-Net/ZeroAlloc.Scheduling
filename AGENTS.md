@@ -76,8 +76,10 @@ consumer of the packed packages with Roslyn 5.0:
 
 ```bash
 unset v; r=$(od -An -N4 -tx4 /dev/urandom | tr -d " ") && [ -n "$r" ] && v=9.9.9-local.sha$(git rev-parse --short HEAD).$(date +%s).r$r
-dotnet pack src/ZeroAlloc.Scheduling -c Release -o artifacts -p:Version="${v:?no random suffix}"
-dotnet pack src/ZeroAlloc.Scheduling.InMemory -c Release -o artifacts -p:Version="${v:?no random suffix}"
+for p in src/ZeroAlloc.Scheduling*/ZeroAlloc.Scheduling*.csproj; do
+  case "$p" in *.Generator.csproj) continue ;; esac
+  dotnet pack "$p" -c Release -o artifacts -p:Version="${v:?no random suffix}"
+done
 cd tests/ZeroAlloc.Scheduling.Sdk10Smoke/Consumer
 dotnet run -c Release -p:ZeroAllocSchedulingVersion="${v:?no random suffix}"
 ```
@@ -85,6 +87,9 @@ dotnet run -c Release -p:ZeroAllocSchedulingVersion="${v:?no random suffix}"
 Each step stops when the random suffix cannot be generated. Runs in one checkout share its `obj/` and
 `bin/` folders, so they must not overlap: give each concurrent run its own worktree. `CS9057` is an
 error in the consumer, so a generator from any package in its graph that this SDK skips fails it.
+The consumer references every package under `src` except the standalone generator package, which
+ZeroAlloc.Scheduling bundles: an adapter brings its own dependencies' generators, as Scheduling.Orm does
+with ZeroAlloc.AsyncEvents through AdoNet.Async.Adapters. CI fails when a packed package is missing from it.
 
 CI job `roslyn-floor` calls the shared `roslyn-floor.yml` from ZeroAlloc-Net/.github: it packs the
 solution and fails when a packed DLL references Roslyn above 5.0.0.

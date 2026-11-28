@@ -1,8 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <!--
-    Builds a consumer of the packed ZeroAlloc.Scheduling and ZeroAlloc.Scheduling.InMemory packages with the oldest supported .NET
+    Builds a consumer of every packed ZeroAlloc.Scheduling package with the oldest supported .NET
     SDK band, 10.0.1xx, whose compiler is Roslyn 5.0. If a generator in the package references a newer Roslyn
     than the compiler that loads it, it is skipped with CS9057 and the generated AddPingJob method goes missing.
+    Each adapter package brings the generators of its own dependencies: ZeroAlloc.Scheduling.Orm pulls in
+    AdoNet.Async.Adapters and, through it, ZeroAlloc.AsyncEvents. The consumer references all of them,
+    because a package it leaves out is a graph it never checks. The standalone
+    ZeroAlloc.Scheduling.Generator package is left out: ZeroAlloc.Scheduling bundles the same generator.
     CS9057 is an error here as well. Dependencies of the packages, ZeroAlloc.Serialisation 2.11.2,
     ZeroAlloc.Resilience 3.6.0, ZeroAlloc.StateMachine 1.8.2, ZeroAlloc.ValueObjects 2.4.3 and
     ZeroAlloc.Collections 1.3.2, also ship generators built against Roslyn 5.0, so no package in
@@ -11,8 +15,8 @@
     The parent folder's global.json pins the 10.0.1xx band with rollForward latestPatch, so a
     newer band cannot stand in for it. Run locally with a 10.0.1xx SDK installed:
       unset v; r=$(od -An -N4 -tx4 /dev/urandom | tr -d " ") && [ -n "$r" ] && v=9.9.9-local.sha$(git rev-parse HEAD | cut -c1-7).$(date +%s).r$r
-      dotnet pack src/ZeroAlloc.Scheduling -c Release -o artifacts -p:Version=${v:?no random suffix}
-      dotnet pack src/ZeroAlloc.Scheduling.InMemory -c Release -o artifacts -p:Version=${v:?no random suffix}
+      for p in src/ZeroAlloc.Scheduling*/ZeroAlloc.Scheduling*.csproj; do case $p in *.Generator.csproj) continue ;; esac
+        dotnet pack $p -c Release -o artifacts -p:Version=${v:?no random suffix}; done
       cd tests/ZeroAlloc.Scheduling.Sdk10Smoke/Consumer
       dotnet run -c Release -p:ZeroAllocSchedulingVersion=${v:?no random suffix}
     Each step stops when the random suffix cannot be generated; give each
@@ -36,6 +40,14 @@
   <ItemGroup>
     <PackageReference Include="ZeroAlloc.Scheduling" Version="[$(ZeroAllocSchedulingVersion)]" />
     <PackageReference Include="ZeroAlloc.Scheduling.InMemory" Version="[$(ZeroAllocSchedulingVersion)]" />
+    <PackageReference Include="ZeroAlloc.Scheduling.Orm" Version="[$(ZeroAllocSchedulingVersion)]" />
+    <PackageReference Include="ZeroAlloc.Scheduling.EfCore" Version="[$(ZeroAllocSchedulingVersion)]" />
+    <PackageReference Include="ZeroAlloc.Scheduling.Redis" Version="[$(ZeroAllocSchedulingVersion)]" />
+    <PackageReference Include="ZeroAlloc.Scheduling.Mediator" Version="[$(ZeroAllocSchedulingVersion)]" />
+    <PackageReference Include="ZeroAlloc.Scheduling.Resilience" Version="[$(ZeroAllocSchedulingVersion)]" />
+    <PackageReference Include="ZeroAlloc.Scheduling.Telemetry" Version="[$(ZeroAllocSchedulingVersion)]" />
+    <PackageReference Include="ZeroAlloc.Scheduling.Dashboard" Version="[$(ZeroAllocSchedulingVersion)]" />
+    <PackageReference Include="ZeroAlloc.Scheduling.Dashboard.Blazor" Version="[$(ZeroAllocSchedulingVersion)]" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.1*" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.1*" />
   </ItemGroup>
